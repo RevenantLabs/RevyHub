@@ -1,6 +1,33 @@
+import {
+  type TransactionMemo,
+  type TransactionMemoType,
+  type TransactionSummary
+} from "@/components/stellar/TransactionDetails";
 import { getHorizonServer, STELLAR_NETWORK, type StellarNetwork } from "@/lib/stellar/horizon";
 import { getResponseStatus } from "@/lib/stellar/account";
-import type { TransactionSummary } from "@/components/stellar/TransactionDetails";
+
+const HORIZON_MEMO_TYPES = new Set<TransactionMemoType>(["none", "text", "id", "hash", "return"]);
+
+export function normalizeTransactionMemo(
+  memoType: string | undefined,
+  memo: string | undefined
+): TransactionMemo {
+  const type: TransactionMemoType =
+    memoType && HORIZON_MEMO_TYPES.has(memoType as TransactionMemoType)
+      ? (memoType as TransactionMemoType)
+      : "none";
+
+  if (type === "none") {
+    return { type, value: null };
+  }
+
+  const trimmed = memo?.trim() ?? "";
+
+  return {
+    type,
+    value: trimmed.length > 0 ? trimmed : null
+  };
+}
 
 export function isLikelyTransactionHash(value: string) {
   return /^[a-fA-F0-9]{64}$/.test(value.trim());
@@ -31,7 +58,8 @@ export async function lookupTransaction(
       createdAt: transaction.created_at,
       successful: transaction.successful,
       network,
-      operationCount: transaction.operation_count
+      operationCount: transaction.operation_count,
+      memo: normalizeTransactionMemo(transaction.memo_type, transaction.memo)
     };
   } catch (error) {
     if (getResponseStatus(error) === 404) {

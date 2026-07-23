@@ -7,6 +7,13 @@ const explorerBaseUrls: Record<StellarNetwork, string> = {
   mainnet: "https://stellar.expert/explorer/public/tx"
 };
 
+export type TransactionMemoType = "none" | "text" | "id" | "hash" | "return";
+
+export interface TransactionMemo {
+  type: TransactionMemoType;
+  value: string | null;
+}
+
 export interface TransactionSummary {
   hash: string;
   ledger: number;
@@ -16,6 +23,34 @@ export interface TransactionSummary {
   successful: boolean;
   network: StellarNetwork;
   operationCount?: number;
+  memo: TransactionMemo;
+}
+
+export function formatMemoTypeLabel(type: TransactionMemoType) {
+  switch (type) {
+    case "none":
+      return "None";
+    case "text":
+      return "Text";
+    case "id":
+      return "ID";
+    case "hash":
+      return "Hash";
+    case "return":
+      return "Return hash";
+  }
+}
+
+export function formatMemoValueLabel(memo: TransactionMemo) {
+  if (memo.type === "none" || memo.value === null) {
+    return "No memo attached";
+  }
+
+  return memo.value;
+}
+
+export function shouldUseCopyableMemoValue(type: TransactionMemoType) {
+  return type === "hash" || type === "return";
 }
 
 function formatFee(stroops: string) {
@@ -28,12 +63,27 @@ function formatFee(stroops: string) {
   return `${fee} stroops (${(fee / 10_000_000).toFixed(7)} XLM)`;
 }
 
+function renderMemoValue(memo: TransactionMemo) {
+  if (memo.type === "none" || memo.value === null) {
+    return formatMemoValueLabel(memo);
+  }
+
+  if (shouldUseCopyableMemoValue(memo.type)) {
+    return <CopyableValue key="memo" label="transaction memo" value={memo.value} visible={10} />;
+  }
+
+  return formatMemoValueLabel(memo);
+}
+
 export function TransactionDetails({ transaction }: { transaction: TransactionSummary }) {
+  const memoValue = renderMemoValue(transaction.memo);
   const rows = [
     ["Network", transaction.network],
     ["Hash", <CopyableValue key="hash" label="transaction hash" value={transaction.hash} visible={10} />],
     ["Ledger", String(transaction.ledger)],
     ["Source account", <CopyableValue key="source" label="source account" value={transaction.sourceAccount} />],
+    ["Memo type", formatMemoTypeLabel(transaction.memo.type)],
+    ["Memo", memoValue],
     ["Fee charged", formatFee(transaction.feeCharged)],
     ["Created at", new Date(transaction.createdAt).toLocaleString()],
     ["Operations", String(transaction.operationCount ?? "Not loaded")]
