@@ -9,6 +9,7 @@ RevyHubX is a Next.js App Router application that keeps user-facing tool pages, 
 - `components/stellar/` contains Stellar-specific display and input components such as address inputs, balance lists, QR previews, and transaction details.
 - `lib/stellar/` contains SDK-facing logic, validation, and Horizon/Friendbot helpers. Route components should call these helpers instead of using the Stellar SDK directly.
 - `docs/` contains contributor roadmap, issue scope, and project-level documentation.
+- `docs/EXTENDING.md` is the step-by-step tutorial for adding a new tool (page, helper, tests, navigation).
 - `docs/DEPLOYMENT.md` and `docs/STELLAR_BASICS.md` support operators and new Stellar developers.
 
 ## Current Stellar Workflows
