@@ -10,7 +10,18 @@ import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { copyText } from "@/lib/copy";
-import { createPaymentUri } from "@/lib/stellar/paymentUri";
+import {
+  createPaymentUri,
+  PAYMENT_MEMO_TYPE_GUIDANCE,
+  type PaymentMemoType
+} from "@/lib/stellar/paymentUri";
+
+const MEMO_PLACEHOLDERS: Record<PaymentMemoType, string> = {
+  text: "Invoice 1001",
+  id: "1234567890",
+  hash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  return: "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+};
 
 export default function PaymentQrPage() {
   const [destination, setDestination] = useState("");
@@ -18,6 +29,7 @@ export default function PaymentQrPage() {
   const [asset, setAsset] = useState<"XLM" | "ISSUED">("XLM");
   const [assetCode, setAssetCode] = useState("");
   const [assetIssuer, setAssetIssuer] = useState("");
+  const [memoType, setMemoType] = useState<PaymentMemoType>("text");
   const [memo, setMemo] = useState("");
   const [uri, setUri] = useState("");
   const [qr, setQr] = useState("");
@@ -27,7 +39,15 @@ export default function PaymentQrPage() {
     event.preventDefault();
 
     try {
-      const nextUri = createPaymentUri({ destination, amount, asset, assetCode, assetIssuer, memo });
+      const nextUri = createPaymentUri({
+        destination,
+        amount,
+        asset,
+        assetCode,
+        assetIssuer,
+        memo,
+        memoType: memo.trim() ? memoType : undefined
+      });
       const nextQr = await QRCode.toDataURL(nextUri, { margin: 1, width: 256 });
       setUri(nextUri);
       setQr(nextQr);
@@ -86,8 +106,27 @@ export default function PaymentQrPage() {
               </div>
             ) : null}
             <label className="block space-y-2">
+              <span className="text-sm font-medium text-[#29364d]">Memo type optional</span>
+              <select
+                value={memoType}
+                onChange={(event) => setMemoType(event.target.value as PaymentMemoType)}
+                className="min-h-12 w-full rounded-md border border-[#c7d6e8] bg-white/78 px-4 text-sm text-[#172033] outline-none focus:border-[#47a8c7] focus:ring-2 focus:ring-[#8edcf4]/35"
+              >
+                <option value="text">Text memo</option>
+                <option value="id">ID memo</option>
+                <option value="hash">Hash memo</option>
+                <option value="return">Return memo</option>
+              </select>
+              <p className="text-xs text-[#4e5c73]">{PAYMENT_MEMO_TYPE_GUIDANCE[memoType]}</p>
+            </label>
+            <label className="block space-y-2">
               <span className="text-sm font-medium text-[#29364d]">Memo optional</span>
-              <Input value={memo} onChange={(event) => setMemo(event.target.value)} placeholder="Invoice 1001" />
+              <Input
+                value={memo}
+                onChange={(event) => setMemo(event.target.value)}
+                placeholder={MEMO_PLACEHOLDERS[memoType]}
+                inputMode={memoType === "id" ? "numeric" : "text"}
+              />
             </label>
             <Button type="submit">Ask rocket to draw QR</Button>
           </form>
