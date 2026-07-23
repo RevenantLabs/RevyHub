@@ -16,9 +16,13 @@ export function CopyableValue({ label, value, visible = 6 }: CopyableValueProps)
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
-    await copyText(value);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+    try {
+      await copyText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
   }
 
   return (
