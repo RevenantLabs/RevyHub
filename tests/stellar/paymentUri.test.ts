@@ -63,7 +63,7 @@ describe("createPaymentUri", () => {
         amount: "10",
         asset: "XLM"
       })
-    ).toThrow(/start with G/);
+    ).toThrow(/start with the letter G/);
   });
 
   it("rejects non-positive and non-numeric amounts", () => {
