@@ -19,7 +19,7 @@ export default function BalanceViewerPage() {
   const [balances, setBalances] = useState<DisplayBalance[]>([]);
   const [message, setMessage] = useState<{ type: "info" | "success" | "error"; text: string }>({
     type: "info",
-    text: "The moon wallet is waiting for a funded testnet account address."
+    text: "The moon wallet is waiting for a funded account address on the selected network."
   });
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -73,7 +73,7 @@ export default function BalanceViewerPage() {
         </form>
       </Card>
       <StatusMessage type={message.type} title={message.type === "success" ? "Wallet opened" : "Moon wallet status"} description={message.text} />
-      {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
+      {network === "testnet" && message.type === "error" && message.text.includes("Account not found") ? (
         <StatusMessage
           type="info"
           title="Create the testnet account"

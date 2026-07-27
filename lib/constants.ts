@@ -68,8 +68,8 @@ export const tools: Tool[] = [
   },
   {
     title: "Balance Viewer",
-    description: "Inspect testnet account balances through Horizon.",
-    character: "A moon wallet opens its pockets for testnet balances.",
+    description: "Inspect account balances on the selected network through Horizon.",
+    character: "A moon wallet opens its pockets for the selected network's balances.",
     href: "/tools/balance-viewer",
     status: "Working" as ToolStatus,
     category: "balances",
@@ -86,7 +86,7 @@ export const tools: Tool[] = [
   },
   {
     title: "Transaction Lookup",
-    description: "Look up testnet transactions by hash.",
+    description: "Look up transactions by hash on the selected network.",
     character: "A detective comet follows transaction trails through Horizon.",
     href: "/tools/transaction-lookup",
     status: "MVP" as ToolStatus,
