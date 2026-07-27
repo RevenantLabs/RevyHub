@@ -65,9 +65,14 @@ The app uses testnet by default and includes a persisted network switch for Hori
 ```bash
 npm run dev
 npm run test
+npm run test:coverage
 npm run build
 npm run lint
 ```
+
+`npm run test:coverage` writes a text table to `coverage/coverage.txt` and
+machine-readable totals to `coverage/coverage-summary.json`. Coverage is
+informational and does not enforce a global percentage threshold.
 
 ## Quality Gates
 
@@ -75,7 +80,7 @@ The repository includes unit tests for core Stellar validation and payment URI b
 
 ```bash
 npm run lint
-npm run test
+npm run test:coverage
 npm run build
 ```
 

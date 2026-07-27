@@ -27,8 +27,19 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test
-        run: npm run test
+      - name: Test with coverage
+        run: npm run test:coverage
+
+      - name: Publish coverage summary
+        if: ${{ always() && hashFiles('coverage/coverage.txt') != '' }}
+        run: |
+          {
+            echo "## Unit test coverage"
+            echo
+            echo '```text'
+            cat coverage/coverage.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build
         run: npm run build
