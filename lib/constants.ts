@@ -1,4 +1,5 @@
 import {
+  AtSign,
   BadgeCheck,
   CircleDollarSign,
   Droplets,
@@ -67,6 +68,14 @@ export const tools = [
     href: "/tools/testnet-faucet",
     status: "Working" as ToolStatus,
     icon: Droplets
+  },
+  {
+    title: "Federation Resolver",
+    description: "Resolve Stellar federation addresses (name*domain) into public keys and memos.",
+    character: "A diligent wallet-style postmaster routes names to verified destinations.",
+    href: "/tools/federation-resolver",
+    status: "Working" as ToolStatus,
+    icon: AtSign
   }
 ];
 
