@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import {
   AtSign,
   BadgeCheck,
@@ -14,6 +15,15 @@ import {
 } from "lucide-react";
 
 export type ToolStatus = "Working" | "MVP" | "Coming Soon";
+export type WorkflowCategory = "Accounts" | "Assets" | "Transactions" | "Payments" | "Wallets";
+
+export const workflowCategories: WorkflowCategory[] = [
+  "Accounts",
+  "Assets",
+  "Transactions",
+  "Payments",
+  "Wallets"
+];
 
 export type ToolCategory = "validation" | "balances" | "network";
 
@@ -44,7 +54,8 @@ export interface Tool {
   href: string;
   status: ToolStatus;
   category: ToolCategory;
-  icon: React.ComponentType<{ className?: string }>;
+  workflow: WorkflowCategory;
+  icon: ComponentType<{ className?: string }>;
 }
 
 export const tools: Tool[] = [
@@ -53,8 +64,9 @@ export const tools: Tool[] = [
     description: "Validate Stellar public keys and explain address format issues.",
     character: "A careful star clerk checks every public key badge.",
     href: "/tools/address-validator",
-    status: "Working" as ToolStatus,
+    status: "Working",
     category: "validation",
+    workflow: "Accounts",
     icon: ShieldCheck
   },
   {
@@ -62,8 +74,9 @@ export const tools: Tool[] = [
     description: "Check whether an account trusts a specific issued asset.",
     character: "A tiny inspector looks for asset handshakes.",
     href: "/tools/trustline-checker",
-    status: "MVP" as ToolStatus,
+    status: "MVP",
     category: "validation",
+    workflow: "Assets",
     icon: BadgeCheck
   },
   {
@@ -71,8 +84,9 @@ export const tools: Tool[] = [
     description: "Inspect account balances on the selected network through Horizon.",
     character: "A moon wallet opens its pockets for the selected network's balances.",
     href: "/tools/balance-viewer",
-    status: "Working" as ToolStatus,
+    status: "Working",
     category: "balances",
+    workflow: "Accounts",
     icon: CircleDollarSign
   },
   {
@@ -80,8 +94,9 @@ export const tools: Tool[] = [
     description: "Create demo Stellar payment request QR codes.",
     character: "A rocket assistant frames payment details as a QR poster.",
     href: "/tools/payment-qr",
-    status: "Working" as ToolStatus,
+    status: "Working",
     category: "balances",
+    workflow: "Payments",
     icon: QrCode
   },
   {
@@ -89,8 +104,9 @@ export const tools: Tool[] = [
     description: "Look up transactions by hash on the selected network.",
     character: "A detective comet follows transaction trails through Horizon.",
     href: "/tools/transaction-lookup",
-    status: "MVP" as ToolStatus,
+    status: "MVP",
     category: "balances",
+    workflow: "Transactions",
     icon: Search
   },
   {
@@ -98,8 +114,9 @@ export const tools: Tool[] = [
     description: "Decode transaction envelope XDR locally, without any network calls.",
     character: "A lens-eyed archivist unrolls transaction scrolls without leaving the library.",
     href: "/tools/xdr-inspector",
-    status: "Working" as ToolStatus,
+    status: "Working",
     category: "validation",
+    workflow: "Transactions",
     icon: ScanSearch
   },
   {
@@ -107,8 +124,9 @@ export const tools: Tool[] = [
     description: "Try a browser wallet connection example.",
     character: "A friendly wallet mascot waves when Freighter is nearby.",
     href: "/tools/freighter-connect",
-    status: "MVP" as ToolStatus,
+    status: "MVP",
     category: "network",
+    workflow: "Wallets",
     icon: WalletCards
   },
   {
@@ -116,8 +134,9 @@ export const tools: Tool[] = [
     description: "Fund a testnet account with Friendbot.",
     character: "A faucet character pours harmless testnet XLM.",
     href: "/tools/testnet-faucet",
-    status: "Working" as ToolStatus,
+    status: "Working",
     category: "network",
+    workflow: "Accounts",
     icon: Droplets
   },
   {
@@ -125,8 +144,9 @@ export const tools: Tool[] = [
     description: "Fetch and browse stellar.toml currency metadata for any issuer domain.",
     character: "A star librarian leafs through issuer TOML scrolls.",
     href: "/tools/asset-metadata",
-    status: "Working" as ToolStatus,
+    status: "Working",
     category: "validation",
+    workflow: "Assets",
     icon: FileSearch
   },
   {
@@ -134,8 +154,9 @@ export const tools: Tool[] = [
     description: "Resolve Stellar federation addresses (name*domain) into public keys and memos.",
     character: "A diligent wallet-style postmaster routes names to verified destinations.",
     href: "/tools/federation-resolver",
-    status: "Working" as ToolStatus,
+    status: "Working",
     category: "validation",
+    workflow: "Accounts",
     icon: AtSign
   },
   {
@@ -143,8 +164,9 @@ export const tools: Tool[] = [
     description: "Check Horizon fee-market stats in stroops and XLM.",
     character: "A gauge gremlin reads the fee market on demand.",
     href: "/tools/fee-stats",
-    status: "MVP" as ToolStatus,
+    status: "MVP",
     category: "network",
+    workflow: "Transactions",
     icon: Gauge
   }
 ];

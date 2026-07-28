@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import type { ComponentType } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
-import type { ToolStatus, ToolCategory } from "@/lib/constants";
-import { toolCategories } from "@/lib/constants";
+import { toolCategories, type ToolCategory, type ToolStatus, type WorkflowCategory } from "@/lib/constants";
 
 interface ToolCardProps {
   title: string;
@@ -13,7 +13,8 @@ interface ToolCardProps {
   href: string;
   status: ToolStatus;
   category: ToolCategory;
-  icon: React.ComponentType<{ className?: string }>;
+  workflow: WorkflowCategory;
+  icon: ComponentType<{ className?: string }>;
 }
 
 const statusTone: Record<ToolStatus, "success" | "info" | "warning"> = {
@@ -28,7 +29,7 @@ const categoryTone: Record<ToolCategory, string> = {
   network: "border-[#ffc3a8]/80 bg-[#fff0e8] text-[#9a513f]"
 };
 
-export function ToolCard({ title, description, character, href, status, category, icon: Icon }: ToolCardProps) {
+export function ToolCard({ title, description, character, href, status, category, workflow, icon: Icon }: ToolCardProps) {
   return (
     <Link
       href={href}
@@ -53,8 +54,13 @@ export function ToolCard({ title, description, character, href, status, category
         </div>
         <h3 className="mt-5 text-lg font-semibold text-[#172033] group-hover:text-[#178fb5] transition-colors duration-200">{title}</h3>
         <p className="mt-2 text-sm leading-6 text-[#5d6b82]">{description}</p>
+        <Badge tone="muted" className="mt-4 w-fit">
+          {workflow}
+        </Badge>
         <div className="mt-4 flex items-start gap-2 rounded-md border border-[#ffd1c6]/80 bg-[#fff7f1] px-3 py-2">
-          <span className="mt-0.5 text-xs" aria-hidden>💬</span>
+          <span className="mt-0.5 text-xs" aria-hidden>
+            💬
+          </span>
           <p className="text-xs font-semibold leading-5 text-[#8a5a4c]">{character}</p>
         </div>
         <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#178fb5] transition-all duration-200 group-hover:gap-3">

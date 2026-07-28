@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import {
   Activity,
   ArrowRight,
@@ -12,20 +15,41 @@ import {
 import { ToolCard } from "@/components/ui/ToolCard";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { tools, toolCategories } from "@/lib/constants";
-import type { ToolCategory } from "@/lib/constants";
+import {
+  tools,
+  toolCategories,
+  workflowCategories,
+  type ToolCategory,
+  type WorkflowCategory
+} from "@/lib/constants";
 
-export default function HomePage() {
-  const groupedTools = tools.reduce<
-    Record<ToolCategory, (typeof tools)[number][]>
-  >(
-    (acc, tool) => {
-      if (!acc[tool.category]) acc[tool.category] = [];
-      acc[tool.category].push(tool);
-      return acc;
-    },
-    {} as Record<ToolCategory, (typeof tools)[number][]>
+export function HomePage() {
+  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowCategory | "All">("All");
+
+  const groupedTools = useMemo(
+    () =>
+      tools.reduce<Record<ToolCategory, (typeof tools)[number][]>>(
+        (acc, tool) => {
+          if (!acc[tool.category]) acc[tool.category] = [];
+          acc[tool.category].push(tool);
+          return acc;
+        },
+        {
+          validation: [],
+          balances: [],
+          network: []
+        }
+      ),
+    []
   );
+
+  const visibleTools = useMemo(() => {
+    if (selectedWorkflow === "All") {
+      return tools;
+    }
+
+    return tools.filter((tool) => tool.workflow === selectedWorkflow);
+  }, [selectedWorkflow]);
 
   const categoryOrder: ToolCategory[] = ["validation", "balances", "network"];
 
@@ -168,42 +192,73 @@ export default function HomePage() {
 
       {/* ─── Tools by Category ─── */}
       <section id="tools">
-        <div className="mb-8">
-          <h2 className="text-3xl font-black text-[#172033]">Helper cast</h2>
-          <p className="mt-2 max-w-2xl text-sm text-[#68758a]">
-            Each tool has a role, a mood, and a clear task so the Stellar workflow feels visual and memorable.
-          </p>
+        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-[#172033]">Helper cast</h2>
+            <p className="mt-2 text-sm text-[#68758a]">
+              Each tool has a role, a mood, and a clear task so the Stellar workflow feels visual and memorable.
+            </p>
+          </div>
+          <label className="flex flex-col gap-2 text-sm font-semibold text-[#4e5c73]" htmlFor="workflow-filter">
+            <span>Filter by workflow</span>
+            <select
+              id="workflow-filter"
+              name="workflow-filter"
+              value={selectedWorkflow}
+              onChange={(event) => setSelectedWorkflow(event.target.value as WorkflowCategory | "All")}
+              className="rounded-lg border border-[#cbd5e1] bg-white px-3 py-2 text-sm text-[#172033] shadow-sm outline-none focus:border-[#178fb5] focus:ring-2 focus:ring-[#178fb5]/20"
+            >
+              <option value="All">All</option>
+              {workflowCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        {categoryOrder.map((category, catIndex) => (
-          <div key={category} className="mb-10 last:mb-0">
-            <div
-              className="animate-fade-in-up opacity-0 [animation-fill-mode:forwards] mb-4"
-              style={{ animationDelay: `${100 + catIndex * 100}ms` }}
-            >
-              <h3 className="text-lg font-extrabold text-[#172033]">
-                {toolCategories[category].label}
-              </h3>
-              <p className="mt-1 text-sm text-[#68758a]">
-                {toolCategories[category].description}
-              </p>
+        {selectedWorkflow === "All" ? (
+          categoryOrder.map((category, catIndex) => (
+            <div key={category} className="mb-10 last:mb-0">
+              <div
+                className="animate-fade-in-up opacity-0 [animation-fill-mode:forwards] mb-4"
+                style={{ animationDelay: `${100 + catIndex * 100}ms` }}
+              >
+                <h3 className="text-lg font-extrabold text-[#172033]">
+                  {toolCategories[category].label}
+                </h3>
+                <p className="mt-1 text-sm text-[#68758a]">
+                  {toolCategories[category].description}
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {groupedTools[category].map((tool, toolIndex) => (
+                  <div
+                    key={tool.href}
+                    className="animate-fade-in-up opacity-0 [animation-fill-mode:forwards]"
+                    style={{
+                      animationDelay: `${200 + catIndex * 100 + toolIndex * 80}ms`
+                    }}
+                  >
+                    <ToolCard {...tool} />
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {groupedTools[category].map((tool, toolIndex) => (
-                <div
-                  key={tool.href}
-                  className="animate-fade-in-up opacity-0 [animation-fill-mode:forwards]"
-                  style={{
-                    animationDelay: `${200 + catIndex * 100 + toolIndex * 80}ms`
-                  }}
-                >
-                  <ToolCard {...tool} />
-                </div>
-              ))}
-            </div>
+          ))
+        ) : visibleTools.length === 0 ? (
+          <Card className="border-dashed border-[#ffd1c6]/80 bg-[#fff7f1]/70 p-8 text-center">
+            <p className="text-lg font-semibold text-[#172033]">No helpers match this workflow yet.</p>
+            <p className="mt-2 text-sm text-[#68758a]">Try switching to another category to explore the full Stellar toolkit.</p>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {visibleTools.map((tool) => (
+              <ToolCard key={tool.href} {...tool} />
+            ))}
           </div>
-        ))}
-      </section>
-    </div>
-  );
+        )}
 }
+
+export default HomePage;
