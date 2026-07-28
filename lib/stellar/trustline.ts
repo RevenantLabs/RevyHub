@@ -4,6 +4,8 @@ import { getResponseStatus } from "@/lib/stellar/account";
 
 export interface TrustlineCheck {
   exists: boolean;
+  assetCode: string;
+  issuer: string;
   message: string;
 }
 
@@ -43,6 +45,8 @@ export async function checkTrustline(
 
     return {
       exists,
+      assetCode: normalizedCode,
+      issuer: normalizedIssuer,
       message: exists
         ? `Trustline found for ${normalizedCode}.`
         : `No ${normalizedCode} trustline found for this account.`

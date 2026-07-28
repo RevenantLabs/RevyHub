@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -18,6 +18,8 @@ declare global {
   }
 }
 
+const CONNECTION_TIMEOUT_MS = 15_000;
+
 function normalizeFreighterNetwork(value: string) {
   const normalized = value.toLowerCase();
 
@@ -33,7 +35,9 @@ export default function FreighterConnectPage() {
   const [connected, setConnected] = useState(false);
   const [publicKey, setPublicKey] = useState("");
   const [walletNetwork, setWalletNetwork] = useState("");
+  const [connecting, setConnecting] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The wallet mascot is listening for Freighter in this browser." });
+  const connectionId = useRef(0);
   const walletNetworkKind = walletNetwork ? normalizeFreighterNetwork(walletNetwork) : "";
   const networkMismatch =
     walletNetworkKind !== "" && walletNetworkKind !== "unknown" && walletNetworkKind !== network;
@@ -82,25 +86,55 @@ export default function FreighterConnectPage() {
     };
   }, []);
 
-  async function connect() {
+  const connect = useCallback(async () => {
+    if (connecting) return;
+
     if (!window.freighterApi?.getPublicKey) {
       setMessage({ type: "warning", text: "The wallet mascot cannot reach the Freighter API in this browser." });
       return;
     }
 
+    const id = ++connectionId.current;
+    setConnecting(true);
+    setMessage({ type: "info", text: "The wallet mascot is reaching out to Freighter..." });
+
     try {
-      const key = await window.freighterApi.getPublicKey();
+      const key = await Promise.race([
+        window.freighterApi.getPublicKey(),
+        new Promise<string>((_, reject) =>
+          setTimeout(() => reject(new Error("TIMEOUT")), CONNECTION_TIMEOUT_MS)
+        )
+      ]);
+
+      if (id !== connectionId.current) return;
+
       const nextWalletNetwork = window.freighterApi.getNetwork
         ? await window.freighterApi.getNetwork().catch(() => "")
         : walletNetwork;
+
+      if (id !== connectionId.current) return;
+
       setPublicKey(key);
       setConnected(true);
       setWalletNetwork(nextWalletNetwork);
       setMessage({ type: "success", text: "The wallet mascot received the Freighter public key." });
-    } catch {
-      setMessage({ type: "error", text: "Connection request was rejected or could not be completed." });
+    } catch (error) {
+      if (id !== connectionId.current) return;
+
+      if (error instanceof Error && error.message === "TIMEOUT") {
+        setMessage({
+          type: "error",
+          text: "Connection timed out. Freighter did not respond within 15 seconds. Make sure the extension is unlocked and try again."
+        });
+      } else {
+        setMessage({ type: "error", text: "Connection request was rejected or could not be completed." });
+      }
+    } finally {
+      if (id === connectionId.current) {
+        setConnecting(false);
+      }
     }
-  }
+  }, [connecting, walletNetwork]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -111,8 +145,8 @@ export default function FreighterConnectPage() {
         description="The wallet mascot watches for Freighter, asks for a public key, and explains what happened without asking for secrets."
       />
       <Card className="space-y-5">
-        <Button type="button" onClick={connect} disabled={!available}>
-          Ask wallet mascot to connect
+        <Button type="button" onClick={connect} disabled={!available || connecting}>
+          {connecting ? "Connecting..." : "Ask wallet mascot to connect"}
         </Button>
         {publicKey ? (
           <div className="rounded-lg border border-white/80 bg-white/68 p-4">

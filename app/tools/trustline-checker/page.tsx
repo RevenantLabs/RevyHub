@@ -8,8 +8,9 @@ import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { AddressInput } from "@/components/stellar/AddressInput";
+import { CopyableValue } from "@/components/stellar/CopyableValue";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
-import { checkTrustline } from "@/lib/stellar/trustline";
+import { checkTrustline, type TrustlineCheck } from "@/lib/stellar/trustline";
 
 export default function TrustlineCheckerPage() {
   const { network } = useNetwork();
@@ -17,6 +18,7 @@ export default function TrustlineCheckerPage() {
   const [assetCode, setAssetCode] = useState("");
   const [issuer, setIssuer] = useState("");
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<TrustlineCheck | null>(null);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -24,8 +26,9 @@ export default function TrustlineCheckerPage() {
     setLoading(true);
 
     try {
-      const result = await checkTrustline(account, assetCode, issuer, network);
-      setMessage({ type: result.exists ? "success" : "warning", text: result.message });
+      const check = await checkTrustline(account, assetCode, issuer, network);
+      setResult(check);
+      setMessage({ type: check.exists ? "success" : "warning", text: check.message });
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
@@ -55,6 +58,28 @@ export default function TrustlineCheckerPage() {
         </form>
       </Card>
       <StatusMessage type={message.type} title="Inspector report" description={message.text} />
+      {result ? (
+        <Card>
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-[#172033]">Checked asset identity</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-white/80 bg-white/60 p-3">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-[#9a6754]">Asset code</p>
+                <p className="mt-2 text-sm text-[#29364d]">{result.assetCode}</p>
+              </div>
+              <div className="rounded-lg border border-white/80 bg-white/60 p-3">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-[#9a6754]">Issuer</p>
+                <p className="mt-2 text-sm text-[#29364d]">
+                  <CopyableValue label="issuer" value={result.issuer} />
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-[#68758a]">
+              Checked on Stellar {network}
+            </p>
+          </div>
+        </Card>
+      ) : null}
       {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
         <StatusMessage
           type="info"
