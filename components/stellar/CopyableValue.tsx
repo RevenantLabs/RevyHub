@@ -8,11 +8,12 @@ import { truncateMiddle } from "@/lib/utils";
 
 interface CopyableValueProps {
   label: string;
-  value: string;
+  value: string; // raw value to copy and to use as title
   visible?: number;
+  display?: string; // optional string to show instead of truncating the raw value
 }
 
-export function CopyableValue({ label, value, visible = 6 }: CopyableValueProps) {
+export function CopyableValue({ label, value, visible = 6, display }: CopyableValueProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -24,7 +25,7 @@ export function CopyableValue({ label, value, visible = 6 }: CopyableValueProps)
   return (
     <span className="inline-flex max-w-full items-center gap-2">
       <span title={value} className="min-w-0 truncate">
-        {truncateMiddle(value, visible)}
+        {display ?? truncateMiddle(value, visible)}
       </span>
       <Button
         type="button"
