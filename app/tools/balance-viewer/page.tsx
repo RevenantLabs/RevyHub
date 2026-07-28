@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { StellarNetwork } from "@/lib/stellar/horizon";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -20,6 +21,19 @@ export default function BalanceViewerPage() {
     text: "The moon wallet is waiting for a funded testnet account address."
   });
   const [loading, setLoading] = useState(false);
+  const [resultNetwork, setResultNetwork] = useState<StellarNetwork | null>(null);
+
+  useEffect(() => {
+    if (resultNetwork && resultNetwork !== network) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setBalances([]);
+      setResultNetwork(null);
+      setMessage({
+        type: "info",
+        text: "Results were cleared because the selected Stellar network changed. Run the lookup again to fetch data for the current network."
+      });
+    }
+  }, [network, resultNetwork]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,6 +44,7 @@ export default function BalanceViewerPage() {
     try {
       const nextBalances = await getAccountBalances(address, network);
       setBalances(nextBalances);
+      setResultNetwork(network);
       setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });

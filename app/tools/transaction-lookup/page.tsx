@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { StellarNetwork } from "@/lib/stellar/horizon";
 import { TransactionDetails, type TransactionSummary } from "@/components/stellar/TransactionDetails";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -16,6 +17,16 @@ export default function TransactionLookupPage() {
   const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a testnet transaction hash to follow the trail." });
+  const [resultNetwork, setResultNetwork] = useState<StellarNetwork | null>(null);
+
+  useEffect(() => {
+    if (resultNetwork && resultNetwork !== network) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTransaction(null);
+      setResultNetwork(null);
+      setMessage({ type: "info", text: "Results were cleared because the selected Stellar network changed. Run the lookup again to fetch data for the current network." });
+    }
+  }, [network, resultNetwork]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -26,6 +37,7 @@ export default function TransactionLookupPage() {
     try {
       const result = await lookupTransaction(hash, network);
       setTransaction(result);
+      setResultNetwork(network);
       setMessage({ type: "success", text: `The detective comet found the transaction in ${network} Horizon.` });
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });

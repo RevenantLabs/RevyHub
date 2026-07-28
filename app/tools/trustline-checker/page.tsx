@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { StellarNetwork } from "@/lib/stellar/horizon";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -18,6 +19,15 @@ export default function TrustlineCheckerPage() {
   const [issuer, setIssuer] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
+  const [resultNetwork, setResultNetwork] = useState<StellarNetwork | null>(null);
+
+  useEffect(() => {
+    if (resultNetwork && resultNetwork !== network) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setResultNetwork(null);
+      setMessage({ type: "info", text: "Results were cleared because the selected Stellar network changed. Run the lookup again to fetch data for the current network." });
+    }
+  }, [network, resultNetwork]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -26,6 +36,7 @@ export default function TrustlineCheckerPage() {
     try {
       const result = await checkTrustline(account, assetCode, issuer, network);
       setMessage({ type: result.exists ? "success" : "warning", text: result.message });
+      setResultNetwork(network);
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
