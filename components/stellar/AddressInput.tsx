@@ -5,13 +5,15 @@ interface AddressInputProps {
   onChange: (value: string) => void;
   label?: string;
   placeholder?: string;
+  maxLength?: number;
 }
 
 export function AddressInput({
   value,
   onChange,
   label = "Stellar public address",
-  placeholder = "G..."
+  placeholder = "G...",
+  maxLength = 100
 }: AddressInputProps) {
   return (
     <label className="block space-y-2">
@@ -21,6 +23,7 @@ export function AddressInput({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         spellCheck={false}
+        maxLength={maxLength}
       />
     </label>
   );
