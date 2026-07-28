@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TransactionDetails, type TransactionSummary } from "@/components/stellar/TransactionDetails";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { lookupTransaction } from "@/lib/stellar/transaction";
+import { isCancelledError } from "@/lib/stellar/horizon";
 
 export default function TransactionLookupPage() {
   const { network } = useNetwork();
@@ -16,18 +17,28 @@ export default function TransactionLookupPage() {
   const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a testnet transaction hash to follow the trail." });
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     // TODO(issue #24): Add skeleton loading for transaction detail rows while Horizon responds.
     setLoading(true);
     setTransaction(null);
 
     try {
-      const result = await lookupTransaction(hash, network);
+      const result = await lookupTransaction(hash, network, controller.signal);
       setTransaction(result);
       setMessage({ type: "success", text: `The detective comet found the transaction in ${network} Horizon.` });
     } catch (error) {
+      if (isCancelledError(error)) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
       setLoading(false);
