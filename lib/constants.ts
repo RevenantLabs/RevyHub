@@ -2,6 +2,7 @@ import {
   BadgeCheck,
   CircleDollarSign,
   Droplets,
+  FileCode,
   Landmark,
   QrCode,
   Search,
@@ -51,6 +52,14 @@ export const tools = [
     href: "/tools/transaction-lookup",
     status: "MVP" as ToolStatus,
     icon: Search
+  },
+  {
+    title: "XDR Decoder",
+    description: "Decode transaction envelope XDR locally without network submission.",
+    character: "A cipher owl reveals envelope details from XDR strings.",
+    href: "/tools/xdr-decoder",
+    status: "Working" as ToolStatus,
+    icon: FileCode
   },
   {
     title: "Freighter Connect",
