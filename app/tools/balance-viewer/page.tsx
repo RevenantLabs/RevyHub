@@ -70,7 +70,7 @@ export default function BalanceViewerPage() {
           }
         />
       ) : null}
-      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
+      {balances.length > 0 ? <BalanceList balances={balances} network={network} /> : null}
     </div>
   );
 }

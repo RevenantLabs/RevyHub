@@ -20,6 +20,7 @@ export async function getAccountBalances(
       if (balance.asset_type === "native") {
         return {
           assetCode: "XLM",
+          assetType: "native",
           amount: balance.balance
         };
       }
@@ -27,7 +28,8 @@ export async function getAccountBalances(
       if (balance.asset_type === "liquidity_pool_shares") {
         return {
           assetCode: "Liquidity pool shares",
-          issuer: balance.liquidity_pool_id,
+          assetType: "liquidity_pool_shares",
+          poolId: balance.liquidity_pool_id,
           amount: balance.balance
         };
       }
@@ -35,6 +37,7 @@ export async function getAccountBalances(
       return {
         assetCode: balance.asset_code,
         issuer: balance.asset_issuer,
+        assetType: "issued",
         amount: balance.balance
       };
     });
