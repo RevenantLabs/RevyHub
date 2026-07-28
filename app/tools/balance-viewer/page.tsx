@@ -10,6 +10,13 @@ import { AddressInput } from "@/components/stellar/AddressInput";
 import { BalanceList, type DisplayBalance } from "@/components/stellar/BalanceList";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { getAccountBalances } from "@/lib/stellar/account";
+import type { StellarNetwork } from "@/lib/stellar/horizon";
+
+interface FetchedSnapshot {
+  address: string;
+  network: StellarNetwork;
+  fetchedAt: Date;
+}
 
 export default function BalanceViewerPage() {
   const { network } = useNetwork();
@@ -20,22 +27,36 @@ export default function BalanceViewerPage() {
     text: "The moon wallet is waiting for a funded testnet account address."
   });
   const [loading, setLoading] = useState(false);
+  const [lastFetched, setLastFetched] = useState<FetchedSnapshot | null>(null);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    // TODO(issue #24): Replace button-only loading feedback with skeleton rows and preserved layout height.
+  const isStale =
+    !lastFetched ||
+    lastFetched.address !== address ||
+    lastFetched.network !== network;
+
+  const isRefreshing = loading && !isStale;
+
+  async function fetchBalances() {
     setLoading(true);
-    setBalances([]);
+    if (isStale) {
+      setBalances([]);
+    }
 
     try {
       const nextBalances = await getAccountBalances(address, network);
       setBalances(nextBalances);
+      setLastFetched({ address, network, fetchedAt: new Date() });
       setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await fetchBalances();
   }
 
   return (
@@ -70,7 +91,14 @@ export default function BalanceViewerPage() {
           }
         />
       ) : null}
-      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
+      {balances.length > 0 ? (
+        <BalanceList
+          balances={balances}
+          lastUpdated={isStale ? undefined : lastFetched?.fetchedAt}
+          onRefresh={isStale ? undefined : fetchBalances}
+          isRefreshing={isRefreshing}
+        />
+      ) : null}
     </div>
   );
 }
