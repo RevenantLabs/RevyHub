@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -10,6 +10,7 @@ import { AddressInput } from "@/components/stellar/AddressInput";
 import { BalanceList, type DisplayBalance } from "@/components/stellar/BalanceList";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { getAccountBalances } from "@/lib/stellar/account";
+import { isTransientError } from "@/lib/stellar/errors";
 
 export default function BalanceViewerPage() {
   const { network } = useNetwork();
@@ -20,22 +21,38 @@ export default function BalanceViewerPage() {
     text: "The moon wallet is waiting for a funded testnet account address."
   });
   const [loading, setLoading] = useState(false);
+  const [showRetry, setShowRetry] = useState(false);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  // Capture the last submitted address so Retry can replay it without
+  // requiring the user to re-enter valid input.
+  const lastAddress = useRef<string>("");
+
+  async function fetchBalances(targetAddress: string) {
     // TODO(issue #24): Replace button-only loading feedback with skeleton rows and preserved layout height.
     setLoading(true);
     setBalances([]);
+    setShowRetry(false);
 
     try {
-      const nextBalances = await getAccountBalances(address, network);
+      const nextBalances = await getAccountBalances(targetAddress, network);
       setBalances(nextBalances);
       setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
+      setShowRetry(isTransientError(error));
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    lastAddress.current = address;
+    await fetchBalances(address);
+  }
+
+  async function handleRetry() {
+    await fetchBalances(lastAddress.current);
   }
 
   return (
@@ -54,7 +71,18 @@ export default function BalanceViewerPage() {
           </Button>
         </form>
       </Card>
-      <StatusMessage type={message.type} title={message.type === "success" ? "Wallet opened" : "Moon wallet status"} description={message.text} />
+      <StatusMessage
+        type={message.type}
+        title={message.type === "success" ? "Wallet opened" : "Moon wallet status"}
+        description={message.text}
+        action={
+          showRetry ? (
+            <Button variant="secondary" disabled={loading} onClick={handleRetry} type="button">
+              {loading ? "Retrying..." : "Retry"}
+            </Button>
+          ) : undefined
+        }
+      />
       {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
         <StatusMessage
           type="info"

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -10,6 +10,13 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { checkTrustline } from "@/lib/stellar/trustline";
+import { isTransientError } from "@/lib/stellar/errors";
+
+interface TrustlineParams {
+  account: string;
+  assetCode: string;
+  issuer: string;
+}
 
 export default function TrustlineCheckerPage() {
   const { network } = useNetwork();
@@ -18,19 +25,36 @@ export default function TrustlineCheckerPage() {
   const [issuer, setIssuer] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
+  const [showRetry, setShowRetry] = useState(false);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  // Capture the last submitted form values so Retry can replay without
+  // requiring the user to re-enter valid input.
+  const lastParams = useRef<TrustlineParams>({ account: "", assetCode: "", issuer: "" });
+
+  async function fetchTrustline(params: TrustlineParams) {
     setLoading(true);
+    setShowRetry(false);
 
     try {
-      const result = await checkTrustline(account, assetCode, issuer, network);
+      const result = await checkTrustline(params.account, params.assetCode, params.issuer, network);
       setMessage({ type: result.exists ? "success" : "warning", text: result.message });
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
+      setShowRetry(isTransientError(error));
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const params: TrustlineParams = { account, assetCode, issuer };
+    lastParams.current = params;
+    await fetchTrustline(params);
+  }
+
+  async function handleRetry() {
+    await fetchTrustline(lastParams.current);
   }
 
   return (
@@ -54,7 +78,18 @@ export default function TrustlineCheckerPage() {
           </Button>
         </form>
       </Card>
-      <StatusMessage type={message.type} title="Inspector report" description={message.text} />
+      <StatusMessage
+        type={message.type}
+        title="Inspector report"
+        description={message.text}
+        action={
+          showRetry ? (
+            <Button variant="secondary" disabled={loading} onClick={handleRetry} type="button">
+              {loading ? "Retrying..." : "Retry"}
+            </Button>
+          ) : undefined
+        }
+      />
       {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
         <StatusMessage
           type="info"
