@@ -9,7 +9,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <AppHeader />
         <div className="mx-auto flex max-w-7xl border-x border-white/70 bg-white/32 shadow-[0_24px_90px_rgba(80,95,130,0.16)] backdrop-blur-sm">
           <Sidebar />
-          <main className="min-w-0 flex-1 px-4 py-8 sm:px-6 lg:px-8">
+          <main id="main-content" className="min-w-0 flex-1 px-4 py-8 outline-none sm:px-6 lg:px-8" tabIndex={-1}>
             <div className="relative">
               <div className="pointer-events-none absolute -left-4 -right-4 top-0 h-px bg-gradient-to-r from-transparent via-[#ff8b7a]/55 to-transparent" />
               {children}

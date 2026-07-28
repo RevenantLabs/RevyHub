@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
+import { SkipLink } from "@/components/ui/SkipLink";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
@@ -25,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <SkipLink />
         <AppShell>{children}</AppShell>
       </body>
     </html>
