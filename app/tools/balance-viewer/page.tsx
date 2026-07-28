@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useFocusResult } from "@/lib/hooks/useFocusResult";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -20,6 +21,7 @@ export default function BalanceViewerPage() {
     text: "The moon wallet is waiting for a funded testnet account address."
   });
   const [loading, setLoading] = useState(false);
+  const { resultRef, moveFocusToResult } = useFocusResult();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,6 +37,7 @@ export default function BalanceViewerPage() {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
       setLoading(false);
+      moveFocusToResult();
     }
   }
 
@@ -54,7 +57,9 @@ export default function BalanceViewerPage() {
           </Button>
         </form>
       </Card>
-      <StatusMessage type={message.type} title={message.type === "success" ? "Wallet opened" : "Moon wallet status"} description={message.text} />
+      <div ref={resultRef} tabIndex={-1} className="outline-none" aria-live="polite">
+        <StatusMessage type={message.type} title={message.type === "success" ? "Wallet opened" : "Moon wallet status"} description={message.text} />
+      </div>
       {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
         <StatusMessage
           type="info"
@@ -70,7 +75,11 @@ export default function BalanceViewerPage() {
           }
         />
       ) : null}
-      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
+      {balances.length > 0 ? (
+        <div tabIndex={-1} className="outline-none">
+          <BalanceList balances={balances} />
+        </div>
+      ) : null}
     </div>
   );
 }

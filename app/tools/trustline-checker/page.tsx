@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useFocusResult } from "@/lib/hooks/useFocusResult";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -18,6 +19,7 @@ export default function TrustlineCheckerPage() {
   const [issuer, setIssuer] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
+  const { resultRef, moveFocusToResult } = useFocusResult();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,6 +32,7 @@ export default function TrustlineCheckerPage() {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
       setLoading(false);
+      moveFocusToResult();
     }
   }
 
@@ -54,7 +57,9 @@ export default function TrustlineCheckerPage() {
           </Button>
         </form>
       </Card>
-      <StatusMessage type={message.type} title="Inspector report" description={message.text} />
+      <div ref={resultRef} tabIndex={-1} className="outline-none" aria-live="polite">
+        <StatusMessage type={message.type} title="Inspector report" description={message.text} />
+      </div>
       {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
         <StatusMessage
           type="info"

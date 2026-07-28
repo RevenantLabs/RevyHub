@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFocusResult } from "@/lib/hooks/useFocusResult";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -12,6 +13,7 @@ export default function TestnetFaucetPage() {
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The faucet helper pours testnet XLM only. No real funds are involved." });
+  const { resultRef, moveFocusToResult } = useFocusResult();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -25,6 +27,7 @@ export default function TestnetFaucetPage() {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
       setLoading(false);
+      moveFocusToResult();
     }
   }
 
@@ -44,7 +47,9 @@ export default function TestnetFaucetPage() {
           </Button>
         </form>
       </Card>
-      <StatusMessage type={message.type} title="Faucet helper status" description={message.text} />
+      <div ref={resultRef} tabIndex={-1} className="outline-none" aria-live="polite">
+        <StatusMessage type={message.type} title="Faucet helper status" description={message.text} />
+      </div>
       <StatusMessage type="warning" title="Testnet only" description="Friendbot resets and testnet XLM have no market value." />
     </div>
   );

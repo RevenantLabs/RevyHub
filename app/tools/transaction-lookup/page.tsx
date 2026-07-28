@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFocusResult } from "@/lib/hooks/useFocusResult";
 import { TransactionDetails, type TransactionSummary } from "@/components/stellar/TransactionDetails";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -16,6 +17,7 @@ export default function TransactionLookupPage() {
   const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a testnet transaction hash to follow the trail." });
+  const { resultRef, moveFocusToResult } = useFocusResult();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,6 +33,7 @@ export default function TransactionLookupPage() {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
       setLoading(false);
+      moveFocusToResult();
     }
   }
 
@@ -53,8 +56,14 @@ export default function TransactionLookupPage() {
           </Button>
         </form>
       </Card>
-      <StatusMessage type={message.type} title="Detective report" description={message.text} />
-      {transaction ? <TransactionDetails transaction={transaction} /> : null}
+      <div ref={resultRef} tabIndex={-1} className="outline-none" aria-live="polite">
+        <StatusMessage type={message.type} title="Detective report" description={message.text} />
+      </div>
+      {transaction ? (
+        <div tabIndex={-1} className="outline-none">
+          <TransactionDetails transaction={transaction} />
+        </div>
+      ) : null}
     </div>
   );
 }
