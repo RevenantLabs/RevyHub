@@ -21,17 +21,23 @@ export async function lookupTransaction(
 
   try {
     const server = getHorizonServer(network);
-    const transaction = await server.transactions().transaction(hash.trim()).call();
+    const tx = await server.transactions().transaction(hash.trim()).call();
+
+    const memo =
+      tx.memo_type && tx.memo_type !== "none" && tx.memo
+        ? { type: tx.memo_type, value: String(tx.memo) }
+        : undefined;
 
     return {
-      hash: transaction.hash,
-      ledger: transaction.ledger_attr,
-      sourceAccount: transaction.source_account,
-      feeCharged: String(transaction.fee_charged),
-      createdAt: transaction.created_at,
-      successful: transaction.successful,
+      hash: tx.hash,
+      ledger: tx.ledger_attr,
+      sourceAccount: tx.source_account,
+      feeCharged: String(tx.fee_charged),
+      createdAt: tx.created_at,
+      successful: tx.successful,
       network,
-      operationCount: transaction.operation_count
+      operationCount: tx.operation_count,
+      memo
     };
   } catch (error) {
     if (getResponseStatus(error) === 404) {
