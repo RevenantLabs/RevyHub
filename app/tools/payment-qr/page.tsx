@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
-import { copyText } from "@/lib/copy";
+import { useCopyToClipboard } from "@/lib/useCopyToClipboard";
 import { createPaymentUri } from "@/lib/stellar/paymentUri";
 
 export default function PaymentQrPage() {
@@ -22,6 +22,7 @@ export default function PaymentQrPage() {
   const [uri, setUri] = useState("");
   const [qr, setQr] = useState("");
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The rocket assistant can turn payment details into a demo QR poster." });
+  const { copied: uriCopied, copy: copyUri } = useCopyToClipboard();
 
   async function handleGenerate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,16 +37,6 @@ export default function PaymentQrPage() {
       setUri("");
       setQr("");
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
-    }
-  }
-
-  async function copyUri() {
-    if (!uri) return;
-    try {
-      await copyText(uri);
-      setMessage({ type: "success", text: "Payment URI copied from the rocket assistant." });
-    } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Clipboard permission failed." });
     }
   }
 
@@ -98,8 +89,8 @@ export default function PaymentQrPage() {
           {uri ? (
             <Card className="space-y-3">
               <p className="break-all text-xs text-[#4e5c73]">{uri}</p>
-              <Button type="button" variant="secondary" onClick={copyUri}>
-                Copy URI
+              <Button type="button" variant="secondary" onClick={() => copyUri(uri)}>
+                {uriCopied ? "Copied" : "Copy URI"}
               </Button>
             </Card>
           ) : null}

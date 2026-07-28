@@ -1,9 +1,8 @@
 "use client";
 
 import { Copy } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { copyText } from "@/lib/copy";
+import { useCopyToClipboard } from "@/lib/useCopyToClipboard";
 import { truncateMiddle } from "@/lib/utils";
 
 interface CopyableValueProps {
@@ -13,12 +12,10 @@ interface CopyableValueProps {
 }
 
 export function CopyableValue({ label, value, visible = 6 }: CopyableValueProps) {
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
 
   async function handleCopy() {
-    await copyText(value);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+    await copy(value);
   }
 
   return (
