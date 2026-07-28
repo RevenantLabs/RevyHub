@@ -1,5 +1,6 @@
 import {
   BadgeCheck,
+  BookOpen,
   CircleDollarSign,
   Droplets,
   Landmark,
@@ -10,6 +11,16 @@ import {
 } from "lucide-react";
 
 export type ToolStatus = "Working" | "MVP" | "Coming Soon";
+
+export const docs = [
+  {
+    title: "Stellar Basics",
+    description: "Learn about Stellar public keys, trustlines, Horizon, testnet, and more.",
+    character: "A wise star teacher opens a chalkboard full of Stellar concepts.",
+    href: "/docs/stellar-basics",
+    icon: BookOpen
+  }
+];
 
 export const tools = [
   {

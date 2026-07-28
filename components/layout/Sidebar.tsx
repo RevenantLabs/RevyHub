@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { tools } from "@/lib/constants";
+import { docs, tools } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function Sidebar() {
@@ -30,6 +30,28 @@ export function Sidebar() {
             >
               <Icon className="h-4 w-4" aria-hidden />
               {tool.title}
+            </Link>
+          );
+        })}
+        <div className="my-3 border-t border-white/70" />
+        <p className="px-3 text-xs font-extrabold uppercase tracking-wide text-[#9a6754]">Learn</p>
+        {docs.map((doc) => {
+          const Icon = doc.icon;
+          const active = pathname === doc.href;
+
+          return (
+            <Link
+              key={doc.href}
+              href={doc.href}
+              className={cn(
+                "flex items-center gap-3 rounded-[1rem] px-3 py-2.5 text-sm font-semibold transition",
+                active
+                  ? "bg-[#fff7f1] text-[#172033] shadow-[4px_4px_0_#ff8b7a,0_0_26px_rgba(111,212,255,0.18)]"
+                  : "border border-transparent text-[#4e5c73] hover:border-white/80 hover:bg-white/64 hover:text-[#172033]"
+              )}
+            >
+              <Icon className="h-4 w-4" aria-hidden />
+              {doc.title}
             </Link>
           );
         })}
