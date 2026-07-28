@@ -2,11 +2,46 @@ import { getHorizonServer, STELLAR_NETWORK, type StellarNetwork } from "@/lib/st
 import { validatePublicKey } from "@/lib/stellar/validateAddress";
 import { getResponseStatus } from "@/lib/stellar/account";
 
+/** Authorization state for a trustline as reported by Horizon. */
+export interface TrustlineAuthorization {
+  /** Fully authorized — the issuer has approved this trustline. */
+  authorized: boolean;
+  /** Authorized to maintain liabilities only — selling offers are allowed but new buying is not. */
+  authorizedToMaintainLiabilities: boolean;
+  /** Clawback is enabled on this trustline. */
+  clawbackEnabled: boolean;
+}
+
+/** Trustline liability summary returned by Horizon. */
+export interface TrustlineLiabilities {
+  /** Amount of this asset currently being bought (buying offers). */
+  buying: string;
+  /** Amount of this asset currently being sold (selling offers). */
+  selling: string;
+}
+
+/** Expanded result of a trustline check. */
 export interface TrustlineCheck {
   exists: boolean;
   message: string;
+  /** The current balance held in this trustline. Only present when the trustline exists. */
+  balance?: string;
+  /** The trust limit set for this trustline. Only present when the trustline exists. */
+  limit?: string;
+  /** Authorization flags from Horizon. Only present when the trustline exists. */
+  authorization?: TrustlineAuthorization;
+  /** Current buying and selling liabilities. Only present when the trustline exists. */
+  liabilities?: TrustlineLiabilities;
+  /** The last ledger in which this trustline was modified. Only present when the trustline exists. */
+  lastModifiedLedger?: number;
 }
 
+/**
+ * Look up a trustline on the given account for a specific issued asset.
+ *
+ * Returns `{ exists: true }` with balance, limit, authorization, and liability
+ * details when the trustline is found, or `{ exists: false }` when it is not.
+ */
 export async function checkTrustline(
   accountAddress: string,
   assetCode: string,
@@ -33,19 +68,50 @@ export async function checkTrustline(
     const account = await getHorizonServer(network).loadAccount(accountAddress.trim());
     const normalizedCode = assetCode.trim().toUpperCase();
     const normalizedIssuer = issuerAddress.trim();
-    const exists = account.balances.some(
-      (balance) =>
-        balance.asset_type !== "native" &&
-        balance.asset_type !== "liquidity_pool_shares" &&
-        balance.asset_code.toUpperCase() === normalizedCode &&
-        balance.asset_issuer === normalizedIssuer
-    );
+
+    const trustline = account.balances.find(
+      (b) =>
+        b.asset_type !== "native" &&
+        b.asset_type !== "liquidity_pool_shares" &&
+        (b as { asset_code: string }).asset_code.toUpperCase() === normalizedCode &&
+        (b as { asset_issuer: string }).asset_issuer === normalizedIssuer
+    ) as
+      | {
+          asset_code: string;
+          asset_issuer: string;
+          balance: string;
+          limit: string;
+          is_authorized: boolean;
+          is_authorized_to_maintain_liabilities: boolean;
+          is_clawback_enabled: boolean;
+          buying_liabilities: string;
+          selling_liabilities: string;
+          last_modified_ledger: number;
+        }
+      | undefined;
+
+    if (!trustline) {
+      return {
+        exists: false,
+        message: `No ${normalizedCode} trustline found for this account.`
+      };
+    }
 
     return {
-      exists,
-      message: exists
-        ? `Trustline found for ${normalizedCode}.`
-        : `No ${normalizedCode} trustline found for this account.`
+      exists: true,
+      message: `Trustline found for ${normalizedCode}.`,
+      balance: trustline.balance,
+      limit: trustline.limit,
+      authorization: {
+        authorized: trustline.is_authorized,
+        authorizedToMaintainLiabilities: trustline.is_authorized_to_maintain_liabilities,
+        clawbackEnabled: trustline.is_clawback_enabled
+      },
+      liabilities: {
+        buying: trustline.buying_liabilities,
+        selling: trustline.selling_liabilities
+      },
+      lastModifiedLedger: trustline.last_modified_ledger
     };
   } catch (error) {
     if (getResponseStatus(error) === 404) {
