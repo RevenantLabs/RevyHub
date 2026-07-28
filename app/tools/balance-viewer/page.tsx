@@ -70,7 +70,7 @@ export default function BalanceViewerPage() {
           }
         />
       ) : null}
-      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
+      {message.type === "success" ? <BalanceList balances={balances} /> : null}
     </div>
   );
 }
