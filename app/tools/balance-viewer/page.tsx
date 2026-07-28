@@ -84,7 +84,7 @@ export default function BalanceViewerPage() {
           description="Every account on Stellar mainnet must be created and funded before it can appear on Horizon."
         />
       ) : null}
-      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
+      {message.type === "success" ? <BalanceList balances={balances} /> : null}
     </div>
   );
 }

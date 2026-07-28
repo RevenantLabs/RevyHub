@@ -6,6 +6,17 @@ export type AccountLookup =
   | { found: true; balances: DisplayBalance[] }
   | { found: false; reason: "not-found"; network: StellarNetwork };
 
+function formatBalance(balance: string): string {
+  const num = Number(balance);
+  if (Number.isNaN(num)) return balance;
+  const parts = num.toLocaleString("en-US", {
+    maximumFractionDigits: 7,
+    minimumFractionDigits: 0,
+    useGrouping: false
+  });
+  return parts;
+}
+
 export async function getAccountBalances(
   publicKey: string,
   network: StellarNetwork = STELLAR_NETWORK
@@ -25,7 +36,8 @@ export async function getAccountBalances(
         if (balance.asset_type === "native") {
           return {
             assetCode: "XLM",
-            amount: balance.balance
+            amount: formatBalance(balance.balance),
+            isNative: true
           };
         }
 
@@ -33,14 +45,14 @@ export async function getAccountBalances(
           return {
             assetCode: "Liquidity pool shares",
             issuer: balance.liquidity_pool_id,
-            amount: balance.balance
+            amount: formatBalance(balance.balance)
           };
         }
 
         return {
           assetCode: balance.asset_code,
           issuer: balance.asset_issuer,
-          amount: balance.balance
+          amount: formatBalance(balance.balance)
         };
       })
     };
