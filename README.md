@@ -65,8 +65,21 @@ The app uses testnet by default and includes a persisted network switch for Hori
 ```bash
 npm run dev
 npm run test
+npm run test:unit
 npm run build
 npm run lint
+```
+
+## Running Tests
+
+RevyHubX uses Vitest for running fast unit tests on core Stellar utilities such as public address validation, transaction helpers, and payment URIs.
+
+Run the unit test suite locally using either command:
+
+```bash
+npm test
+# or
+npm run test:unit
 ```
 
 ## Quality Gates
