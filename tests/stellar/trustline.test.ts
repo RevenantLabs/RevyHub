@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { checkTrustline } from "../../lib/stellar/trustline";
+import { checkTrustline, getUSDCPreset, USDC_PRESETS } from "../../lib/stellar/trustline";
 
 type MockBalanceLine = {
   asset_type: string;
@@ -45,6 +45,37 @@ vi.mock("../../lib/stellar/validateAddress", () => ({
 }));
 
 import { getHorizonServer } from "../../lib/stellar/horizon";
+
+describe("USDC presets", () => {
+  it("returns a USDC preset for testnet", () => {
+    const preset = getUSDCPreset("testnet");
+    expect(preset.code).toBe("USDC");
+    expect(preset.issuer).toBe("GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5");
+  });
+
+  it("returns a USDC preset for mainnet", () => {
+    const preset = getUSDCPreset("mainnet");
+    expect(preset.code).toBe("USDC");
+    expect(preset.issuer).toBe("GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN");
+  });
+
+  it("testnet and mainnet have different USDC issuers", () => {
+    const testnet = getUSDCPreset("testnet");
+    const mainnet = getUSDCPreset("mainnet");
+    expect(testnet.issuer).not.toBe(mainnet.issuer);
+  });
+
+  it("both presets have the same asset code", () => {
+    const testnet = getUSDCPreset("testnet");
+    const mainnet = getUSDCPreset("mainnet");
+    expect(testnet.code).toBe(mainnet.code);
+  });
+
+  it("USDC_PRESETS object contains both networks", () => {
+    expect(USDC_PRESETS).toHaveProperty("testnet");
+    expect(USDC_PRESETS).toHaveProperty("mainnet");
+  });
+});
 
 describe("checkTrustline", () => {
   beforeEach(() => {

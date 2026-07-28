@@ -2,6 +2,29 @@ import { getHorizonServer, STELLAR_NETWORK, type StellarNetwork } from "@/lib/st
 import { validatePublicKey } from "@/lib/stellar/validateAddress";
 import { getResponseStatus } from "@/lib/stellar/account";
 
+// ── Asset presets ────────────────────────────────────────────────────────
+
+/**
+ * Network-aware USDC issuer addresses on Stellar.
+ * - Mainnet: Circle's USDC issuer
+ * - Testnet: Circle's testnet USDC issuer
+ */
+export const USDC_PRESETS: Record<StellarNetwork, { code: string; issuer: string }> = {
+  mainnet: {
+    code: "USDC",
+    issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
+  },
+  testnet: {
+    code: "USDC",
+    issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+  }
+};
+
+/** Return the USDC preset for the given network. */
+export function getUSDCPreset(network: StellarNetwork): { code: string; issuer: string } {
+  return USDC_PRESETS[network];
+}
+
 /** Authorization state for a trustline as reported by Horizon. */
 export interface TrustlineAuthorization {
   /** Fully authorized — the issuer has approved this trustline. */
@@ -48,7 +71,6 @@ export async function checkTrustline(
   issuerAddress: string,
   network: StellarNetwork = STELLAR_NETWORK
 ): Promise<TrustlineCheck> {
-  // TODO(issue #5): Add network-aware USDC presets and validate issuer/code pairs before Horizon lookup.
   const accountValidation = validatePublicKey(accountAddress);
   const issuerValidation = validatePublicKey(issuerAddress);
 
@@ -126,4 +148,3 @@ export async function checkTrustline(
   }
 }
 
-// TODO(issue #5): Add USDC trustline preset for Stellar mainnet and testnet.
