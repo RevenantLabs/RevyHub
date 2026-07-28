@@ -302,6 +302,10 @@ Advanced
 
 Improve form validation for the payment QR generator.
 
+### Maintainer Status
+
+Completed with a reusable `validatePaymentForm` function and real-time field-level validation on the payment QR page. Submit button is disabled when any field is invalid.
+
 ### Acceptance Criteria
 
 - Destination address is validated
