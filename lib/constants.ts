@@ -1,4 +1,5 @@
 import {
+  Activity,
   BadgeCheck,
   CircleDollarSign,
   Droplets,
@@ -67,6 +68,14 @@ export const tools = [
     href: "/tools/testnet-faucet",
     status: "Working" as ToolStatus,
     icon: Droplets
+  },
+  {
+    title: "Horizon Health",
+    description: "Check Horizon reachability, latency, and network identity on demand.",
+    character: "A detective comet pings Horizon and reports what it finds.",
+    href: "/tools/horizon-health",
+    status: "MVP" as ToolStatus,
+    icon: Activity
   }
 ];
 

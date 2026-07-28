@@ -1,4 +1,4 @@
-import { Horizon } from "@stellar/stellar-sdk";
+import { Horizon, Networks } from "@stellar/stellar-sdk";
 
 export type StellarNetwork = "testnet" | "mainnet";
 
@@ -9,6 +9,11 @@ export const horizonUrls = {
   testnet:
     process.env.NEXT_PUBLIC_HORIZON_TESTNET_URL ?? "https://horizon-testnet.stellar.org",
   mainnet: process.env.NEXT_PUBLIC_HORIZON_MAINNET_URL ?? "https://horizon.stellar.org"
+};
+
+export const networkPassphrases: Record<StellarNetwork, string> = {
+  testnet: Networks.TESTNET,
+  mainnet: Networks.PUBLIC
 };
 
 export const horizonServer = new Horizon.Server(horizonUrls[STELLAR_NETWORK]);
