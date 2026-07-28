@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/Badge";
 import { CopyableValue } from "@/components/stellar/CopyableValue";
+import { useRedaction } from "@/components/stellar/RedactionProvider";
 import type { StellarNetwork } from "@/lib/stellar/horizon";
 
 const explorerBaseUrls: Record<StellarNetwork, string> = {
@@ -29,6 +30,7 @@ function formatFee(stroops: string) {
 }
 
 export function TransactionDetails({ transaction }: { transaction: TransactionSummary }) {
+  const { redacted } = useRedaction();
   const rows = [
     ["Network", transaction.network],
     ["Hash", <CopyableValue key="hash" label="transaction hash" value={transaction.hash} visible={10} />],
@@ -56,14 +58,18 @@ export function TransactionDetails({ transaction }: { transaction: TransactionSu
           </div>
         ))}
       </dl>
-      <a
-        href={explorerUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex rounded-md border border-[#82cbe3]/80 bg-white/60 px-3 py-2 text-sm font-extrabold text-[#178fb5] hover:bg-[#e0f6ff]"
-      >
-        Open in Stellar Expert
-      </a>
+      {redacted ? (
+        <p className="text-xs italic text-[#8a5a4c]">Explorer link hidden while redaction is active</p>
+      ) : (
+        <a
+          href={explorerUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex rounded-md border border-[#82cbe3]/80 bg-white/60 px-3 py-2 text-sm font-extrabold text-[#178fb5] hover:bg-[#e0f6ff]"
+        >
+          Open in Stellar Expert
+        </a>
+      )}
     </div>
   );
 }

@@ -9,10 +9,12 @@ import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
-import { copyText } from "@/lib/copy";
+import { CopyableValue } from "@/components/stellar/CopyableValue";
+import { useRedaction } from "@/components/stellar/RedactionProvider";
 import { createPaymentUri } from "@/lib/stellar/paymentUri";
 
 export default function PaymentQrPage() {
+  const { redacted } = useRedaction();
   const [destination, setDestination] = useState("");
   const [amount, setAmount] = useState("");
   const [asset, setAsset] = useState<"XLM" | "ISSUED">("XLM");
@@ -36,16 +38,6 @@ export default function PaymentQrPage() {
       setUri("");
       setQr("");
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
-    }
-  }
-
-  async function copyUri() {
-    if (!uri) return;
-    try {
-      await copyText(uri);
-      setMessage({ type: "success", text: "Payment URI copied from the rocket assistant." });
-    } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Clipboard permission failed." });
     }
   }
 
@@ -94,13 +86,22 @@ export default function PaymentQrPage() {
         </Card>
         <div className="space-y-4">
           <StatusMessage type={message.type} title="Rocket desk status" description={message.text} />
-          {qr ? <QRPreview dataUrl={qr} /> : null}
+          {qr ? (
+            redacted ? (
+              <div className="mx-auto rounded-lg border border-[#ff8b7a]/55 bg-[#fff7f1] p-4 shadow-[4px_4px_0_rgba(199,185,243,0.24)]">
+                <div className="flex h-56 w-56 items-center justify-center text-center">
+                  <p className="px-4 text-sm font-semibold text-[#8a5a4c]">QR hidden while redaction is active</p>
+                </div>
+              </div>
+            ) : (
+              <QRPreview dataUrl={qr} />
+            )
+          ) : null}
           {uri ? (
             <Card className="space-y-3">
-              <p className="break-all text-xs text-[#4e5c73]">{uri}</p>
-              <Button type="button" variant="secondary" onClick={copyUri}>
-                Copy URI
-              </Button>
+              <p className="break-all text-xs text-[#4e5c73]">
+                <CopyableValue label="payment URI" value={uri} visible={8} />
+              </p>
             </Card>
           ) : null}
           <StatusMessage type="warning" title="Rocket safety note" description="This tool does not submit payments. Users must verify destination, amount, asset, and memo in their wallet." />
