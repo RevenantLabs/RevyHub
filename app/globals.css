@@ -2,8 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  :focus-visible {
+    outline: 2px solid #178fb5;
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#178fb5] focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+  }
 }
 
 * {
