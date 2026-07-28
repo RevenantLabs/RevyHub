@@ -10,11 +10,14 @@ import { AddressInput } from "@/components/stellar/AddressInput";
 import { BalanceList, type DisplayBalance } from "@/components/stellar/BalanceList";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { getAccountBalances } from "@/lib/stellar/account";
+import { Download } from "lucide-react";
+import { createBalanceSnapshot, getExportFilename, downloadBlob } from "@/lib/export";
 
 export default function BalanceViewerPage() {
   const { network } = useNetwork();
   const [address, setAddress] = useState("");
   const [balances, setBalances] = useState<DisplayBalance[]>([]);
+  const [lookedUpAddress, setLookedUpAddress] = useState("");
   const [message, setMessage] = useState<{ type: "info" | "success" | "error"; text: string }>({
     type: "info",
     text: "The moon wallet is waiting for a funded testnet account address."
@@ -30,12 +33,19 @@ export default function BalanceViewerPage() {
     try {
       const nextBalances = await getAccountBalances(address, network);
       setBalances(nextBalances);
+      setLookedUpAddress(address);
       setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleExport() {
+    const blob = createBalanceSnapshot(network, lookedUpAddress, balances);
+    const filename = getExportFilename(network, lookedUpAddress);
+    downloadBlob(blob, filename);
   }
 
   return (
@@ -70,7 +80,17 @@ export default function BalanceViewerPage() {
           }
         />
       ) : null}
-      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
+      {balances.length > 0 ? (
+        <div className="space-y-4">
+          <BalanceList balances={balances} />
+          <div className="flex justify-end">
+            <Button type="button" variant="secondary" onClick={handleExport}>
+              <Download className="h-4 w-4" />
+              Export as JSON
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
