@@ -1,36 +1,48 @@
 ## Summary
 
-Fetch and display the operations included in a Stellar transaction.
+Add an explicit privacy mode that masks account IDs, transaction hashes, issuers, and other long identifiers in result views and screenshots.
 
-Closes #10
+Closes #168
 
 ## Changes
 
-### `lib/stellar/transaction.ts`
-- Added `NormalizedOperation` interface covering **20+ Stellar operation types** with all key fields (payment amounts, account addresses, asset codes, offer prices, data entries, etc.)
-- Added `fetchTransactionOperations(hash, network)` — fetches operations from Horizon via `server.operations().forTransaction(hash).call()`
-- Updated `lookupTransaction` to fetch operations alongside the transaction using a **resilient pattern** — if the operations endpoint fails transiently, the transaction details are still displayed
-- Removed the `TODO(issue #10)` marker
+### `lib/utils.ts`
+- Added **`redactValue(value)`** — masks long identifiers preserving type context:
+  - Stellar G-keys: `G••••••••Q7H6` (1-char prefix, 8 masked, 4 trailing)
+  - Hashes & other strings: `ab••••••••6789` (2-char prefix)
+  - Short strings (< 12 chars) unchanged; defensive guard prevents expanding
 
-### `components/stellar/TransactionDetails.tsx`
-- Added `OperationCard` — displays an operation type badge and type-specific fields
-- Added `OperationsPanel` — shows operation count badge, the list of `OperationCard`s, and a themed empty state
-- Updated `TransactionDetails` to include the operations section below the transaction summary
-- Long address fields use `CopyableValue` for truncation and copy-to-clipboard
+### `components/stellar/RedactionProvider.tsx` *(new)*
+- React context providing `redacted` boolean + `setRedacted` toggle
+- Follows the `NetworkProvider` pattern used throughout the app
 
-### `tests/stellar/transaction.test.ts`
-- Added **6 new tests** for `normalizeOperation` covering payment, create_account, change_trust, manage_data, unknown types, and empty input
+### `components/stellar/CopyableValue.tsx`
+- When redacted: shows `EyeOff` icon + masked value in muted colour, copy button disabled with "Locked" label, `aria-label="Redacted [label]"`
+- When not redacted: normal behaviour preserved
+
+### `components/layout/AppHeader.tsx`
+- Privacy toggle button with `Eye`/`EyeOff` icons and "Masked" badge
+- Sits next to the Network selector in the header bar
+
+### `components/layout/AppShell.tsx`
+- Wrapped with `RedactionProvider` inside `NetworkProvider`
+
+### Tests — 2 new files, 10 new tests
+| File | Tests | What it covers |
+|---|---|---|
+| `tests/redaction.test.ts` | 8 | `redactValue` for Stellar keys, hashes, issuers, short strings, G-prefix detection, length guard |
+| `tests/redaction-behavior.test.tsx` | 2 | `CopyableValue` masked rendering, disabled copy, accessible labels in redacted & normal modes |
 
 ## Validation
 
 - ✅ Lint passes (`npm run lint`)
-- ✅ All 18 tests pass (`npm test`)
+- ✅ All 28 tests pass (`npm test`)
 - ✅ Production build succeeds (`npm run build`)
 
 ## Acceptance criteria met
 
-- [x] Operations are fetched from Horizon
-- [x] Operation type is displayed
-- [x] Important operation fields are shown
-- [x] Empty operation state is handled
-- [x] Errors are handled properly
+- [x] Redaction is opt-in (toggle in header), clearly indicated ("Masked" badge), consistent across all `CopyableValue` instances
+- [x] Masked values preserve type context (`G` prefix, `••••••••` block, last 4 chars)
+- [x] Copy actions disabled while redaction is active (button shows "Locked", `disabled` attribute set)
+- [x] Setting is local-only (React state), doesn't alter fetched data or URL params
+- [x] Screen readers receive `aria-label="Redacted [label]"` and `title="Redacted [label]"`
