@@ -1,5 +1,7 @@
 import { validatePublicKey } from "@/lib/stellar/validateAddress";
 
+const FRIENDBOT_URL = process.env.NEXT_PUBLIC_FRIENDBOT_URL ?? "https://friendbot.stellar.org";
+
 export async function fundTestnetAccount(publicKey: string) {
   // TODO(issue #13): Return typed Friendbot success/error states, including rate-limit and already-funded hints.
   const validation = validatePublicKey(publicKey);
@@ -8,7 +10,8 @@ export async function fundTestnetAccount(publicKey: string) {
     throw new Error(validation.message);
   }
 
-  const url = `https://friendbot.stellar.org?addr=${encodeURIComponent(publicKey.trim())}`;
+  const url = new URL(FRIENDBOT_URL);
+  url.searchParams.set("addr", publicKey.trim());
   const response = await fetch(url);
 
   if (!response.ok) {

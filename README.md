@@ -56,9 +56,29 @@ cp .env.example .env.local
 NEXT_PUBLIC_STELLAR_NETWORK=testnet
 NEXT_PUBLIC_HORIZON_TESTNET_URL=https://horizon-testnet.stellar.org
 NEXT_PUBLIC_HORIZON_MAINNET_URL=https://horizon.stellar.org
+NEXT_PUBLIC_FRIENDBOT_URL=https://friendbot.stellar.org
 ```
 
 The app uses testnet by default and includes a persisted network switch for Horizon-backed tools. The Friendbot faucet remains testnet-only.
+
+## Browser Security Headers
+
+Production responses include a baseline Content Security Policy and companion browser security headers from `next.config.mjs`. The policy is intentionally narrow:
+
+- `script-src` and `font-src` are limited to this app. Development adds `unsafe-eval` only so the Next.js dev server keeps working.
+- `style-src` allows this app plus inline styles required by the current Next.js and Tailwind runtime.
+- `img-src` allows this app plus `data:` and `blob:` URLs for generated QR codes and local image assets. Add explicit origins in code and documentation before introducing remote images.
+- `connect-src` allows this app, the configured Stellar Horizon endpoints, and the configured Friendbot endpoint. Development also allows localhost connections for framework tooling.
+- Frames, plugins, cross-origin form posts, and alternate base URIs are blocked by default.
+
+Default external origins used by the security policy are:
+
+| Purpose | Environment variable | Default origin |
+| --- | --- | --- |
+| Horizon testnet API | `NEXT_PUBLIC_HORIZON_TESTNET_URL` | `https://horizon-testnet.stellar.org` |
+| Horizon mainnet API | `NEXT_PUBLIC_HORIZON_MAINNET_URL` | `https://horizon.stellar.org` |
+| Testnet Friendbot | `NEXT_PUBLIC_FRIENDBOT_URL` | `https://friendbot.stellar.org` |
+| QR and app images | n/a | `self`, `data:`, `blob:` |
 
 ## Commands
 
