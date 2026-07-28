@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -13,11 +13,21 @@ import { checkTrustline } from "@/lib/stellar/trustline";
 
 export default function TrustlineCheckerPage() {
   const { network } = useNetwork();
+  const formRef = useRef<HTMLFormElement>(null);
   const [account, setAccount] = useState("");
   const [assetCode, setAssetCode] = useState("");
   const [issuer, setIssuer] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
+
+  function handleReset() {
+    setAccount("");
+    setAssetCode("");
+    setIssuer("");
+    setLoading(false);
+    setMessage({ type: "info", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
+    formRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,16 +52,19 @@ export default function TrustlineCheckerPage() {
         description={`The inspector looks for a friendly handshake between an account and an issued asset on Stellar ${network}.`}
       />
       <Card>
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
           <AddressInput value={account} onChange={setAccount} label="Account address" />
           <label className="block space-y-2">
             <span className="text-sm font-medium text-[#29364d]">Asset code</span>
             <Input value={assetCode} onChange={(event) => setAssetCode(event.target.value)} placeholder="USDC" />
           </label>
           <AddressInput value={issuer} onChange={setIssuer} label="Issuer address" />
-          <Button type="submit" disabled={loading}>
-            {loading ? "Inspecting..." : "Inspect handshake"}
-          </Button>
+          <div className="flex gap-3">
+            <Button type="submit" disabled={loading}>
+              {loading ? "Inspecting..." : "Inspect handshake"}
+            </Button>
+            <Button type="button" variant="secondary" onClick={handleReset}>Reset</Button>
+          </div>
         </form>
       </Card>
       <StatusMessage type={message.type} title="Inspector report" description={message.text} />

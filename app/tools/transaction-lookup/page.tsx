@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { TransactionDetails, type TransactionSummary } from "@/components/stellar/TransactionDetails";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -12,10 +12,19 @@ import { lookupTransaction } from "@/lib/stellar/transaction";
 
 export default function TransactionLookupPage() {
   const { network } = useNetwork();
+  const formRef = useRef<HTMLFormElement>(null);
   const [hash, setHash] = useState("");
   const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a testnet transaction hash to follow the trail." });
+
+  function handleReset() {
+    setHash("");
+    setTransaction(null);
+    setLoading(false);
+    setMessage({ type: "info", text: "The detective comet needs a testnet transaction hash to follow the trail." });
+    formRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,14 +52,17 @@ export default function TransactionLookupPage() {
         description={`The detective comet follows a transaction hash through Stellar ${network} Horizon and brings back the important clues.`}
       />
       <Card>
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
           <label className="block space-y-2">
             <span className="text-sm font-medium text-[#29364d]">Transaction hash</span>
             <Input value={hash} onChange={(event) => setHash(event.target.value)} placeholder="64 character hash" spellCheck={false} />
           </label>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Following trail..." : "Follow transaction trail"}
-          </Button>
+          <div className="flex gap-3">
+            <Button type="submit" disabled={loading}>
+              {loading ? "Following trail..." : "Follow transaction trail"}
+            </Button>
+            <Button type="button" variant="secondary" onClick={handleReset}>Reset</Button>
+          </div>
         </form>
       </Card>
       <StatusMessage type={message.type} title="Detective report" description={message.text} />

@@ -1,7 +1,7 @@
 "use client";
 
 import QRCode from "qrcode";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { QRPreview } from "@/components/stellar/QRPreview";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +13,7 @@ import { copyText } from "@/lib/copy";
 import { createPaymentUri } from "@/lib/stellar/paymentUri";
 
 export default function PaymentQrPage() {
+  const formRef = useRef<HTMLFormElement>(null);
   const [destination, setDestination] = useState("");
   const [amount, setAmount] = useState("");
   const [asset, setAsset] = useState<"XLM" | "ISSUED">("XLM");
@@ -22,6 +23,19 @@ export default function PaymentQrPage() {
   const [uri, setUri] = useState("");
   const [qr, setQr] = useState("");
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The rocket assistant can turn payment details into a demo QR poster." });
+
+  function handleReset() {
+    setDestination("");
+    setAmount("");
+    setAsset("XLM");
+    setAssetCode("");
+    setAssetIssuer("");
+    setMemo("");
+    setUri("");
+    setQr("");
+    setMessage({ type: "info", text: "The rocket assistant can turn payment details into a demo QR poster." });
+    formRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+  }
 
   async function handleGenerate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,7 +73,7 @@ export default function PaymentQrPage() {
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <Card>
-          <form onSubmit={handleGenerate} className="space-y-5">
+          <form ref={formRef} onSubmit={handleGenerate} className="space-y-5">
             <AddressInput value={destination} onChange={setDestination} label="Destination address" />
             <label className="block space-y-2">
               <span className="text-sm font-medium text-[#29364d]">Amount</span>
@@ -89,7 +103,10 @@ export default function PaymentQrPage() {
               <span className="text-sm font-medium text-[#29364d]">Memo optional</span>
               <Input value={memo} onChange={(event) => setMemo(event.target.value)} placeholder="Invoice 1001" />
             </label>
-            <Button type="submit">Ask rocket to draw QR</Button>
+            <div className="flex gap-3">
+              <Button type="submit">Ask rocket to draw QR</Button>
+              <Button type="button" variant="secondary" onClick={handleReset}>Reset</Button>
+            </div>
           </form>
         </Card>
         <div className="space-y-4">
