@@ -8,6 +8,7 @@ export default defineConfig({
     }
   },
   test: {
-    include: ["tests/**/*.test.ts"]
+    include: ["tests/**/*.test.ts"],
+    setupFiles: ["tests/msw/setup.ts"]
   }
 });
