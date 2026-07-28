@@ -23,6 +23,45 @@ export function validateAssetCode(value: string) {
   return assetCode;
 }
 
+export function parsePaymentUri(uri: string): PaymentRequestInput {
+  const prefix = "web+stellar:pay?";
+
+  if (!uri.startsWith(prefix)) {
+    throw new Error("Payment URI must start with 'web+stellar:pay?'.");
+  }
+
+  const params = new URLSearchParams(uri.slice(prefix.length));
+  const destination = params.get("destination");
+  const amount = params.get("amount");
+  const assetCode = params.get("asset_code") ?? "XLM";
+  const memo = params.get("memo") ?? undefined;
+  const assetIssuer = params.get("asset_issuer") ?? undefined;
+
+  if (!destination) {
+    throw new Error("Payment URI missing required 'destination' parameter.");
+  }
+
+  if (!amount) {
+    throw new Error("Payment URI missing required 'amount' parameter.");
+  }
+
+  const asset = assetCode === "XLM" ? "XLM" : "ISSUED";
+
+  const input: PaymentRequestInput = {
+    destination,
+    amount,
+    asset,
+    assetCode: asset === "XLM" ? undefined : assetCode,
+    assetIssuer: asset === "ISSUED" ? (assetIssuer || undefined) : undefined,
+    memo: memo || undefined
+  };
+
+  // Reuse existing validation by attempting to create a URI from the parsed input
+  createPaymentUri(input);
+
+  return input;
+}
+
 export function createPaymentUri(input: PaymentRequestInput) {
   // TODO(issue #11): Extract full form validation into a reusable schema with field-level errors.
   // TODO(issue #12): Align this URI builder with a documented Stellar payment URI format and network/asset metadata.
