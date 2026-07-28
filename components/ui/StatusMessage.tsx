@@ -8,6 +8,7 @@ interface StatusMessageProps {
   title: string;
   description?: string;
   action?: React.ReactNode;
+  ariaLive?: "polite" | "assertive" | "off";
 }
 
 const statusStyles: Record<StatusType, string> = {
@@ -24,12 +25,15 @@ const icons = {
   info: Info
 };
 
-export function StatusMessage({ type, title, description, action }: StatusMessageProps) {
+export function StatusMessage({ type, title, description, action, ariaLive = "polite" }: StatusMessageProps) {
   const Icon = icons[type];
 
   return (
-    // TODO(issue #6): Add optional actions, ARIA live-region behavior, and reusable test coverage for async tool feedback.
-    <div className={cn("flex gap-3 rounded-lg border p-4 shadow-[4px_4px_0_rgba(255,139,122,0.12)]", statusStyles[type])}>
+    <div
+      role="status"
+      aria-live={ariaLive}
+      className={cn("flex gap-3 rounded-lg border p-4 shadow-[4px_4px_0_rgba(255,139,122,0.12)]", statusStyles[type])}
+    >
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/60">
         <Icon className="h-5 w-5" aria-hidden />
       </span>

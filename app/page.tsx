@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Activity, GitPullRequest, Rocket, SmilePlus, Wand2 } from "lucide-react";
 import { ToolCard } from "@/components/ui/ToolCard";
+import { SorobanRpcPanel } from "@/components/stellar/SorobanRpcPanel";
 import { Card } from "@/components/ui/Card";
 import { tools } from "@/lib/constants";
 
@@ -63,6 +64,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <SorobanRpcPanel />
 
       <section className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
