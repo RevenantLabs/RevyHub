@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "issues:create": "node scripts/create-github-issues.mjs",
-    "issues:dry-run": "node scripts/create-github-issues.mjs --dry-run"
+    "issues:dry-run": "node scripts/create-github-issues.mjs --dry-run",
+    "verify:headers": "node scripts/verify-security-headers.mjs"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^13.3.0",

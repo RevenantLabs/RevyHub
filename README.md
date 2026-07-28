@@ -60,6 +60,62 @@ NEXT_PUBLIC_HORIZON_MAINNET_URL=https://horizon.stellar.org
 
 The app uses testnet by default and includes a persisted network switch for Horizon-backed tools. The Friendbot faucet remains testnet-only.
 
+## Security Headers
+
+Production builds serve the following security headers via `next.config.mjs`:
+
+| Header | Value |
+|---|---|
+| `Content-Security-Policy` | Restrictive CSP (see below) |
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` (production only) |
+| `X-Frame-Options` | `DENY` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), interest-cohort=()` |
+| `Cross-Origin-Opener-Policy` | `same-origin` |
+| `Cross-Origin-Resource-Policy` | `same-origin` |
+
+### Content Security Policy
+
+```
+default-src 'self';
+script-src 'self' 'unsafe-inline';
+style-src 'self' 'unsafe-inline';
+img-src 'self' data:;
+font-src 'self';
+connect-src 'self' <horizon-endpoints> <friendbot>;
+frame-src 'none';
+form-action 'self';
+base-uri 'self';
+object-src 'none';
+frame-ancestors 'none'
+```
+
+- `'unsafe-inline'` on `script-src` and `style-src` is required by Next.js runtime. A nonce-based approach would require additional infrastructure (tracked as a future improvement).
+- `data:` on `img-src` enables QR code rendering (base64 PNG data URIs).
+- `connect-src` includes Horizon endpoints (configurable via environment) and `https://friendbot.stellar.org`.
+- No external scripts, fonts, or frames are used.
+
+### Updating CSP for New Integrations
+
+When adding an external origin, update the CSP in `next.config.mjs`:
+
+1. **Horizon/Soroban endpoint** — Add the URL to `connect-src`. If configurable, use an environment variable.
+2. **External image host** — Add the origin to `img-src` and document in `NEXT_PUBLIC_IMAGE_ORIGINS`.
+3. **External script** — Add the origin to `script-src`. Prefer `'strict-dynamic'` or nonces over `'unsafe-inline'`.
+4. **Iframe embed** — Add the origin to `frame-src`.
+
+### Verification
+
+After a production build, verify headers are served correctly:
+
+```bash
+npm run build
+npm run verify:headers
+```
+
+The verification script starts a local production server and asserts expected response headers.
+
 ## Commands
 
 ```bash
