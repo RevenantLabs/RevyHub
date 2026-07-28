@@ -65,9 +65,12 @@ The app uses testnet by default and includes a persisted network switch for Hori
 ```bash
 npm run dev
 npm run test
+npm run test:e2e
 npm run build
 npm run lint
 ```
+
+Install Chromium once with `npx playwright install chromium`. Then `npm run test:e2e` starts the app and runs the Playwright browser tests headlessly in Chromium.
 
 ## Quality Gates
 
