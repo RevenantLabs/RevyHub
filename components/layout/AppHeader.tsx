@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Github, Network } from "lucide-react";
+import { Github, Network, Search } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 
@@ -29,6 +29,17 @@ export function AppHeader() {
           </span>
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+            className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#c7b9f3]/65 bg-white/60 px-3 text-sm font-semibold text-[#29364d] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition hover:border-[#ff8b7a]/70 hover:bg-[#fff7f1]"
+            aria-label="Search tools (⌘K or Ctrl+K)"
+          >
+            <Search className="h-4 w-4 text-[#178fb5]" aria-hidden="true" />
+            <span className="hidden sm:inline">Search</span>
+            <kbd className="hidden sm:inline-block ml-1 rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-bold text-[#56678c] border border-[#e1e5ee]">
+              ⌘K
+            </kbd>
+          </button>
           <label className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#7dbcd2]/45 bg-white/75 px-3 text-sm font-semibold text-[#29364d] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
             <Network className="h-4 w-4 text-[#178fb5]" aria-hidden />
             <span className="sr-only sm:not-sr-only">Network</span>
