@@ -2,11 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Github, Network } from "lucide-react";
+import { Github, Network, Command } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 
-export function AppHeader() {
+interface AppHeaderProps {
+  onCommandPaletteToggle?: () => void;
+}
+
+export function AppHeader({ onCommandPaletteToggle }: AppHeaderProps) {
   const { network, setNetwork } = useNetwork();
 
   return (
@@ -29,6 +33,17 @@ export function AppHeader() {
           </span>
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={onCommandPaletteToggle}
+            className="inline-flex items-center gap-1.5 rounded-md border border-[#c7b9f3]/65 bg-white/60 px-3 py-2 text-sm font-semibold text-[#29364d] transition hover:border-[#ff8b7a]/70 hover:bg-[#fff7f1]"
+            aria-label="Open command palette"
+          >
+            <Command className="h-4 w-4" aria-hidden />
+            <span className="hidden sm:inline">Tools</span>
+            <kbd className="hidden rounded-md border border-gray-300 bg-white px-1 py-0.5 text-[10px] font-medium text-gray-500 md:inline-block">
+              Ctrl+K
+            </kbd>
+          </button>
           <label className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#7dbcd2]/45 bg-white/75 px-3 text-sm font-semibold text-[#29364d] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
             <Network className="h-4 w-4 text-[#178fb5]" aria-hidden />
             <span className="sr-only sm:not-sr-only">Network</span>
