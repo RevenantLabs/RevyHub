@@ -38,23 +38,11 @@ Prefer clear conventional-style commits:
 
 ## Pick an Issue
 
-Start with [docs/ISSUES.md](./docs/ISSUES.md). Choose an issue with a difficulty level that matches your experience, then open a GitHub issue or comment on an existing one before starting larger work.
-
-<!-- TODO(issue #18): Add GitHub issue templates and link them from this section once .github/ISSUE_TEMPLATE exists. -->
+Pick an issue from [docs/ISSUES.md](./docs/ISSUES.md) that matches your experience level, then comment on it before starting larger work. Bug report, feature request, and documentation templates are available under `.github/ISSUE_TEMPLATE/`.
 
 ## Pull Requests
 
-<!-- TODO(issue #19): Add a pull request template and document the required PR checklist here. -->
-
-PRs should include:
-
-- What changed
-- Why it changed
-- How you tested it
-- Screenshots for UI changes
-- Any follow-up TODOs
-
-GitHub issue and pull request templates are included under `.github/`.
+Use the pull request template at `.github/PULL_REQUEST_TEMPLATE.md` when opening a PR.
 
 ## Code Quality
 
