@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy } from "lucide-react";
+import { AlertCircle, Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { copyText } from "@/lib/copy";
@@ -12,14 +12,28 @@ interface CopyableValueProps {
   visible?: number;
 }
 
+type CopyStatus = "idle" | "copied" | "error";
+
 export function CopyableValue({ label, value, visible = 6 }: CopyableValueProps) {
-  const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState<CopyStatus>("idle");
 
   async function handleCopy() {
-    await copyText(value);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+    try {
+      await copyText(value);
+      setStatus("copied");
+    } catch (error) {
+      // Surface failures in UI instead of bubbling an unhandled rejection.
+      console.error(`CopyableValue failed to copy ${label}`, error);
+      setStatus("error");
+    } finally {
+      window.setTimeout(() => setStatus("idle"), 1800);
+    }
   }
+
+  const buttonLabel =
+    status === "copied" ? "Copied" : status === "error" ? "Copy failed" : "Copy";
+  const StatusIcon =
+    status === "copied" ? Check : status === "error" ? AlertCircle : Copy;
 
   return (
     <span className="inline-flex max-w-full items-center gap-2">
@@ -29,12 +43,14 @@ export function CopyableValue({ label, value, visible = 6 }: CopyableValueProps)
       <Button
         type="button"
         variant="ghost"
-        onClick={handleCopy}
+        onClick={() => {
+          void handleCopy();
+        }}
         className="min-h-8 shrink-0 rounded-md px-2 py-1 text-xs"
         aria-label={`Copy ${label}`}
       >
-        <Copy className="h-3.5 w-3.5" aria-hidden />
-        {copied ? "Copied" : "Copy"}
+        <StatusIcon className="h-3.5 w-3.5" aria-hidden />
+        {buttonLabel}
       </Button>
     </span>
   );

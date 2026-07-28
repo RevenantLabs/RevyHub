@@ -2,14 +2,29 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { AddressInput } from "@/components/stellar/AddressInput";
+import { CopyableValue } from "@/components/stellar/CopyableValue";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
-import { checkTrustline } from "@/lib/stellar/trustline";
+import { checkTrustline, type TrustlineCheck } from "@/lib/stellar/trustline";
+import type { StellarNetwork } from "@/lib/stellar/horizon";
+
+type ReportStatus = "info" | "success" | "warning" | "error";
+
+interface Report {
+  type: ReportStatus;
+  text: string;
+}
+
+const initialMessage: Report = {
+  type: "info",
+  text: "The trust inspector needs an account, asset code, and issuer to look for the handshake."
+};
 
 export default function TrustlineCheckerPage() {
   const { network } = useNetwork();
@@ -17,17 +32,38 @@ export default function TrustlineCheckerPage() {
   const [assetCode, setAssetCode] = useState("");
   const [issuer, setIssuer] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
+
+  // Stamping every verification with the network it was retrieved on lets the
+  // displayed result and report be derived at render time. Toggling the network
+  // invalidates the previous check because the stored network no longer matches,
+  // so the UI never describes identifiers from the wrong Stellar network.
+  const [verified, setVerified] = useState<
+    { network: StellarNetwork; result: TrustlineCheck | null; message: Report } | null
+  >(null);
+
+  const result = verified?.network === network ? verified.result : null;
+  const message = verified?.network === network ? verified.message : initialMessage;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
 
     try {
-      const result = await checkTrustline(account, assetCode, issuer, network);
-      setMessage({ type: result.exists ? "success" : "warning", text: result.message });
+      const check = await checkTrustline(account, assetCode, issuer, network);
+      setVerified({
+        network,
+        result: check,
+        message: { type: check.exists ? "success" : "warning", text: check.message }
+      });
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
+      setVerified({
+        network,
+        result: null,
+        message: {
+          type: "error",
+          text: error instanceof Error ? error.message : "Unexpected error."
+        }
+      });
     } finally {
       setLoading(false);
     }
@@ -55,6 +91,23 @@ export default function TrustlineCheckerPage() {
         </form>
       </Card>
       <StatusMessage type={message.type} title="Inspector report" description={message.text} />
+      {result ? (
+        <Card className="space-y-3">
+          <p className="text-sm font-extrabold text-[#172033]">Verified asset identity</p>
+          <dl className="grid gap-3 sm:grid-cols-[max-content_1fr] sm:items-center">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[#68758a]">Asset code</dt>
+            <dd className="font-mono text-sm text-[#172033]">{result.assetCode}</dd>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[#68758a]">Issuer</dt>
+            <dd className="min-w-0">
+              <CopyableValue label={`${result.assetCode} issuer`} value={result.issuer} />
+            </dd>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[#68758a]">Network</dt>
+            <dd>
+              <Badge tone="info">{result.network}</Badge>
+            </dd>
+          </dl>
+        </Card>
+      ) : null}
       {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
         <StatusMessage
           type="info"

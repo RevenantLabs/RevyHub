@@ -5,6 +5,9 @@ import { getResponseStatus } from "@/lib/stellar/account";
 export interface TrustlineCheck {
   exists: boolean;
   message: string;
+  assetCode: string;
+  issuer: string;
+  network: StellarNetwork;
 }
 
 export async function checkTrustline(
@@ -21,7 +24,9 @@ export async function checkTrustline(
     throw new Error(`Account address: ${accountValidation.message}`);
   }
 
-  if (!assetCode.trim()) {
+  const trimmedAssetCode = assetCode.trim();
+
+  if (!trimmedAssetCode) {
     throw new Error("Enter an asset code such as USDC.");
   }
 
@@ -31,7 +36,7 @@ export async function checkTrustline(
 
   try {
     const account = await getHorizonServer(network).loadAccount(accountAddress.trim());
-    const normalizedCode = assetCode.trim().toUpperCase();
+    const normalizedCode = trimmedAssetCode.toUpperCase();
     const normalizedIssuer = issuerAddress.trim();
     const exists = account.balances.some(
       (balance) =>
@@ -45,7 +50,10 @@ export async function checkTrustline(
       exists,
       message: exists
         ? `Trustline found for ${normalizedCode}.`
-        : `No ${normalizedCode} trustline found for this account.`
+        : `No ${normalizedCode} trustline found for this account.`,
+      assetCode: normalizedCode,
+      issuer: normalizedIssuer,
+      network
     };
   } catch (error) {
     if (getResponseStatus(error) === 404) {
