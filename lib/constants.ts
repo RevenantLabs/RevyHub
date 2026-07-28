@@ -1,4 +1,5 @@
 import {
+  Activity,
   BadgeCheck,
   CircleDollarSign,
   Droplets,
@@ -67,6 +68,14 @@ export const tools = [
     href: "/tools/testnet-faucet",
     status: "Working" as ToolStatus,
     icon: Droplets
+  },
+  {
+    title: "Soroban RPC Health",
+    description: "Check RPC health, latest ledger, and response times.",
+    character: "A star engineer inspects the Soroban RPC node.",
+    href: "/tools/soroban-health",
+    status: "MVP" as ToolStatus,
+    icon: Activity
   }
 ];
 
