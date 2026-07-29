@@ -25,6 +25,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "jest-axe": [
+        "./tests/types/jest-axe-module.d.ts"
       ]
     }
   },

@@ -84,7 +84,7 @@ npm run lint
 
 ## Quality Gates
 
-The repository includes unit tests for core Stellar validation and payment URI behavior. Pull requests and pushes to `main` run:
+The repository includes unit tests for core Stellar validation and payment URI behavior, plus automated accessibility checks (`tests/a11y/`) that render the dashboard and the trustline checker tool with [jest-axe](https://github.com/NickColley/jest-axe) and fail on serious or critical violations. These checks catch common regressions in labels, landmarks, roles, and dialog behavior, but they do not replace manual screen-reader testing. Pull requests and pushes to `main` run:
 
 ```bash
 npm run lint
