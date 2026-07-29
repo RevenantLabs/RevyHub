@@ -1,7 +1,10 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { useRecentToolsContext } from "@/components/ui/RecentToolsProvider";
 import type { ToolStatus } from "@/lib/constants";
 
 interface ToolCardProps {
@@ -20,8 +23,17 @@ const statusTone: Record<ToolStatus, "success" | "info" | "warning"> = {
 };
 
 export function ToolCard({ title, description, character, href, status, icon: Icon }: ToolCardProps) {
+  const router = useRouter();
+  const { recordTool } = useRecentToolsContext();
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    recordTool(href);
+    router.push(href);
+  };
+
   return (
-    <Link href={href} className="group block">
+    <a href={href} onClick={handleClick} className="group block">
       {/* TODO(issue #1): Extend tool cards with richer status metadata, grouped categories, and accessible hover/focus states. */}
       <Card className="h-full overflow-hidden transition hover:-translate-y-0.5 hover:border-[#82cbe3]/80 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.82),6px_6px_0_rgba(255,139,122,0.28),0_26px_70px_rgba(84,102,136,0.2)]">
         <div className="flex items-start justify-between gap-4">
@@ -40,6 +52,6 @@ export function ToolCard({ title, description, character, href, status, icon: Ic
           <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" aria-hidden />
         </span>
       </Card>
-    </Link>
+    </a>
   );
 }

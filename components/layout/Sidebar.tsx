@@ -4,9 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { tools } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useRecentToolsContext } from "@/components/ui/RecentToolsProvider";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { recordTool } = useRecentToolsContext();
+
+  const handleToolClick = (href: string) => {
+    recordTool(href);
+  };
 
   return (
     <aside className="hidden w-72 shrink-0 border-r border-white/75 bg-white/50 backdrop-blur-lg lg:block">
@@ -21,6 +27,7 @@ export function Sidebar() {
             <Link
               key={tool.href}
               href={tool.href}
+              onClick={() => handleToolClick(tool.href)}
               className={cn(
                 "flex items-center gap-3 rounded-[1rem] px-3 py-2.5 text-sm font-semibold transition",
                 active

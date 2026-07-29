@@ -1,10 +1,16 @@
+"use client";
+
 import Image from "next/image";
 import { Activity, GitPullRequest, Rocket, SmilePlus, Wand2 } from "lucide-react";
 import { ToolCard } from "@/components/ui/ToolCard";
 import { Card } from "@/components/ui/Card";
+import { RecentToolsSection } from "@/components/ui/RecentToolsSection";
+import { useRecentToolsContext } from "@/components/ui/RecentToolsProvider";
 import { tools } from "@/lib/constants";
 
-export default function HomePage() {
+function HomePageContent() {
+  const { recentTools, clearHistory } = useRecentToolsContext();
+
   return (
     <div className="space-y-10">
       {/* TODO(issue #1): Improve this dashboard with richer responsive storytelling, tool grouping, and visual hierarchy. */}
@@ -98,6 +104,10 @@ export default function HomePage() {
       </section>
 
       <section>
+        <RecentToolsSection recentTools={recentTools} onClearHistory={clearHistory} />
+      </section>
+
+      <section>
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-2xl font-black text-[#172033]">Helper cast</h2>
@@ -114,4 +124,8 @@ export default function HomePage() {
       </section>
     </div>
   );
+}
+
+export default function HomePage() {
+  return <HomePageContent />;
 }
