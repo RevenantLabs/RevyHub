@@ -48,8 +48,6 @@ This project includes [GitHub issue templates](.github/ISSUE_TEMPLATE/) to help 
 
 ## Pull Requests
 
-<!-- TODO(issue #19): Add a pull request template and document the required PR checklist here. -->
-
 PRs should include:
 
 - What changed
@@ -57,6 +55,8 @@ PRs should include:
 - How you tested it
 - Screenshots for UI changes
 - Any follow-up TODOs
+
+The pull request template also asks contributors to confirm lint, tests, the production build, documentation updates, and relevant loading or error states.
 
 Use the [bug report](.github/ISSUE_TEMPLATE/bug_report.md), [feature request](.github/ISSUE_TEMPLATE/feature_request.md), or [documentation](.github/ISSUE_TEMPLATE/documentation.md) template when opening issues, and the [pull request template](.github/PULL_REQUEST_TEMPLATE.md) when submitting changes.
 
