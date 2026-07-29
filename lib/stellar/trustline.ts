@@ -1,4 +1,11 @@
-import { getHorizonServer, STELLAR_NETWORK, type StellarNetwork } from "@/lib/stellar/horizon";
+import {
+  getHorizonServer,
+  STELLAR_NETWORK,
+  type StellarNetwork,
+  withTimeout,
+  isCancelledError,
+  isTimeoutError,
+} from "@/lib/stellar/horizon";
 import { validatePublicKey } from "@/lib/stellar/validateAddress";
 import { getResponseStatus } from "@/lib/stellar/account";
 
@@ -11,7 +18,8 @@ export async function checkTrustline(
   accountAddress: string,
   assetCode: string,
   issuerAddress: string,
-  network: StellarNetwork = STELLAR_NETWORK
+  network: StellarNetwork = STELLAR_NETWORK,
+  signal?: AbortSignal
 ): Promise<TrustlineCheck> {
   // TODO(issue #5): Add network-aware USDC presets and validate issuer/code pairs before Horizon lookup.
   const accountValidation = validatePublicKey(accountAddress);
@@ -30,7 +38,11 @@ export async function checkTrustline(
   }
 
   try {
-    const account = await getHorizonServer(network).loadAccount(accountAddress.trim());
+    const account = await withTimeout(
+      getHorizonServer(network).loadAccount(accountAddress.trim()),
+      undefined,
+      signal
+    );
     const normalizedCode = assetCode.trim().toUpperCase();
     const normalizedIssuer = issuerAddress.trim();
     const exists = account.balances.some(
@@ -48,6 +60,12 @@ export async function checkTrustline(
         : `No ${normalizedCode} trustline found for this account.`
     };
   } catch (error) {
+    if (isCancelledError(error)) throw error; // silent cancellation
+
+    if (isTimeoutError(error)) {
+      throw new Error("Horizon did not respond in time. Check your connection and try again.");
+    }
+
     if (getResponseStatus(error) === 404) {
       throw new Error(
         network === "testnet"
