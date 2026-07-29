@@ -1,9 +1,13 @@
 import {
+  AtSign,
   BadgeCheck,
   CircleDollarSign,
   Droplets,
+  FileSearch,
+  Gauge,
   Landmark,
   QrCode,
+  ScanSearch,
   Search,
   ShieldCheck,
   WalletCards
@@ -53,6 +57,14 @@ export const tools = [
     icon: Search
   },
   {
+    title: "XDR Inspector",
+    description: "Decode transaction envelope XDR locally, without any network calls.",
+    character: "A lens-eyed archivist unrolls transaction scrolls without leaving the library.",
+    href: "/tools/xdr-inspector",
+    status: "Working" as ToolStatus,
+    icon: ScanSearch
+  },
+  {
     title: "Freighter Connect",
     description: "Try a browser wallet connection example.",
     character: "A friendly wallet mascot waves when Freighter is nearby.",
@@ -67,6 +79,30 @@ export const tools = [
     href: "/tools/testnet-faucet",
     status: "Working" as ToolStatus,
     icon: Droplets
+  },
+  {
+    title: "Asset Metadata Inspector",
+    description: "Fetch and browse stellar.toml currency metadata for any issuer domain.",
+    character: "A star librarian leafs through issuer TOML scrolls.",
+    href: "/tools/asset-metadata",
+    status: "Working" as ToolStatus,
+    icon: FileSearch
+  },
+  {
+    title: "Federation Resolver",
+    description: "Resolve Stellar federation addresses (name*domain) into public keys and memos.",
+    character: "A diligent wallet-style postmaster routes names to verified destinations.",
+    href: "/tools/federation-resolver",
+    status: "Working" as ToolStatus,
+    icon: AtSign
+  },
+  {
+    title: "Network Fee Statistics",
+    description: "Check Horizon fee-market stats in stroops and XLM.",
+    character: "A gauge gremlin reads the fee market on demand.",
+    href: "/tools/fee-stats",
+    status: "MVP" as ToolStatus,
+    icon: Gauge
   }
 ];
 

@@ -1,10 +1,18 @@
-import { getHorizonServer, STELLAR_NETWORK, type StellarNetwork } from "@/lib/stellar/horizon";
+import {
+  getHorizonServer,
+  isCancelledError,
+  isTimeoutError,
+  runHorizonRequest,
+  STELLAR_NETWORK,
+  type StellarNetwork
+} from "@/lib/stellar/horizon";
 import { validatePublicKey } from "@/lib/stellar/validateAddress";
 import type { DisplayBalance } from "@/components/stellar/BalanceList";
 
 export async function getAccountBalances(
   publicKey: string,
-  network: StellarNetwork = STELLAR_NETWORK
+  network: StellarNetwork = STELLAR_NETWORK,
+  signal?: AbortSignal
 ): Promise<DisplayBalance[]> {
   const validation = validatePublicKey(publicKey);
 
@@ -13,7 +21,10 @@ export async function getAccountBalances(
   }
 
   try {
-    const account = await getHorizonServer(network).loadAccount(publicKey.trim());
+    const account = await runHorizonRequest(
+      getHorizonServer(network).loadAccount(publicKey.trim()),
+      { signal }
+    );
 
     // TODO(issue #21): Return a typed account-not-found state so UI can link directly to the Testnet Faucet Helper.
     return account.balances.map((balance) => {
@@ -42,6 +53,14 @@ export async function getAccountBalances(
       };
     });
   } catch (error) {
+    if (isCancelledError(error)) {
+      throw error;
+    }
+
+    if (isTimeoutError(error)) {
+      throw new Error("The Horizon balance request timed out. Try again.");
+    }
+
     const responseStatus = getResponseStatus(error);
 
     if (responseStatus === 404) {
