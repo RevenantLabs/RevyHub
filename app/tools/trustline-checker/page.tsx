@@ -18,14 +18,22 @@ export default function TrustlineCheckerPage() {
   const [issuer, setIssuer] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
+  const [notFound, setNotFound] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
+    setNotFound(false);
 
     try {
       const result = await checkTrustline(account, assetCode, issuer, network);
-      setMessage({ type: result.exists ? "success" : "warning", text: result.message });
+
+      if (result.notFound) {
+        setNotFound(true);
+        setMessage({ type: "info", text: "The trust inspector could not find this account on the network." });
+      } else {
+        setMessage({ type: result.exists ? "success" : "warning", text: result.message });
+      }
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
@@ -55,11 +63,11 @@ export default function TrustlineCheckerPage() {
         </form>
       </Card>
       <StatusMessage type={message.type} title="Inspector report" description={message.text} />
-      {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
+      {notFound && network === "testnet" ? (
         <StatusMessage
           type="info"
-          title="Fund the testnet account first"
-          description="A trustline can only be checked after the account exists on testnet."
+          title="This account is a ghost on testnet"
+          description="Every testnet account needs to receive testnet XLM before it can appear on Horizon. This keeps the testnet safe from spam and helps you practice without real funds."
           action={
             <Link
               href="/tools/testnet-faucet"
@@ -68,6 +76,13 @@ export default function TrustlineCheckerPage() {
               Open Testnet Faucet Helper
             </Link>
           }
+        />
+      ) : null}
+      {notFound && network === "mainnet" ? (
+        <StatusMessage
+          type="info"
+          title="This account does not exist on mainnet"
+          description="Every account on Stellar mainnet must be created and funded before it can appear on Horizon."
         />
       ) : null}
     </div>

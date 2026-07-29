@@ -2,10 +2,14 @@ import { getHorizonServer, STELLAR_NETWORK, type StellarNetwork } from "@/lib/st
 import { validatePublicKey } from "@/lib/stellar/validateAddress";
 import type { DisplayBalance } from "@/components/stellar/BalanceList";
 
+export type AccountLookup =
+  | { found: true; balances: DisplayBalance[] }
+  | { found: false; reason: "not-found"; network: StellarNetwork };
+
 export async function getAccountBalances(
   publicKey: string,
   network: StellarNetwork = STELLAR_NETWORK
-): Promise<DisplayBalance[]> {
+): Promise<AccountLookup> {
   const validation = validatePublicKey(publicKey);
 
   if (!validation.valid) {
@@ -15,38 +19,36 @@ export async function getAccountBalances(
   try {
     const account = await getHorizonServer(network).loadAccount(publicKey.trim());
 
-    // TODO(issue #21): Return a typed account-not-found state so UI can link directly to the Testnet Faucet Helper.
-    return account.balances.map((balance) => {
-      if (balance.asset_type === "native") {
+    return {
+      found: true,
+      balances: account.balances.map((balance) => {
+        if (balance.asset_type === "native") {
+          return {
+            assetCode: "XLM",
+            amount: balance.balance
+          };
+        }
+
+        if (balance.asset_type === "liquidity_pool_shares") {
+          return {
+            assetCode: "Liquidity pool shares",
+            issuer: balance.liquidity_pool_id,
+            amount: balance.balance
+          };
+        }
+
         return {
-          assetCode: "XLM",
+          assetCode: balance.asset_code,
+          issuer: balance.asset_issuer,
           amount: balance.balance
         };
-      }
-
-      if (balance.asset_type === "liquidity_pool_shares") {
-        return {
-          assetCode: "Liquidity pool shares",
-          issuer: balance.liquidity_pool_id,
-          amount: balance.balance
-        };
-      }
-
-      return {
-        assetCode: balance.asset_code,
-        issuer: balance.asset_issuer,
-        amount: balance.balance
-      };
-    });
+      })
+    };
   } catch (error) {
     const responseStatus = getResponseStatus(error);
 
     if (responseStatus === 404) {
-      throw new Error(
-        network === "testnet"
-          ? "Account not found on Stellar testnet. Fund it with Friendbot first."
-          : "Account not found on Stellar mainnet."
-      );
+      return { found: false, reason: "not-found", network };
     }
 
     throw new Error("Could not load account balances from Horizon. Try again in a moment.");

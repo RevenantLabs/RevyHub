@@ -19,18 +19,25 @@ export default function BalanceViewerPage() {
     type: "info",
     text: "The moon wallet is waiting for a funded testnet account address."
   });
+  const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // TODO(issue #24): Replace button-only loading feedback with skeleton rows and preserved layout height.
     setLoading(true);
     setBalances([]);
+    setNotFound(false);
 
     try {
-      const nextBalances = await getAccountBalances(address, network);
-      setBalances(nextBalances);
-      setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
+      const result = await getAccountBalances(address, network);
+
+      if (!result.found) {
+        setNotFound(true);
+        setMessage({ type: "info", text: "The moon wallet could not find this account." });
+      } else {
+        setBalances(result.balances);
+        setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
+      }
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
@@ -55,11 +62,11 @@ export default function BalanceViewerPage() {
         </form>
       </Card>
       <StatusMessage type={message.type} title={message.type === "success" ? "Wallet opened" : "Moon wallet status"} description={message.text} />
-      {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
+      {notFound && network === "testnet" ? (
         <StatusMessage
           type="info"
-          title="Create the testnet account"
-          description="Testnet accounts only exist after they receive testnet XLM."
+          title="This account is a ghost on testnet"
+          description="Every testnet account needs to receive testnet XLM before it can appear on Horizon. This keeps the testnet safe from spam and helps you practice without real funds."
           action={
             <Link
               href="/tools/testnet-faucet"
@@ -68,6 +75,13 @@ export default function BalanceViewerPage() {
               Open Testnet Faucet Helper
             </Link>
           }
+        />
+      ) : null}
+      {notFound && network === "mainnet" ? (
+        <StatusMessage
+          type="info"
+          title="This account does not exist on mainnet"
+          description="Every account on Stellar mainnet must be created and funded before it can appear on Horizon."
         />
       ) : null}
       {balances.length > 0 ? <BalanceList balances={balances} /> : null}
