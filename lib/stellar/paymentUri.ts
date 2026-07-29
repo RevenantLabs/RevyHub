@@ -1,3 +1,5 @@
+import { Networks } from "@stellar/stellar-sdk";
+import type { StellarNetwork } from "@/lib/stellar/horizon";
 import { validatePublicKey } from "@/lib/stellar/validateAddress";
 
 export interface PaymentRequestInput {
@@ -7,7 +9,13 @@ export interface PaymentRequestInput {
   assetCode?: string;
   assetIssuer?: string;
   memo?: string;
+  network?: StellarNetwork;
 }
+
+const networkPassphrases: Record<StellarNetwork, string> = {
+  testnet: Networks.TESTNET,
+  mainnet: Networks.PUBLIC
+};
 
 export function validateAssetCode(value: string) {
   const assetCode = value.trim().toUpperCase();
@@ -86,12 +94,17 @@ export function createPaymentUri(input: PaymentRequestInput) {
 
     params.set("asset_code", assetCode);
     params.set("asset_issuer", input.assetIssuer?.trim() ?? "");
-  } else {
-    params.set("asset_code", "XLM");
   }
 
   if (input.memo?.trim()) {
     params.set("memo", input.memo.trim());
+    params.set("memo_type", "MEMO_TEXT");
+  }
+
+  const network = input.network ?? "testnet";
+
+  if (network !== "mainnet") {
+    params.set("network_passphrase", networkPassphrases[network]);
   }
 
   return `web+stellar:pay?${params.toString()}`;
