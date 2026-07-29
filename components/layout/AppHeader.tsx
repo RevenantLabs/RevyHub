@@ -34,7 +34,10 @@ export function AppHeader() {
             <span className="sr-only sm:not-sr-only">Network</span>
             <select
               value={network}
-              onChange={(event) => setNetwork(event.target.value === "mainnet" ? "mainnet" : "testnet")}
+              onChange={(event) => {
+                const nextNetwork = event.target.value === "mainnet" ? "mainnet" : "testnet";
+                setNetwork(nextNetwork);
+              }}
               className="bg-transparent text-sm font-extrabold uppercase text-[#172033] outline-none"
               aria-label="Select Stellar network"
             >
