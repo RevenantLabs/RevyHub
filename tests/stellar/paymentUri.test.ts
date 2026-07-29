@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Keypair, Networks } from "@stellar/stellar-sdk";
-import { createPaymentUri } from "../../lib/stellar/paymentUri";
+import { createPaymentUri, validatePaymentForm } from "../../lib/stellar/paymentUri";
 
 describe("createPaymentUri", () => {
   const destination = Keypair.random().publicKey();
@@ -101,7 +101,7 @@ describe("createPaymentUri", () => {
     );
   });
 
-  it("rejects memo text longer than Stellar memo text limits", () => {
+  it("rejects memo text longer than Stellar's 28-byte text-memo limit", () => {
     expect(() =>
       createPaymentUri({
         destination,
@@ -109,6 +109,44 @@ describe("createPaymentUri", () => {
         asset: "XLM",
         memo: "this memo is intentionally too long"
       })
-    ).toThrow(/28 characters or less/);
+    ).toThrow(/28 UTF-8 bytes or less/);
+
+    expect(() =>
+      createPaymentUri({
+        destination,
+        amount: "10",
+        asset: "XLM",
+        memo: "🚀".repeat(8)
+      })
+    ).toThrow(/28 UTF-8 bytes or less/);
+  });
+
+  it("returns field-level validation errors and accepts a 28-byte memo", () => {
+    const issuer = Keypair.random().publicKey();
+
+    expect(
+      validatePaymentForm({
+        destination,
+        amount: "1",
+        asset: "XLM",
+        memo: "a".repeat(28)
+      })
+    ).toEqual({});
+
+    expect(
+      validatePaymentForm({
+        destination: "invalid",
+        amount: "0",
+        asset: "ISSUED",
+        assetCode: "",
+        assetIssuer: issuer,
+        memo: "🚀".repeat(8)
+      })
+    ).toMatchObject({
+      destination: expect.any(String),
+      amount: expect.any(String),
+      assetCode: expect.any(String),
+      memo: expect.any(String)
+    });
   });
 });
