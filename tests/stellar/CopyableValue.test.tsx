@@ -21,7 +21,10 @@ describe("CopyableValue", () => {
 
     expect(screen.getByText("GABCDE...VWXYZ2")).toBeInTheDocument();
     expect(screen.getByTitle(FULL_VALUE)).toHaveAttribute("title", FULL_VALUE);
-    expect(screen.getByRole("button", { name: "Copy Public key" })).toBeInTheDocument();
+    expect(screen.getByText(`Public key: ${FULL_VALUE}`)).toHaveClass("sr-only");
+    expect(screen.getByRole("button", { name: "Copy Public key" })).toHaveAttribute(
+      "aria-describedby"
+    );
   });
 
   it("shows Copied feedback after a successful copy and resets after 1600ms", async () => {
