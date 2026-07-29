@@ -8,6 +8,7 @@ import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { BalanceList, type DisplayBalance } from "@/components/stellar/BalanceList";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { getAccountBalances } from "@/lib/stellar/account";
 
@@ -23,7 +24,6 @@ export default function BalanceViewerPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // TODO(issue #24): Replace button-only loading feedback with skeleton rows and preserved layout height.
     setLoading(true);
     setBalances([]);
 
@@ -70,7 +70,26 @@ export default function BalanceViewerPage() {
           }
         />
       ) : null}
-      {message.type === "success" ? <BalanceList balances={balances} /> : null}
+      {loading ? (
+        <div className="space-y-3" aria-label="Loading balances" role="status">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-white/80 bg-white/68 p-4 shadow-[4px_4px_0_rgba(142,220,244,0.22)]"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-3 w-44" />
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+            </div>
+          ))}
+          <span className="sr-only">Loading balance data from Horizon...</span>
+        </div>
+      ) : null}
+      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
     </div>
   );
 }
