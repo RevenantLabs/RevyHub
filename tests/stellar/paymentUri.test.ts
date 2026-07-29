@@ -89,6 +89,16 @@ describe("createPaymentUri", () => {
         asset: "XLM"
       })
     ).toThrow(/start with the letter G/);
+
+    const invalidChecksum =
+      destination.slice(0, -1) + (destination.endsWith("A") ? "B" : "A");
+    expect(
+      validatePaymentForm({
+        destination: invalidChecksum,
+        amount: "10",
+        asset: "XLM"
+      }).destination
+    ).toMatch(/checksum/);
   });
 
   it("rejects non-positive and non-numeric amounts", () => {
@@ -99,6 +109,22 @@ describe("createPaymentUri", () => {
     expect(() => createPaymentUri({ destination, amount: "ten", asset: "XLM" })).toThrow(
       /positive payment amount/
     );
+
+    for (const amount of ["-1", "Infinity", "NaN", ""]) {
+      expect(
+        validatePaymentForm({ destination, amount, asset: "XLM" }).amount
+      ).toMatch(/positive payment amount/);
+    }
+  });
+
+  it("preserves valid decimal amount boundaries", () => {
+    const uri = createPaymentUri({
+      destination,
+      amount: "0.0000001",
+      asset: "XLM"
+    });
+
+    expect(new URLSearchParams(uri.split("?")[1]).get("amount")).toBe("0.0000001");
   });
 
   it("rejects memo text longer than Stellar's 28-byte text-memo limit", () => {
@@ -119,6 +145,15 @@ describe("createPaymentUri", () => {
         memo: "🚀".repeat(8)
       })
     ).toThrow(/28 UTF-8 bytes or less/);
+
+    expect(
+      validatePaymentForm({
+        destination,
+        amount: "10",
+        asset: "XLM",
+        memo: "a".repeat(29)
+      }).memo
+    ).toMatch(/28 UTF-8 bytes or less/);
   });
 
   it("returns field-level validation errors and accepts a 28-byte memo", () => {
@@ -147,6 +182,35 @@ describe("createPaymentUri", () => {
       amount: expect.any(String),
       assetCode: expect.any(String),
       memo: expect.any(String)
+    });
+  });
+
+  it("accepts issued asset-code boundaries and rejects missing issuer data", () => {
+    const issuer = Keypair.random().publicKey();
+
+    for (const assetCode of ["A", "ABCDEFGHIJKL"]) {
+      const uri = createPaymentUri({
+        destination,
+        amount: "2",
+        asset: "ISSUED",
+        assetCode,
+        assetIssuer: issuer
+      });
+
+      expect(new URLSearchParams(uri.split("?")[1]).get("asset_code")).toBe(assetCode);
+    }
+
+    expect(
+      validatePaymentForm({
+        destination,
+        amount: "2",
+        asset: "ISSUED",
+        assetCode: "",
+        assetIssuer: ""
+      })
+    ).toMatchObject({
+      assetCode: expect.any(String),
+      assetIssuer: expect.any(String)
     });
   });
 });
