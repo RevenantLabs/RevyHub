@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { lookupTransaction } from "@/lib/stellar/transaction";
@@ -44,7 +45,6 @@ function TransactionLookupContent() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // TODO(issue #24): Add skeleton loading for transaction detail rows while Horizon responds.
     setLoading(true);
     setTransaction(null);
 
@@ -85,12 +85,22 @@ function TransactionLookupContent() {
         </form>
       </Card>
       <StatusMessage type={message.type} title="Detective report" description={message.text} />
-      {paramIgnored ? (
-        <StatusMessage
-          type="warning"
-          title="Link parameter ignored"
-          description="The transaction hash in this link was empty, too long, or contained unsupported characters, so it was not applied."
-        />
+      {loading ? (
+        <div className="space-y-3" aria-label="Loading transaction details" role="status">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-6 w-24 rounded-full" />
+          </div>
+          <dl className="divide-y divide-[#c7d6e8] rounded-lg border border-white/80 bg-white/68">
+            {["Network", "Hash", "Ledger", "Source", "Fee", "Created", "Ops"].map((label) => (
+              <div key={label} className="grid gap-1 px-4 py-3 sm:grid-cols-3">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-4 w-48 sm:col-span-2" />
+              </div>
+            ))}
+          </dl>
+          <span className="sr-only">Loading transaction data from Horizon...</span>
+        </div>
       ) : null}
       {transaction ? <TransactionDetails transaction={transaction} /> : null}
     </div>
