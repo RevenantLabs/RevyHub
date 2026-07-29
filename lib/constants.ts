@@ -2,6 +2,7 @@ import {
   BadgeCheck,
   CircleDollarSign,
   Droplets,
+  Gauge,
   Landmark,
   QrCode,
   ScanSearch,
@@ -76,6 +77,14 @@ export const tools = [
     href: "/tools/testnet-faucet",
     status: "Working" as ToolStatus,
     icon: Droplets
+  },
+  {
+    title: "Network Fee Statistics",
+    description: "Check Horizon fee-market stats in stroops and XLM.",
+    character: "A gauge gremlin reads the fee market on demand.",
+    href: "/tools/fee-stats",
+    status: "MVP" as ToolStatus,
+    icon: Gauge
   }
 ];
 

@@ -5,6 +5,7 @@ import type {
   PreconditionsSummary,
   TransactionEnvelopeSummary
 } from "@/lib/stellar/xdrInspector";
+import { formatStroopAmount } from "@/lib/stellar/stroops";
 
 const variantLabels: Record<EnvelopeVariant, string> = {
   "classic-v0": "Classic (v0)",
@@ -13,21 +14,13 @@ const variantLabels: Record<EnvelopeVariant, string> = {
 };
 
 export function formatFee(stroops: string) {
-  const normalized = stroops.trim();
+  const amount = formatStroopAmount(stroops);
 
-  if (!/^-?\d+$/.test(normalized)) {
+  if (!amount) {
     return `${stroops} stroops`;
   }
 
-  const negative = normalized.startsWith("-");
-  const unsigned = negative ? normalized.slice(1) : normalized;
-  const digits = unsigned.replace(/^0+(?=\d)/, "");
-  const padded = digits.padStart(8, "0");
-  const whole = padded.slice(0, -7);
-  const fraction = padded.slice(-7);
-  const sign = negative && digits !== "0" ? "-" : "";
-
-  return `${normalized} stroops (${sign}${whole}.${fraction} XLM)`;
+  return `${amount.stroops} stroops (${amount.xlm} XLM)`;
 }
 
 function formatTimePoint(value: string) {
