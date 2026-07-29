@@ -1,7 +1,7 @@
 "use client";
 
 import QRCode from "qrcode";
-import { useState, useCallback, useRef } from "react";
+import { useMemo, useState } from "react";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { QRPreview } from "@/components/stellar/QRPreview";
@@ -12,7 +12,7 @@ import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { copyText } from "@/lib/copy";
-import { createPaymentUri, parsePaymentUri } from "@/lib/stellar/paymentUri";
+import { createPaymentUri, validatePaymentForm } from "@/lib/stellar/paymentUri";
 
 export default function PaymentQrPage() {
   const { network } = useNetwork();
@@ -37,6 +37,13 @@ export default function PaymentQrPage() {
     setQr(nextQr);
   }, []);
 
+  const fieldErrors = useMemo(
+    () => validatePaymentForm({ destination, amount, asset, assetCode, assetIssuer, memo }),
+    [destination, amount, asset, assetCode, assetIssuer, memo]
+  );
+
+  const hasErrors = Object.keys(fieldErrors).length > 0;
+
   async function handleGenerate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -45,7 +52,7 @@ export default function PaymentQrPage() {
       const nextQr = await QRCode.toDataURL(nextUri, { margin: 1, width: 256 });
       setUri(nextUri);
       setQr(nextQr);
-      setMessage({ type: "success", text: "The rocket assistant finished the QR poster." });
+      setMessage({ type: "success", text: "The rocket assistant validated the details and finished the QR poster." });
     } catch (error) {
       setUri("");
       setQr("");
@@ -101,45 +108,64 @@ export default function PaymentQrPage() {
         description="The rocket assistant frames destination, amount, asset, and memo into a SEP-0007 formatted web+stellar:pay payment URI and QR poster."
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        {/* Left column: Form */}
-        <div className="space-y-6">
-          <Card>
-            <form onSubmit={handleGenerate} className="space-y-5">
+        <Card>
+          <form onSubmit={handleGenerate} className="space-y-5">
+            <div className="space-y-1">
               <AddressInput value={destination} onChange={setDestination} label="Destination address" />
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-[#29364d]">Amount</span>
-                <Input value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="10" inputMode="decimal" />
-              </label>
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-[#29364d]">Asset</span>
-                <select
-                  value={asset}
-                  onChange={(event) => setAsset(event.target.value as "XLM" | "ISSUED")}
-                  className="min-h-12 w-full rounded-md border border-[#c7d6e8] bg-white/78 px-4 text-sm text-[#172033] outline-none focus:border-[#47a8c7] focus:ring-2 focus:ring-[#8edcf4]/35"
-                >
-                  <option value="XLM">XLM</option>
-                  <option value="ISSUED">Issued asset</option>
-                </select>
-              </label>
-              {asset === "ISSUED" ? (
-                <div className="grid gap-5 md:grid-cols-2">
-                  <label className="block space-y-2">
-                    <span className="text-sm font-medium text-[#29364d]">Asset code</span>
-                    <Input value={assetCode} onChange={(event) => setAssetCode(event.target.value)} placeholder="USDC" />
-                  </label>
-                  <AddressInput value={assetIssuer} onChange={setAssetIssuer} label="Asset issuer" />
-                </div>
+              {fieldErrors.destination ? (
+                <p className="text-xs text-[#9f342d]">{fieldErrors.destination}</p>
               ) : null}
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-[#29364d]">Memo optional</span>
-                <Input value={memo} onChange={(event) => setMemo(event.target.value)} placeholder="Invoice 1001" />
-              </label>
-              <Button type="submit">Ask rocket to draw QR</Button>
-            </form>
-          </Card>
-        </div>
-
-        {/* Right column: Status, scanner, preview */}
+            </div>
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-[#29364d]">Amount</span>
+              <Input value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="10" inputMode="decimal" />
+              {fieldErrors.amount ? (
+                <p className="text-xs text-[#9f342d]">{fieldErrors.amount}</p>
+              ) : null}
+            </label>
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-[#29364d]">Asset</span>
+              <select
+                value={asset}
+                onChange={(event) => setAsset(event.target.value as "XLM" | "ISSUED")}
+                className="min-h-12 w-full rounded-md border border-[#c7d6e8] bg-white/78 px-4 text-sm text-[#172033] outline-none focus:border-[#47a8c7] focus:ring-2 focus:ring-[#8edcf4]/35"
+              >
+                <option value="XLM">XLM</option>
+                <option value="ISSUED">Issued asset</option>
+              </select>
+              {fieldErrors.asset ? (
+                <p className="text-xs text-[#9f342d]">{fieldErrors.asset}</p>
+              ) : null}
+            </label>
+            {asset === "ISSUED" ? (
+              <div className="grid gap-5 md:grid-cols-2">
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-[#29364d]">Asset code</span>
+                  <Input value={assetCode} onChange={(event) => setAssetCode(event.target.value)} placeholder="USDC" />
+                  {fieldErrors.assetCode ? (
+                    <p className="text-xs text-[#9f342d]">{fieldErrors.assetCode}</p>
+                  ) : null}
+                </label>
+                <div className="space-y-1">
+                  <AddressInput value={assetIssuer} onChange={setAssetIssuer} label="Asset issuer" />
+                  {fieldErrors.assetIssuer ? (
+                    <p className="text-xs text-[#9f342d]">{fieldErrors.assetIssuer}</p>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-[#29364d]">Memo optional</span>
+              <Input value={memo} onChange={(event) => setMemo(event.target.value)} placeholder="Invoice 1001" />
+              {fieldErrors.memo ? (
+                <p className="text-xs text-[#9f342d]">{fieldErrors.memo}</p>
+              ) : null}
+            </label>
+            <Button type="submit" disabled={hasErrors}>
+              Ask rocket to draw QR
+            </Button>
+          </form>
+        </Card>
         <div className="space-y-4">
           <StatusMessage type={message.type} title="Rocket desk status" description={message.text} />
 

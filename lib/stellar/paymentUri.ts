@@ -31,64 +31,54 @@ export function validateAssetCode(value: string) {
   return assetCode;
 }
 
-export function parsePaymentUri(uri: string): PaymentRequestInput {
-  const prefix = "web+stellar:pay?";
+export function validatePaymentForm(input: PaymentRequestInput): Record<string, string> {
+  const errors: Record<string, string> = {};
 
-  if (!uri.startsWith(prefix)) {
-    throw new Error("Payment URI must start with 'web+stellar:pay?'.");
-  }
-
-  const params = new URLSearchParams(uri.slice(prefix.length));
-  const destination = params.get("destination");
-  const amount = params.get("amount");
-  const assetCode = params.get("asset_code") ?? "XLM";
-  const memo = params.get("memo") ?? undefined;
-  const assetIssuer = params.get("asset_issuer") ?? undefined;
-
-  if (!destination) {
-    throw new Error("Payment URI missing required 'destination' parameter.");
-  }
-
-  if (!amount) {
-    throw new Error("Payment URI missing required 'amount' parameter.");
-  }
-
-  const asset = assetCode === "XLM" ? "XLM" : "ISSUED";
-
-  const input: PaymentRequestInput = {
-    destination,
-    amount,
-    asset,
-    assetCode: asset === "XLM" ? undefined : assetCode,
-    assetIssuer: asset === "ISSUED" ? (assetIssuer || undefined) : undefined,
-    memo: memo || undefined
-  };
-
-  // Reuse existing validation by attempting to create a URI from the parsed input
-  createPaymentUri(input);
-
-  return input;
-}
-
-export function createPaymentUri(input: PaymentRequestInput) {
-  // TODO(issue #11): Extract full form validation into a reusable schema with field-level errors.
-  // TODO(issue #17): Add validation tests for destination, amount precision, memo length, and custom asset cases.
-  const validation = validatePublicKey(input.destination);
-
-  if (!validation.valid) {
-    throw new Error(validation.message);
+  const destValidation = validatePublicKey(input.destination);
+  if (!destValidation.valid) {
+    errors.destination = destValidation.message;
   }
 
   const amount = Number(input.amount);
-
   if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error("Enter a positive payment amount.");
+    errors.amount = "Enter a positive payment amount.";
   }
 
-  if (input.memo && input.memo.length > 28) {
-    throw new Error("Memo text should be 28 characters or less for a simple Stellar text memo.");
+  if (input.asset !== "XLM" && input.asset !== "ISSUED") {
+    errors.asset = "Select an asset type.";
   }
 
+  if (input.asset === "ISSUED") {
+    const code = (input.assetCode ?? "").trim();
+    if (!code) {
+      errors.assetCode = "Enter an issued asset code.";
+    } else if (!/^[a-zA-Z0-9]{1,12}$/.test(code)) {
+      errors.assetCode = "Asset codes must be 1 to 12 letters or numbers.";
+    }
+
+    const issuerValidation = validatePublicKey(input.assetIssuer ?? "");
+    if (!issuerValidation.valid) {
+      errors.assetIssuer = `Asset issuer: ${issuerValidation.message}`;
+    }
+  }
+
+  if (input.memo && new TextEncoder().encode(input.memo).length > 28) {
+    errors.memo = "Memo text must be 28 UTF-8 bytes or less for a Stellar text memo.";
+  }
+
+  return errors;
+}
+
+export function createPaymentUri(input: PaymentRequestInput) {
+  const validation = validatePaymentForm(input);
+
+  const firstError = Object.values(validation)[0];
+  if (firstError) {
+    throw new Error(firstError);
+  }
+
+  // TODO(issue #12): Align this URI builder with a documented Stellar payment URI format and network/asset metadata.
+  // TODO(issue #17): Add validation tests for destination, amount precision, memo length, and custom asset cases.
   const params = new URLSearchParams({
     destination: input.destination.trim(),
     amount: input.amount.trim()
