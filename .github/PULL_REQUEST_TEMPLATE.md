@@ -1,10 +1,3 @@
----
-name: Pull request
-about: Describe your changes clearly and help reviewers understand what you've done
-title: ""
-labels: []
----
-
 ## Summary
 
 Describe what changed and why. Link the relevant issue or roadmap item.
