@@ -62,8 +62,8 @@ export function validatePaymentForm(input: PaymentRequestInput): Record<string, 
     }
   }
 
-  if (input.memo && input.memo.length > 28) {
-    errors.memo = "Memo text should be 28 characters or less for a simple Stellar text memo.";
+  if (input.memo && new TextEncoder().encode(input.memo).length > 28) {
+    errors.memo = "Memo text must be 28 UTF-8 bytes or less for a Stellar text memo.";
   }
 
   return errors;

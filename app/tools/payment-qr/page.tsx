@@ -60,7 +60,7 @@ export default function PaymentQrPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-       <CharacterPanel
+      <CharacterPanel
         tone="rocket"
         eyebrow="Rocket assistant"
         title="Payment QR Generator"
@@ -98,13 +98,13 @@ export default function PaymentQrPage() {
             </label>
             {asset === "ISSUED" ? (
               <div className="grid gap-5 md:grid-cols-2">
-                <div className="space-y-1">
+                <label className="block space-y-1">
                   <span className="text-sm font-medium text-[#29364d]">Asset code</span>
                   <Input value={assetCode} onChange={(event) => setAssetCode(event.target.value)} placeholder="USDC" />
                   {fieldErrors.assetCode ? (
                     <p className="text-xs text-[#9f342d]">{fieldErrors.assetCode}</p>
                   ) : null}
-                </div>
+                </label>
                 <div className="space-y-1">
                   <AddressInput value={assetIssuer} onChange={setAssetIssuer} label="Asset issuer" />
                   {fieldErrors.assetIssuer ? (
