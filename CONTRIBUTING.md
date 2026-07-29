@@ -71,10 +71,11 @@ Run these before opening a PR:
 ```bash
 npm run lint
 npm run test
+npm run test:e2e
 npm run build
 ```
 
-Unit tests are available for core Stellar utilities. E2E tests remain a roadmap item. If you add or change tests, keep the README and CI workflow aligned.
+Unit tests cover core Stellar utilities, and Playwright covers focused browser workflows with mocked network responses. If you add or change tests, keep the README and CI workflow aligned.
 
 ## Asking for Help
 

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "issues:create": "node scripts/create-github-issues.mjs",
     "issues:dry-run": "node scripts/create-github-issues.mjs --dry-run"
   },
@@ -22,6 +23,7 @@
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@types/node": "^20.17.14",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.2.17",
