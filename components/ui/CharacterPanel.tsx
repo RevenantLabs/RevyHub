@@ -1,7 +1,16 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type CharacterTone = "star" | "moon" | "rocket" | "faucet" | "detective" | "wallet" | "trust";
+type CharacterTone =
+  | "star"
+  | "moon"
+  | "rocket"
+  | "faucet"
+  | "detective"
+  | "wallet"
+  | "trust"
+  | "gauge"
+  | "lens";
 
 interface CharacterPanelProps {
   tone: CharacterTone;
@@ -18,7 +27,9 @@ const toneStyles: Record<CharacterTone, { face: string; hat: string; shadow: str
   faucet: { face: "bg-[#dff8ee]", hat: "bg-[#8edcf4]", shadow: "shadow-[7px_7px_0_#ffd66b]" },
   detective: { face: "bg-[#ffe4a8]", hat: "bg-[#5b4b8a]", shadow: "shadow-[7px_7px_0_#c7b9f3]" },
   wallet: { face: "bg-[#e9ddff]", hat: "bg-[#fff7b8]", shadow: "shadow-[7px_7px_0_#8edcf4]" },
-  trust: { face: "bg-[#ffd1c6]", hat: "bg-[#fff7b8]", shadow: "shadow-[7px_7px_0_#7bdcb5]" }
+  trust: { face: "bg-[#ffd1c6]", hat: "bg-[#fff7b8]", shadow: "shadow-[7px_7px_0_#7bdcb5]" },
+  gauge: { face: "bg-[#dff8ee]", hat: "bg-[#ffc3a8]", shadow: "shadow-[7px_7px_0_#8edcf4]" },
+  lens: { face: "bg-[#d9f4ff]", hat: "bg-[#ff8b7a]", shadow: "shadow-[7px_7px_0_#c7b9f3]" }
 };
 
 export function CharacterPanel({ tone, eyebrow, title, description, children }: CharacterPanelProps) {

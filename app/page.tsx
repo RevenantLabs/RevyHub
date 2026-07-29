@@ -74,19 +74,13 @@ export default function HomePage() {
 
           <div className="animate-fade-in-up opacity-0 [animation-delay:800ms] [animation-fill-mode:forwards] mt-8 grid gap-3 sm:grid-cols-3">
             {[
-              { value: "7", label: "tool modules", icon: Rocket },
-              { value: "Testnet", label: "default network", icon: Activity },
-              { value: "25", label: "issue ideas", icon: Sparkles }
-            ].map(({ value, label, icon: StatIcon }) => (
-              <div
-                key={label}
-                className="flex items-center gap-4 rounded-lg border border-white/80 bg-white/60 p-4 shadow-[4px_4px_0_rgba(199,185,243,0.22)] transition hover:shadow-[4px_4px_0_#ff8b7a]"
-              >
-                <StatIcon className="h-5 w-5 shrink-0 text-[#178fb5]" aria-hidden />
-                <div>
-                  <p className="text-2xl font-bold text-[#172033]">{value}</p>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#68758a]">{label}</p>
-                </div>
+              ["8", "tool modules"],
+              ["Testnet", "default network"],
+              ["25", "issue ideas"]
+            ].map(([value, label]) => (
+              <div key={label} className="rounded-lg border border-white/80 bg-white/60 p-4 shadow-[4px_4px_0_rgba(199,185,243,0.22)]">
+                <p className="text-2xl font-bold text-[#172033]">{value}</p>
+                <p className="text-sm text-[#68758a]">{label}</p>
               </div>
             ))}
           </div>
