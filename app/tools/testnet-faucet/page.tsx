@@ -5,6 +5,7 @@ import { AddressInput } from "@/components/stellar/AddressInput";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { fundTestnetAccount } from "@/lib/stellar/friendbot";
 
@@ -15,7 +16,6 @@ export default function TestnetFaucetPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // TODO(issue #24): Add a shared async loading pattern for faucet, balance, and transaction tools.
     setLoading(true);
 
     try {
@@ -44,7 +44,20 @@ export default function TestnetFaucetPage() {
           </Button>
         </form>
       </Card>
-      <StatusMessage type={message.type} title="Faucet helper status" description={message.text} />
+      {loading ? (
+        <div aria-label="Funding in progress" role="status">
+          <div className="flex gap-3 rounded-lg border border-white/80 bg-white/68 p-4 shadow-[4px_4px_0_rgba(142,220,244,0.22)]">
+            <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-3 w-64" />
+            </div>
+          </div>
+          <span className="sr-only">Faucet helper is processing your request...</span>
+        </div>
+      ) : (
+        <StatusMessage type={message.type} title="Faucet helper status" description={message.text} />
+      )}
       <StatusMessage type="warning" title="Testnet only" description="Friendbot resets and testnet XLM have no market value." />
     </div>
   );
