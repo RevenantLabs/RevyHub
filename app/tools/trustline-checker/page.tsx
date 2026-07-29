@@ -22,7 +22,11 @@ export default function TrustlineCheckerPage() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    return () => { abortRef.current?.abort(); };
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
   }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -35,12 +39,16 @@ export default function TrustlineCheckerPage() {
 
     try {
       const result = await checkTrustline(account, assetCode, issuer, network, controller.signal);
+      if (abortRef.current !== controller) return;
       setMessage({ type: result.exists ? "success" : "warning", text: result.message });
     } catch (error) {
-      if (isCancelledError(error)) return;
+      if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
-      setLoading(false);
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setLoading(false);
+      }
     }
   }
 
