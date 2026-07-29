@@ -11,10 +11,15 @@ const { loadAccountMock, getHorizonServerMock } = vi.hoisted(() => {
   return { loadAccountMock, getHorizonServerMock };
 });
 
-vi.mock("../../lib/stellar/horizon", () => ({
-  getHorizonServer: getHorizonServerMock,
-  STELLAR_NETWORK: "testnet"
-}));
+vi.mock("../../lib/stellar/horizon", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../lib/stellar/horizon")>();
+
+  return {
+    ...actual,
+    getHorizonServer: getHorizonServerMock,
+    STELLAR_NETWORK: "testnet"
+  };
+});
 
 describe("getAccountBalances", () => {
   const publicKey = Keypair.random().publicKey();
