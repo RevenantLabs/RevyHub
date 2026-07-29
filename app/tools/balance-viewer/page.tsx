@@ -6,14 +6,17 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { StatusMessage } from "@/components/ui/StatusMessage";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { BalanceList, type DisplayBalance } from "@/components/stellar/BalanceList";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { useNetworkTool } from "@/lib/useNetworkTool";
 import { getAccountBalances } from "@/lib/stellar/account";
 
 export default function BalanceViewerPage() {
   const { network } = useNetwork();
+  const { executeIfOnline } = useNetworkTool();
   const [address, setAddress] = useState("");
   const [balances, setBalances] = useState<DisplayBalance[]>([]);
   const [message, setMessage] = useState<{ type: "info" | "success" | "error"; text: string }>({
@@ -27,15 +30,20 @@ export default function BalanceViewerPage() {
     setLoading(true);
     setBalances([]);
 
-    try {
-      const nextBalances = await getAccountBalances(address, network);
-      setBalances(nextBalances);
+    const result = await executeIfOnline(
+      async () => {
+        return await getAccountBalances(address, network);
+      },
+      { offlineError: "You're offline. Connect to the internet to check balances from Horizon." }
+    );
+
+    if (result.error) {
+      setMessage({ type: "error", text: result.error });
+    } else if (result.data) {
+      setBalances(result.data);
       setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
-    } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   return (
@@ -46,6 +54,7 @@ export default function BalanceViewerPage() {
         title="Balance Viewer"
         description={`The moon wallet opens its pockets and shows native XLM plus issued assets from Stellar ${network} Horizon.`}
       />
+      <OfflineBanner />
       <Card>
         <form onSubmit={handleSubmit} className="space-y-5">
           <AddressInput value={address} onChange={setAddress} />

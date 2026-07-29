@@ -7,12 +7,15 @@ import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { useNetworkTool } from "@/lib/useNetworkTool";
 import { checkTrustline } from "@/lib/stellar/trustline";
 
 export default function TrustlineCheckerPage() {
   const { network } = useNetwork();
+  const { executeIfOnline } = useNetworkTool();
   const [account, setAccount] = useState("");
   const [assetCode, setAssetCode] = useState("");
   const [issuer, setIssuer] = useState("");
@@ -21,15 +24,22 @@ export default function TrustlineCheckerPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
+    setLoading(false);
 
-    try {
-      const result = await checkTrustline(account, assetCode, issuer, network);
-      setMessage({ type: result.exists ? "success" : "warning", text: result.message });
-    } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
-    } finally {
-      setLoading(false);
+    const result = await executeIfOnline(
+      async () => {
+        setLoading(true);
+        return await checkTrustline(account, assetCode, issuer, network);
+      },
+      { offlineError: "You're offline. Connect to the internet to check trustlines from Horizon." }
+    );
+
+    setLoading(false);
+
+    if (result.error) {
+      setMessage({ type: "error", text: result.error });
+    } else if (result.data) {
+      setMessage({ type: result.data.exists ? "success" : "warning", text: result.data.message });
     }
   }
 
@@ -41,6 +51,7 @@ export default function TrustlineCheckerPage() {
         title="Trustline Checker"
         description={`The inspector looks for a friendly handshake between an account and an issued asset on Stellar ${network}.`}
       />
+      <OfflineBanner />
       <Card>
         <form onSubmit={handleSubmit} className="space-y-5">
           <AddressInput value={account} onChange={setAccount} label="Account address" />

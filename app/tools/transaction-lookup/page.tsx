@@ -7,12 +7,15 @@ import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { StatusMessage } from "@/components/ui/StatusMessage";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { useNetworkTool } from "@/lib/useNetworkTool";
 import { lookupTransaction } from "@/lib/stellar/transaction";
 
 export default function TransactionLookupPage() {
   const { network } = useNetwork();
+  const { executeIfOnline } = useNetworkTool();
   const [hash, setHash] = useState("");
   const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,15 +26,20 @@ export default function TransactionLookupPage() {
     setLoading(true);
     setTransaction(null);
 
-    try {
-      const result = await lookupTransaction(hash, network);
-      setTransaction(result);
+    const result = await executeIfOnline(
+      async () => {
+        return await lookupTransaction(hash, network);
+      },
+      { offlineError: "You're offline. Connect to the internet to look up transactions from Horizon." }
+    );
+
+    if (result.error) {
+      setMessage({ type: "error", text: result.error });
+    } else if (result.data) {
+      setTransaction(result.data);
       setMessage({ type: "success", text: `The detective comet found the transaction in ${network} Horizon.` });
-    } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   return (
@@ -42,6 +50,7 @@ export default function TransactionLookupPage() {
         title="Transaction Lookup"
         description={`The detective comet follows a transaction hash through Stellar ${network} Horizon and brings back the important clues.`}
       />
+      <OfflineBanner />
       <Card>
         <form onSubmit={handleSubmit} className="space-y-5">
           <label className="block space-y-2">
