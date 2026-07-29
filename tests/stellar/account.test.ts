@@ -111,7 +111,7 @@ describe("getAccountBalances", () => {
 
   it("rejects invalid public keys before calling Horizon", async () => {
     await expect(getAccountBalances("not-a-stellar-address", "testnet")).rejects.toThrow(
-      /Stellar public addresses usually start with G/
+      /Stellar public addresses start with the letter G/
     );
 
     expect(getHorizonServerMock).not.toHaveBeenCalled();
