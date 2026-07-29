@@ -4,6 +4,7 @@ import {
   Droplets,
   Landmark,
   QrCode,
+  Scan,
   Search,
   ShieldCheck,
   WalletCards
@@ -67,6 +68,14 @@ export const tools = [
     href: "/tools/testnet-faucet",
     status: "Working" as ToolStatus,
     icon: Droplets
+  },
+  {
+    title: "Contract Inspector",
+    description: "Validate Soroban contract IDs and generate explorer links.",
+    character: "A curious inspector decodes contract ID badges and checks their StrKey credentials.",
+    href: "/tools/contract-inspector",
+    status: "MVP" as ToolStatus,
+    icon: Scan
   }
 ];
 
