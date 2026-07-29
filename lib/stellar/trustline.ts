@@ -7,13 +7,28 @@ export interface TrustlineCheck {
   message: string;
 }
 
+export interface TrustlinePreset {
+  assetCode: string;
+  issuerAddress: string;
+}
+
+export const USDC_TRUSTLINE_PRESETS: Record<StellarNetwork, TrustlinePreset> = {
+  testnet: {
+    assetCode: "USDC",
+    issuerAddress: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+  },
+  mainnet: {
+    assetCode: "USDC",
+    issuerAddress: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
+  }
+};
+
 export async function checkTrustline(
   accountAddress: string,
   assetCode: string,
   issuerAddress: string,
   network: StellarNetwork = STELLAR_NETWORK
 ): Promise<TrustlineCheck> {
-  // TODO(issue #5): Add network-aware USDC presets and validate issuer/code pairs before Horizon lookup.
   const accountValidation = validatePublicKey(accountAddress);
   const issuerValidation = validatePublicKey(issuerAddress);
 
@@ -59,5 +74,3 @@ export async function checkTrustline(
     throw new Error("Could not check trustline through Horizon. Try again shortly.");
   }
 }
-
-// TODO(issue #5): Add USDC trustline preset for Stellar mainnet and testnet.

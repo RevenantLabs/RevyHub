@@ -30,6 +30,17 @@ The Trustline Checker asks for:
 - Asset code
 - Issuer address
 
+### USDC Preset
+
+The Trustline Checker includes a network-aware **USDC by Circle** preset. Selecting it fills the asset code and the official issuer for the network selected in the app header:
+
+- Testnet: `USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`
+- Mainnet: `USDC:GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN`
+
+The issuer addresses are published in [Stellar's supported USDC asset table](https://developers.stellar.org/docs/build/agentic-payments/x402#supported-assets).
+
+These are separate Stellar assets and their trustlines are not interchangeable. Testnet USDC is only for development and has no real-world value; a testnet trustline does not mean the same account has a mainnet USDC trustline. Always confirm the selected network before checking an account. Use **Custom issued asset** when checking a different code or issuer.
+
 ## Transactions
 
 Transactions are identified by 64-character hexadecimal hashes. The Transaction Lookup tool validates the hash shape before querying Horizon and links to Stellar Expert for deeper inspection.

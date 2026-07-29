@@ -15,7 +15,7 @@ This project is being prepared as an open-source Stellar ecosystem project for G
 - Validate Stellar public addresses with Stellar SDK StrKey checks
 - Switch between Stellar testnet and mainnet for Horizon-backed tools
 - Inspect Stellar wallet balances through Horizon
-- Check trustlines for issued Stellar assets
+- Check trustlines for issued Stellar assets with network-aware Circle USDC presets
 - Generate demo payment QR codes and copyable payment URIs
 - Look up transaction hashes on the selected network
 - Detect Freighter wallet public keys and wallet network mismatch states
