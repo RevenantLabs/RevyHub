@@ -21,6 +21,19 @@ This project is being prepared as an open-source Stellar ecosystem project for G
 - Detect Freighter wallet public keys and wallet network mismatch states
 - Fund testnet accounts through Friendbot
 
+## Payment URI Format
+
+The Payment QR Generator builds [SEP-0007](https://stellar.org/protocol/sep-7) `web+stellar:pay` operation URIs so generated QR codes follow the standard wallets already parse:
+
+```
+web+stellar:pay?destination=GDEST...&amount=10.5&memo=Invoice+1001&memo_type=MEMO_TEXT&network_passphrase=Test+SDF+Network+%3B+September+2015
+```
+
+- `destination` and `amount` are always included.
+- `asset_code` and `asset_issuer` are included only for issued assets; native XLM payments omit both, per SEP-0007 (absence of these fields means XLM).
+- `memo` is included with `memo_type=MEMO_TEXT` when a memo is entered.
+- `network_passphrase` is included for testnet requests and omitted for mainnet, since the public network is the SEP-0007 default.
+
 ## Tech Stack
 
 - Next.js App Router
