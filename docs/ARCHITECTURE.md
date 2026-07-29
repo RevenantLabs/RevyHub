@@ -16,7 +16,7 @@ RevyHubX is a Next.js App Router application that keeps user-facing tool pages, 
 - Address validation uses Stellar SDK `StrKey` checks and never asks for secret keys.
 - Balance viewer loads account balances through Horizon using the selected network.
 - Trustline checker validates account and issuer addresses before loading balances on the selected network.
-- Payment QR generator validates destination, amount, memo length, and issued asset metadata before generating a URI.
+- Payment QR generator uses the reusable `validatePaymentForm` function in `lib/stellar/paymentUri.ts` to validate destination, amount, memo length, and issued asset metadata before generating a URI.
 - Transaction lookup validates hash shape before querying Horizon on the selected network.
 - Testnet faucet calls Friendbot and remains explicitly testnet-only.
 - Freighter Connect is a public-key connection example that displays extension availability, permission state, wallet network, and network mismatch warnings. It does not request signatures or secrets.

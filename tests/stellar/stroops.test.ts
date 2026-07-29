@@ -10,6 +10,13 @@ describe("formatStroopAmount", () => {
     expect(formatStroopAmount(100)).toEqual({ stroops: "100", xlm: "0.0000100" });
   });
 
+  it("preserves values larger than JavaScript's safe integer limit", () => {
+    expect(formatStroopAmount("9223372036854775807")).toEqual({
+      stroops: "9223372036854775807",
+      xlm: "922337203685.4775807"
+    });
+  });
+
   it("returns null for missing values instead of NaN or zero", () => {
     expect(formatStroopAmount(null)).toBeNull();
     expect(formatStroopAmount(undefined)).toBeNull();
@@ -18,5 +25,8 @@ describe("formatStroopAmount", () => {
   it("returns null for non-numeric values instead of NaN", () => {
     expect(formatStroopAmount("not-a-number")).toBeNull();
     expect(formatStroopAmount("")).toBeNull();
+    expect(formatStroopAmount("1.5")).toBeNull();
+    expect(formatStroopAmount(-1)).toBeNull();
+    expect(formatStroopAmount(Number.MAX_SAFE_INTEGER + 1)).toBeNull();
   });
 });

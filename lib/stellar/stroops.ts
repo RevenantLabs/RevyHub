@@ -12,14 +12,25 @@ export function formatStroopAmount(value: string | number | null | undefined): S
     return null;
   }
 
-  const stroops = typeof value === "number" ? value : Number(value);
+  let normalized: string;
 
-  if (!Number.isFinite(stroops)) {
-    return null;
+  if (typeof value === "number") {
+    if (!Number.isSafeInteger(value) || value < 0) {
+      return null;
+    }
+    normalized = String(value);
+  } else {
+    const trimmed = value.trim();
+    if (!/^\d+$/.test(trimmed)) {
+      return null;
+    }
+    normalized = trimmed.replace(/^0+(?=\d)/, "");
   }
 
+  const padded = normalized.padStart(8, "0");
+
   return {
-    stroops: String(stroops),
-    xlm: (stroops / 10_000_000).toFixed(7)
+    stroops: normalized,
+    xlm: `${padded.slice(0, -7)}.${padded.slice(-7)}`
   };
 }

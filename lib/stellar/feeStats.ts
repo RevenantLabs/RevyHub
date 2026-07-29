@@ -19,10 +19,10 @@ export interface FeeStatsSummary {
   fetchedAt: string;
 }
 
-function formatCapacityUsage(value: string | undefined): string | null {
+export function formatCapacityUsage(value: string | undefined): string | null {
   const usage = Number(value);
 
-  if (!Number.isFinite(usage)) {
+  if (!Number.isFinite(usage) || usage < 0 || usage > 1) {
     return null;
   }
 

@@ -5,6 +5,7 @@ import {
   Gauge,
   Landmark,
   QrCode,
+  ScanSearch,
   Search,
   ShieldCheck,
   WalletCards
@@ -52,6 +53,14 @@ export const tools = [
     href: "/tools/transaction-lookup",
     status: "MVP" as ToolStatus,
     icon: Search
+  },
+  {
+    title: "XDR Inspector",
+    description: "Decode transaction envelope XDR locally, without any network calls.",
+    character: "A lens-eyed archivist unrolls transaction scrolls without leaving the library.",
+    href: "/tools/xdr-inspector",
+    status: "Working" as ToolStatus,
+    icon: ScanSearch
   },
   {
     title: "Freighter Connect",

@@ -13,7 +13,7 @@ export default function FeeStatsPage() {
   const { network } = useNetwork();
   const [stats, setStats] = useState<FeeStatsSummary | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ network: typeof network; text: string } | null>(null);
   const loadingRef = useRef(false);
 
   const loadFeeStats = useCallback(async () => {
@@ -29,7 +29,10 @@ export default function FeeStatsPage() {
       setStats(result);
       setError(null);
     } catch (fetchError) {
-      setError(fetchError instanceof Error ? fetchError.message : "Unexpected error.");
+      setError({
+        network,
+        text: fetchError instanceof Error ? fetchError.message : "Unexpected error."
+      });
     } finally {
       loadingRef.current = false;
       setLoading(false);
@@ -38,8 +41,9 @@ export default function FeeStatsPage() {
 
   // Stats fetched for a previously selected network are stale once the user switches networks.
   const displayedStats = stats && stats.network === network ? stats : null;
-  const message = error
-    ? { type: "error" as const, text: error }
+  const displayedError = error?.network === network ? error.text : null;
+  const message = displayedError
+    ? { type: "error" as const, text: displayedError }
     : displayedStats
       ? { type: "success" as const, text: `The gauge gremlin read fresh fee stats from ${network} Horizon.` }
       : { type: "info" as const, text: `The gauge gremlin waits for a click before checking ${network} network fees.` };
