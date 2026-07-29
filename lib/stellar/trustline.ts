@@ -1,4 +1,11 @@
-import { getHorizonServer, STELLAR_NETWORK, type StellarNetwork } from "@/lib/stellar/horizon";
+import {
+  getHorizonServer,
+  isCancelledError,
+  isTimeoutError,
+  runHorizonRequest,
+  STELLAR_NETWORK,
+  type StellarNetwork
+} from "@/lib/stellar/horizon";
 import { validatePublicKey } from "@/lib/stellar/validateAddress";
 import { getResponseStatus } from "@/lib/stellar/account";
 
@@ -69,7 +76,8 @@ export async function checkTrustline(
   accountAddress: string,
   assetCode: string,
   issuerAddress: string,
-  network: StellarNetwork = STELLAR_NETWORK
+  network: StellarNetwork = STELLAR_NETWORK,
+  signal?: AbortSignal
 ): Promise<TrustlineCheck> {
   const accountValidation = validatePublicKey(accountAddress);
   const issuerValidation = validatePublicKey(issuerAddress);
@@ -87,7 +95,10 @@ export async function checkTrustline(
   }
 
   try {
-    const account = await getHorizonServer(network).loadAccount(accountAddress.trim());
+    const account = await runHorizonRequest(
+      getHorizonServer(network).loadAccount(accountAddress.trim()),
+      { signal }
+    );
     const normalizedCode = assetCode.trim().toUpperCase();
     const normalizedIssuer = issuerAddress.trim();
 
@@ -136,6 +147,14 @@ export async function checkTrustline(
       lastModifiedLedger: trustline.last_modified_ledger
     };
   } catch (error) {
+    if (isCancelledError(error)) {
+      throw error;
+    }
+
+    if (isTimeoutError(error)) {
+      throw new Error("The Horizon trustline request timed out. Try again.");
+    }
+
     if (getResponseStatus(error) === 404) {
       throw new Error(
         network === "testnet"
