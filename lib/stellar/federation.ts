@@ -25,7 +25,7 @@ const NAME_PATTERN = /^[a-zA-Z0-9._-]+$/;
 const DOMAIN_PATTERN =
   /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
 const FEDERATION_SERVER_REGEX =
-  /^\s*FEDERATION_SERVER\s*=\s*(?:"([^"]+)"|([^"\s#]+))/m;
+  /^\s*FEDERATION_SERVER\s*=\s*(?:"([^"]+)"|'([^']+)'|([^"'\s#]+))/m;
 
 const NAME_MAX_LENGTH = 64;
 const DEFAULT_TIMEOUT_MS = 8000;
@@ -325,7 +325,7 @@ async function discoverFederationServer(
     );
   }
 
-  const federationServer = (matched[1] ?? matched[2] ?? "").trim();
+  const federationServer = (matched[1] ?? matched[2] ?? matched[3] ?? "").trim();
 
   if (!federationServer) {
     return stepError(
@@ -334,7 +334,18 @@ async function discoverFederationServer(
     );
   }
 
-  if (!federationServer.startsWith("https://")) {
+  let parsedFederationServer: URL;
+
+  try {
+    parsedFederationServer = new URL(federationServer);
+  } catch {
+    return stepError(
+      "tomlMalformed",
+      "The FEDERATION_SERVER value in stellar.toml is not a valid URL."
+    );
+  }
+
+  if (parsedFederationServer.protocol !== "https:") {
     return stepError(
       "httpsRequired",
       "The federation server URL must use HTTPS."
@@ -434,10 +445,14 @@ async function queryFederationServer(
     );
   }
 
-  if (memoType === "text" && memo !== undefined && memo.length > 28) {
+  if (
+    memoType === "text" &&
+    memo !== undefined &&
+    new TextEncoder().encode(memo).length > 28
+  ) {
     return stepError(
       "invalidMemo",
-      "Text memos must be 28 characters or less to fit on a Stellar transaction."
+      "Text memos must be 28 UTF-8 bytes or less to fit on a Stellar transaction."
     );
   }
 

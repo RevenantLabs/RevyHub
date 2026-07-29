@@ -3,8 +3,10 @@ import {
   BadgeCheck,
   CircleDollarSign,
   Droplets,
+  Gauge,
   Landmark,
   QrCode,
+  ScanSearch,
   Search,
   ShieldCheck,
   WalletCards
@@ -54,6 +56,14 @@ export const tools = [
     icon: Search
   },
   {
+    title: "XDR Inspector",
+    description: "Decode transaction envelope XDR locally, without any network calls.",
+    character: "A lens-eyed archivist unrolls transaction scrolls without leaving the library.",
+    href: "/tools/xdr-inspector",
+    status: "Working" as ToolStatus,
+    icon: ScanSearch
+  },
+  {
     title: "Freighter Connect",
     description: "Try a browser wallet connection example.",
     character: "A friendly wallet mascot waves when Freighter is nearby.",
@@ -76,6 +86,14 @@ export const tools = [
     href: "/tools/federation-resolver",
     status: "Working" as ToolStatus,
     icon: AtSign
+  },
+  {
+    title: "Network Fee Statistics",
+    description: "Check Horizon fee-market stats in stroops and XLM.",
+    character: "A gauge gremlin reads the fee market on demand.",
+    href: "/tools/fee-stats",
+    status: "MVP" as ToolStatus,
+    icon: Gauge
   }
 ];
 

@@ -186,6 +186,22 @@ OTHER_KEY = "ignored"
     expect(result.kind).toBe("success");
   });
 
+  it("parses TOML literal-string FEDERATION_SERVER values", async () => {
+    const fetchImpl = makeFetchSequence([
+      {
+        match: (url) => url === tomlUrl("stellar.org"),
+        body: `FEDERATION_SERVER='https://federation.stellar.org'\n`
+      },
+      {
+        match: (url) => url.includes("federation.stellar.org"),
+        body: JSON.stringify({ account_id: sampleAccountId })
+      }
+    ]);
+
+    const result = await resolveFederation("alice*stellar.org", { fetchImpl });
+    expect(result.kind).toBe("success");
+  });
+
   it("parses FEDERATION_SERVER values that include inline comments", async () => {
     const fetchImpl = makeFetchSequence([
       {
@@ -281,6 +297,19 @@ describe("resolveFederation – failure paths", () => {
     expect(result.code).toBe("httpsRequired");
   });
 
+  it("returns 'tomlMalformed' when FEDERATION_SERVER is not a valid URL", async () => {
+    const fetchImpl = makeFetchSequence([
+      {
+        match: () => true,
+        body: `FEDERATION_SERVER="https://"\n`
+      }
+    ]);
+
+    const result = await resolveFederation("alice*stellar.org", { fetchImpl });
+    if (result.kind !== "error") throw new Error("expected error");
+    expect(result.code).toBe("tomlMalformed");
+  });
+
   it("returns 'federationNotFound' when the server 404s", async () => {
     const fetchImpl = makeFetchSequence([
       {
@@ -366,7 +395,7 @@ describe("resolveFederation – failure paths", () => {
     expect(result.code).toBe("invalidMemo");
   });
 
-  it("returns 'invalidMemo' when text memo exceeds Stellar's 28-char limit", async () => {
+  it("returns 'invalidMemo' when text memo exceeds Stellar's 28-byte limit", async () => {
     const fetchImpl = makeFetchSequence([
       {
         match: (url) => url === tomlUrl("stellar.org"),
@@ -381,6 +410,27 @@ describe("resolveFederation – failure paths", () => {
         })
       }
     ]);
+    const result = await resolveFederation("alice*stellar.org", { fetchImpl });
+    if (result.kind !== "error") throw new Error("expected error");
+    expect(result.code).toBe("invalidMemo");
+  });
+
+  it("counts multibyte text memos using UTF-8 bytes", async () => {
+    const fetchImpl = makeFetchSequence([
+      {
+        match: (url) => url === tomlUrl("stellar.org"),
+        body: `FEDERATION_SERVER="https://federation.stellar.org"\n`
+      },
+      {
+        match: (url) => url.includes("federation.stellar.org"),
+        body: JSON.stringify({
+          account_id: sampleAccountId,
+          memo_type: "text",
+          memo: "🚀".repeat(8)
+        })
+      }
+    ]);
+
     const result = await resolveFederation("alice*stellar.org", { fetchImpl });
     if (result.kind !== "error") throw new Error("expected error");
     expect(result.code).toBe("invalidMemo");
