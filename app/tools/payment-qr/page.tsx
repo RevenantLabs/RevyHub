@@ -3,6 +3,7 @@
 import QRCode from "qrcode";
 import { useState } from "react";
 import { AddressInput } from "@/components/stellar/AddressInput";
+import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { QRPreview } from "@/components/stellar/QRPreview";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -14,7 +15,7 @@ import { useRedaction } from "@/components/stellar/RedactionProvider";
 import { createPaymentUri } from "@/lib/stellar/paymentUri";
 
 export default function PaymentQrPage() {
-  const { redacted } = useRedaction();
+  const { network } = useNetwork();
   const [destination, setDestination] = useState("");
   const [amount, setAmount] = useState("");
   const [asset, setAsset] = useState<"XLM" | "ISSUED">("XLM");
@@ -29,7 +30,7 @@ export default function PaymentQrPage() {
     event.preventDefault();
 
     try {
-      const nextUri = createPaymentUri({ destination, amount, asset, assetCode, assetIssuer, memo });
+      const nextUri = createPaymentUri({ destination, amount, asset, assetCode, assetIssuer, memo, network });
       const nextQr = await QRCode.toDataURL(nextUri, { margin: 1, width: 256 });
       setUri(nextUri);
       setQr(nextQr);
@@ -47,7 +48,7 @@ export default function PaymentQrPage() {
         tone="rocket"
         eyebrow="Rocket assistant"
         title="Payment QR Generator"
-        description="The rocket assistant frames destination, amount, asset, and memo into a readable demo payment poster."
+        description="The rocket assistant frames destination, amount, asset, and memo into a SEP-0007 formatted web+stellar:pay payment URI and QR poster."
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <Card>
@@ -99,9 +100,11 @@ export default function PaymentQrPage() {
           ) : null}
           {uri ? (
             <Card className="space-y-3">
-              <p className="break-all text-xs text-[#4e5c73]">
-                <CopyableValue label="payment URI" value={uri} visible={8} />
-              </p>
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#7a8ba6]">SEP-0007 payment URI</span>
+              <p className="break-all text-xs text-[#4e5c73]">{uri}</p>
+              <Button type="button" variant="secondary" onClick={copyUri}>
+                Copy URI
+              </Button>
             </Card>
           ) : null}
           <StatusMessage type="warning" title="Rocket safety note" description="This tool does not submit payments. Users must verify destination, amount, asset, and memo in their wallet." />
