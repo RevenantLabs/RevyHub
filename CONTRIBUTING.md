@@ -38,11 +38,27 @@ Prefer clear conventional-style commits:
 
 ## Pick an Issue
 
-Pick an issue from [docs/ISSUES.md](./docs/ISSUES.md) that matches your experience level, then comment on it before starting larger work. Bug report, feature request, and documentation templates are available under `.github/ISSUE_TEMPLATE/`.
+Start with [docs/ISSUES.md](./docs/ISSUES.md). Choose an issue with a difficulty level that matches your experience, then open a GitHub issue or comment on an existing one before starting larger work.
+
+This project includes [GitHub issue templates](.github/ISSUE_TEMPLATE/) to help structure contributions:
+- [Bug report](.github/ISSUE_TEMPLATE/bug_report.md) — for reporting broken workflows or UI states
+- [Feature request](.github/ISSUE_TEMPLATE/feature_request.md) — for proposing new Stellar tools or improvements
+- [Documentation](.github/ISSUE_TEMPLATE/documentation.md) — for suggesting doc or guide updates
+- [Pull request](.github/PULL_REQUEST_TEMPLATE.md) — for submitting your changes
 
 ## Pull Requests
 
-Use the pull request template at `.github/PULL_REQUEST_TEMPLATE.md` when opening a PR.
+<!-- TODO(issue #19): Add a pull request template and document the required PR checklist here. -->
+
+PRs should include:
+
+- What changed
+- Why it changed
+- How you tested it
+- Screenshots for UI changes
+- Any follow-up TODOs
+
+Use the [bug report](.github/ISSUE_TEMPLATE/bug_report.md), [feature request](.github/ISSUE_TEMPLATE/feature_request.md), or [documentation](.github/ISSUE_TEMPLATE/documentation.md) template when opening issues, and the [pull request template](.github/PULL_REQUEST_TEMPLATE.md) when submitting changes.
 
 ## Code Quality
 
