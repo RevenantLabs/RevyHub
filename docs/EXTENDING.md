@@ -31,16 +31,18 @@ export function checkMemoLength(memo: string) {
     return { ok: false, message: "Enter a memo to check its length." };
   }
 
-  if (value.length > 28) {
+  const byteLength = new TextEncoder().encode(value).length;
+
+  if (byteLength > 28) {
     return {
       ok: false,
-      message: `Memo is ${value.length} characters. Stellar text memos must be 28 characters or fewer.`
+      message: `Memo is ${byteLength} bytes. Stellar text memos must be 28 bytes or fewer.`
     };
   }
 
   return {
     ok: true,
-    message: `Memo looks valid for a text memo (${value.length}/28 characters).`
+    message: `Memo looks valid for a text memo (${byteLength}/28 bytes).`
   };
 }
 ```
@@ -60,8 +62,13 @@ describe("checkMemoLength", () => {
     expect(checkMemoLength("").ok).toBe(false);
   });
 
-  it("accepts memos within the text memo limit", () => {
+  it("accepts memos within the text memo byte limit", () => {
     expect(checkMemoLength("Invoice 1001").ok).toBe(true);
+  });
+
+  it("rejects multibyte memos that exceed 28 UTF-8 bytes", () => {
+    // 8 emoji × 4 UTF-8 bytes = 32 bytes, even though value.length is 8
+    expect(checkMemoLength("🎉".repeat(8)).ok).toBe(false);
   });
 });
 ```
@@ -89,8 +96,8 @@ Add an entry to `tools` in `lib/constants.ts`:
 ```ts
 {
   title: "Memo Length Checker",
-  description: "Check whether a text memo fits Stellar's 28-character limit.",
-  character: "A tiny clipboard counts memo characters.",
+  description: "Check whether a text memo fits Stellar's 28-byte limit.",
+  character: "A tiny clipboard counts memo UTF-8 bytes.",
   href: "/tools/memo-length",
   status: "MVP",
   icon: Search // or another lucide-react icon already imported
