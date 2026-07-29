@@ -2,11 +2,11 @@ import {
   getHorizonServer,
   isCancelledError,
   isTimeoutError,
+  mapHorizonError,
   runHorizonRequest,
   STELLAR_NETWORK,
   type StellarNetwork
 } from "@/lib/stellar/horizon";
-import { getResponseStatus } from "@/lib/stellar/account";
 import type { TransactionSummary } from "@/components/stellar/TransactionDetails";
 
 export function isLikelyTransactionHash(value: string) {
@@ -35,15 +35,14 @@ export async function lookupTransaction(
     );
 
     return {
-      hash: tx.hash,
-      ledger: tx.ledger_attr,
-      sourceAccount: tx.source_account,
-      feeCharged: String(tx.fee_charged),
-      createdAt: tx.created_at,
-      successful: tx.successful,
+      hash: transaction.hash,
+      ledger: transaction.ledger_attr,
+      sourceAccount: transaction.source_account,
+      feeCharged: String(transaction.fee_charged),
+      createdAt: transaction.created_at,
+      successful: transaction.successful,
       network,
-      operationCount: tx.operation_count,
-      memo
+      operationCount: transaction.operation_count
     };
   } catch (error) {
     if (isCancelledError(error)) {
@@ -54,10 +53,12 @@ export async function lookupTransaction(
       throw new Error("The Horizon transaction request timed out. Try again.");
     }
 
-    if (getResponseStatus(error) === 404) {
+    const mapped = mapHorizonError(error, "transaction");
+
+    if (mapped.code === "not_found") {
       throw new Error(`Transaction not found on Stellar ${network}.`);
     }
 
-    throw new Error("Could not load transaction from Horizon. Try again in a moment.");
+    throw mapped;
   }
 }

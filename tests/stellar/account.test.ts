@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Keypair } from "@stellar/stellar-sdk";
-import { getAccountBalances, getResponseStatus } from "../../lib/stellar/account";
+import { getAccountBalances } from "../../lib/stellar/account";
+import { HorizonError } from "../../lib/stellar/horizon";
 
 const { loadAccountMock, getHorizonServerMock } = vi.hoisted(() => {
   const loadAccountMock = vi.fn();
@@ -13,7 +14,6 @@ const { loadAccountMock, getHorizonServerMock } = vi.hoisted(() => {
 
 vi.mock("../../lib/stellar/horizon", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/stellar/horizon")>();
-
   return {
     ...actual,
     getHorizonServer: getHorizonServerMock,
@@ -98,20 +98,16 @@ describe("getAccountBalances", () => {
     );
   });
 
-  it("throws a generic message for other Horizon failures", async () => {
+  it("throws a HorizonError for server errors", async () => {
     loadAccountMock.mockRejectedValue({ response: { status: 503 } });
 
-    await expect(getAccountBalances(publicKey, "testnet")).rejects.toThrow(
-      "Could not load account balances from Horizon. Try again in a moment."
-    );
+    await expect(getAccountBalances(publicKey, "testnet")).rejects.toBeInstanceOf(HorizonError);
   });
 
-  it("throws a generic message when Horizon errors lack a response status", async () => {
+  it("throws a HorizonError when Horizon errors lack a response status", async () => {
     loadAccountMock.mockRejectedValue(new Error("network unavailable"));
 
-    await expect(getAccountBalances(publicKey, "testnet")).rejects.toThrow(
-      "Could not load account balances from Horizon. Try again in a moment."
-    );
+    await expect(getAccountBalances(publicKey, "testnet")).rejects.toBeInstanceOf(HorizonError);
   });
 
   it("rejects invalid public keys before calling Horizon", async () => {
@@ -120,16 +116,5 @@ describe("getAccountBalances", () => {
     );
 
     expect(getHorizonServerMock).not.toHaveBeenCalled();
-  });
-});
-
-describe("getResponseStatus", () => {
-  it("returns the HTTP status from Horizon-style errors", () => {
-    expect(getResponseStatus({ response: { status: 404 } })).toBe(404);
-  });
-
-  it("returns undefined for non-response errors", () => {
-    expect(getResponseStatus(new Error("timeout"))).toBeUndefined();
-    expect(getResponseStatus(null)).toBeUndefined();
   });
 });

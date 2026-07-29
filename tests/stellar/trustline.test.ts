@@ -1,5 +1,6 @@
 import { Keypair } from "@stellar/stellar-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { HorizonError } from "@/lib/stellar/horizon";
 
 const { mockLoadAccount } = vi.hoisted(() => ({
   mockLoadAccount: vi.fn()
@@ -137,8 +138,6 @@ describe("checkTrustline", () => {
 
     await expect(
       checkTrustline(accountAddress, "USDC", issuerAddress)
-    ).rejects.toThrow(
-      "Could not check trustline through Horizon. Try again shortly."
-    );
+    ).rejects.toBeInstanceOf(HorizonError);
   });
 });
