@@ -149,105 +149,13 @@ app/tools/<tool-name>/page.tsx  ("use client")
 
 1. **Character panel** — A `<CharacterPanel>` with a unique `tone` (one of `star`, `moon`, `rocket`, `faucet`, `detective`, `wallet`, `trust`) that introduces the tool's "helper character" with an eyebrow label, title, and description.
 
-2. **Form card** — A `<Card>` wrapping a `<form>` with input fields:
-   - Use `<AddressInput>` for Stellar public address fields.
-   - Use `<Input>` for text/number fields.
-   - Use `<Button>` for the submit action (with a `disabled` state during loading).
-
-3. **Status message** — A `<StatusMessage>` that shows info, success, warning, or error states. Default to an info state when no action has been taken.
-
-4. **Result display** — Conditional rendering of result data (e.g., `<BalanceList>`, `<TransactionDetails>`, `<QRPreview>`).
-
-5. **Contextual guidance** — Additional `<StatusMessage>` blocks for edge cases:
-   - "Account not found" links to the Testnet Faucet Helper.
-   - Testnet-only warnings on testnet-only tools.
-   - Network mismatch warnings on the Freighter Connect page.
-
-### State management
-
-Each tool page manages its own state with `useState` hooks:
-
-```typescript
-const [loading, setLoading] = useState(false);
-const [message, setMessage] = useState({ type: "info", text: "..." });
-const [result, setResult] = useState<ResultType | null>(null);
-```
-
-For async calls, the pattern is:
-
-```typescript
-async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-  event.preventDefault();
-  setLoading(true);
-  setResult(null);
-
-  try {
-    const data = await someStellarHelper(input, network);
-    setResult(data);
-    setMessage({ type: "success", text: "..." });
-  } catch (error) {
-    setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
-  } finally {
-    setLoading(false);
-  }
-}
-```
-
-### Network-aware tools
-
-Tools that call Horizon (Balance Viewer, Trustline Checker, Transaction Lookup) use `useNetwork()` to get the current network and pass it to their Stellar helper:
-
-```typescript
-const { network } = useNetwork();
-const data = await someHelper(address, network);
-```
-
-Testnet-only tools like the Testnet Faucet Helper do not use network context and display a permanent testnet warning.
-
----
-
-## Stellar Utility Files
-
-Each file in `lib/stellar/` encapsulates a single area of Stellar SDK interaction. Tool pages import these helpers instead of using the Stellar SDK directly.
-
-| File | Exports | Purpose | Used by |
-|---|---|---|---|
-| `horizon.ts` | `STELLAR_NETWORK`, `StellarNetwork`, `horizonUrls`, `horizonServer`, `getHorizonServer(network)` | Shared Horizon server configuration. Reads network from env vars and provides a factory function that creates a `Horizon.Server` instance for any network. | All Horizon-backed utilities |
-| `validateAddress.ts` | `validatePublicKey(value)` → `{ valid, message }` | Validates Stellar public keys using SDK `StrKey.isValidEd25519PublicKey`. Returns structured results with user-friendly error messages (empty, wrong prefix, checksum failure, valid). | Address Validator page, called by most other helpers before making Horizon requests |
-| `account.ts` | `getAccountBalances(publicKey, network)` → `DisplayBalance[]`, `getResponseStatus(error)` | Loads account via Horizon and maps balances to a uniform `DisplayBalance` format (native XLM, issued assets, liquidity pool shares). Handles 404 with a network-aware error message. | Balance Viewer page |
-| `trustline.ts` | `checkTrustline(account, assetCode, issuer, network)` → `{ exists, message }` | Validates both addresses, loads account from Horizon, and checks whether the account's balances include the specified asset. | Trustline Checker page |
-| `transaction.ts` | `isLikelyTransactionHash(value)` → `boolean`, `lookupTransaction(hash, network)` → `TransactionSummary` | Validates hash shape (64 hex chars), fetches transaction from Horizon, and returns a typed `TransactionSummary`. | Transaction Lookup page |
-| `paymentUri.ts` | `validateAssetCode(value)`, `createPaymentUri(input)` → `string` | Validates destination, amount, asset code, and memo length, then builds a `web+stellar:pay?` URI string for QR generation. | Payment QR Generator page |
-| `friendbot.ts` | `fundTestnetAccount(publicKey)` → `response` | Validates the address, then calls the Friendbot endpoint. Throws on non-OK responses with a rate-limit / already-funded hint. | Testnet Faucet Helper page |
-
-### Helper pattern
-
-Each Stellar helper follows a consistent pattern:
-
-1. **Validate inputs** — Call `validatePublicKey()` or inline validation for non-address inputs.
-2. **Call Horizon** — Use `getHorizonServer(network)` to create a server instance and call the relevant Horizon API.
-3. **Handle errors** — Check for 404 (account/hash not found) using `getResponseStatus(error)` and throw network-aware, user-friendly error messages.
-4. **Return typed results** — Always return a defined TypeScript interface (no raw SDK types in page components).
-
----
-
-## Anthropomorphic UI Theme
-
-The project uses a playful "helpers" theme where each tool is represented by a character with a distinct personality. This is expressed through:
-
-- **CharacterPanel** — Each tool page header shows a stylised face with coloured elements matching the character's tone. Seven tones exist: `star` (star clerk), `moon` (moon wallet), `rocket` (rocket assistant), `faucet` (faucet helper), `detective` (detective comet), `wallet` (wallet mascot), `trust` (trust inspector). Each tone is defined in the `toneStyles` record inside `components/ui/CharacterPanel.tsx`, which maps a tone to its `face`, `hat`, and `shadow` colour values. To add a new character tone when building a new tool, add a new entry to this record and import the tone in your page.
-- **Status messages** — Use character-appropriate language (e.g., "The moon wallet is waiting for a funded testnet account address").
-- **Button labels** — Use in-character action text (e.g., "Ask faucet helper to fund", "Follow transaction trail").
-- **ToolCard** — Each card on the home page includes a `character` quote string that describes the helper in one sentence.
-
-When adding new components or pages, maintain this voice:
-
-- Describe what the character is doing in third person.
-- Use warm, friendly language.
-- Keep technical accuracy — do not fake blockchain data.
-- Use theme colours from the Tailwind config (`stellar-cyan`, `stellar-violet`, `stellar-green`, `stellar-amber`) and the existing CSS variable patterns in `globals.css`.
-
----
+- Address validation uses Stellar SDK `StrKey` checks and never asks for secret keys.
+- Balance viewer loads account balances through Horizon using the selected network.
+- Trustline checker validates account and issuer addresses before loading balances on the selected network.
+- Payment QR generator uses the reusable `validatePaymentForm` function in `lib/stellar/paymentUri.ts` to validate destination, amount, memo length, and issued asset metadata before generating a URI.
+- Transaction lookup validates hash shape before querying Horizon on the selected network.
+- Testnet faucet calls Friendbot and remains explicitly testnet-only.
+- Freighter Connect is a public-key connection example that displays extension availability, permission state, wallet network, and network mismatch warnings. It does not request signatures or secrets.
 
 ## Network Model
 

@@ -38,7 +38,7 @@ export default function HomePage() {
           </div>
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             {[
-              ["7", "tool modules"],
+              ["8", "tool modules"],
               ["Testnet", "default network"],
               ["25", "issue ideas"]
             ].map(([value, label]) => (
