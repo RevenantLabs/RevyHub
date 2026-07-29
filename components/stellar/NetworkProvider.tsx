@@ -16,14 +16,26 @@ function readInitialNetwork(): StellarNetwork {
     return "testnet";
   }
 
-  return window.localStorage.getItem(storageKey) === "mainnet" ? "mainnet" : "testnet";
+  try {
+    return window.localStorage.getItem(storageKey) === "mainnet" ? "mainnet" : "testnet";
+  } catch {
+    return "testnet";
+  }
+}
+
+function persistNetwork(network: StellarNetwork) {
+  try {
+    window.localStorage.setItem(storageKey, network);
+  } catch {
+    // Storage can be unavailable because of browser privacy or quota restrictions.
+  }
 }
 
 export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const [network, setNetworkState] = useState<StellarNetwork>(readInitialNetwork);
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, network);
+    persistNetwork(network);
   }, [network]);
 
   const value = useMemo<NetworkContextValue>(
