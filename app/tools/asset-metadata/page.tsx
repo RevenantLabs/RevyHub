@@ -143,23 +143,9 @@ export default function AssetMetadataPage() {
                   className="rounded-lg border border-white/80 bg-white/68"
                 >
                   <div className="flex flex-wrap items-center gap-3 border-b border-[#c7d6e8] px-4 py-3">
-                    {/* Asset image — treated as untrusted, no JS execution risk but we use
-                        img with explicit dimensions and no onerror handler */}
-                    {currency.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={currency.image}
-                        alt={`${currency.code} asset logo (external image from issuer)`}
-                        width={32}
-                        height={32}
-                        className="h-8 w-8 rounded-full border border-[#c7d6e8] object-contain"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#8edcf4]/30 text-xs font-black text-[#146783]">
-                        {currency.code.slice(0, 2)}
-                      </span>
-                    )}
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#8edcf4]/30 text-xs font-black text-[#146783]">
+                      {currency.code.slice(0, 2)}
+                    </span>
                     <span className="text-sm font-black text-[#172033]">{currency.code}</span>
                     {currency.name && (
                       <span className="text-sm text-[#4e5c73]">&mdash; {currency.name}</span>

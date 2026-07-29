@@ -1,4 +1,11 @@
-import { getHorizonServer, STELLAR_NETWORK, type StellarNetwork } from "@/lib/stellar/horizon";
+import {
+  getHorizonServer,
+  isCancelledError,
+  isTimeoutError,
+  runHorizonRequest,
+  STELLAR_NETWORK,
+  type StellarNetwork
+} from "@/lib/stellar/horizon";
 import { getResponseStatus } from "@/lib/stellar/account";
 import type { TransactionSummary } from "@/components/stellar/TransactionDetails";
 
@@ -8,7 +15,8 @@ export function isLikelyTransactionHash(value: string) {
 
 export async function lookupTransaction(
   hash: string,
-  network: StellarNetwork = STELLAR_NETWORK
+  network: StellarNetwork = STELLAR_NETWORK,
+  signal?: AbortSignal
 ): Promise<TransactionSummary> {
   // TODO(issue #10): Fetch and normalize transaction operations for display below the transaction summary.
   if (!hash.trim()) {
@@ -21,7 +29,10 @@ export async function lookupTransaction(
 
   try {
     const server = getHorizonServer(network);
-    const transaction = await server.transactions().transaction(hash.trim()).call();
+    const transaction = await runHorizonRequest(
+      server.transactions().transaction(hash.trim()).call(),
+      { signal }
+    );
 
     return {
       hash: transaction.hash,
@@ -34,6 +45,14 @@ export async function lookupTransaction(
       operationCount: transaction.operation_count
     };
   } catch (error) {
+    if (isCancelledError(error)) {
+      throw error;
+    }
+
+    if (isTimeoutError(error)) {
+      throw new Error("The Horizon transaction request timed out. Try again.");
+    }
+
     if (getResponseStatus(error) === 404) {
       throw new Error(`Transaction not found on Stellar ${network}.`);
     }

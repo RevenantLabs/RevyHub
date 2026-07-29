@@ -41,6 +41,12 @@ describe("normaliseDomain", () => {
   it("rejects clearly malformed hostnames", () => {
     expect(() => normaliseDomain("not a domain at all")).toThrow(/could not be parsed|No hostname/);
   });
+
+  it("rejects credentials, localhost, and IP address inputs", () => {
+    expect(() => normaliseDomain("user:pass@example.com")).toThrow(/Credentials/);
+    expect(() => normaliseDomain("localhost")).toThrow(/valid DNS hostname/);
+    expect(() => normaliseDomain("127.0.0.1")).toThrow(/valid DNS hostname/);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -126,12 +132,20 @@ name = "No Code"
     expect(result).toHaveLength(0);
   });
 
-  it("handles a malformed key line (no value) without throwing", () => {
-    // 'code' line has no = sign so it is skipped; entry has no code → excluded
-    const result = parseStellarTomlCurrencies(MALFORMED_BLOCK_TOML);
+  it("throws a distinct parse error for malformed currency lines", () => {
+    expect(() => parseStellarTomlCurrencies(MALFORMED_BLOCK_TOML)).toThrow(
+      /Malformed TOML line/
+    );
+  });
 
-    // issuer is present but code is missing → entry is excluded
-    expect(result).toHaveLength(0);
+  it("parses quoted values with inline comments", () => {
+    const result = parseStellarTomlCurrencies(`
+[[CURRENCIES]]
+code = "USDC" # canonical code
+name = 'USD Coin' # literal string
+`);
+
+    expect(result).toEqual([{ code: "USDC", name: "USD Coin" }]);
   });
 });
 
@@ -239,6 +253,13 @@ describe("fetchStellarToml", () => {
     await expect(fetchStellarToml("example.com")).rejects.toThrow(/too large/);
   });
 
+  it("measures the response size in UTF-8 bytes", async () => {
+    const oversized = "🚀".repeat(30 * 1024);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(makeFetchResponse(oversized)));
+
+    await expect(fetchStellarToml("example.com")).rejects.toThrow(/too large/);
+  });
+
   it("throws on network / CORS failure", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
 
@@ -266,7 +287,19 @@ describe("fetchStellarToml", () => {
     );
 
     await expect(fetchStellarToml("example.com")).rejects.toThrow(
-      /redirected to a different origin/
+      /redirect|Redirect/
+    );
+  });
+
+  it("uses manual redirect handling so an untrusted target is not followed", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeFetchResponse(SAMPLE_TOML_BODY));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchStellarToml("example.com");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://example.com/.well-known/stellar.toml",
+      expect.objectContaining({ redirect: "manual" })
     );
   });
 

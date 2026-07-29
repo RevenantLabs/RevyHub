@@ -93,6 +93,19 @@ export function normaliseDomain(raw: string): string {
     throw new Error("No hostname found. Enter a domain such as example.com.");
   }
 
+  if (parsed.username || parsed.password) {
+    throw new Error("Credentials are not allowed in issuer-domain inputs.");
+  }
+
+  const hostnamePattern =
+    /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
+
+  const isIpv4Address = /^\d{1,3}(?:\.\d{1,3}){3}$/.test(parsed.hostname);
+
+  if (isIpv4Address || !hostnamePattern.test(parsed.hostname)) {
+    throw new Error("Enter a valid DNS hostname such as example.com.");
+  }
+
   // Return only scheme + host + port (strip path, query, hash)
   return parsed.port
     ? `${parsed.protocol}//${parsed.hostname}:${parsed.port}`
@@ -128,7 +141,9 @@ export function parseStellarTomlCurrencies(toml: string): TomlCurrency[] {
 
     // Split block on the next table-level header (either [[…]] or […])
     // so we don't bleed into sibling tables
-    const blockContent = block.split(/\[{1,2}[A-Z_]/)[0];
+    const blockContent = block.split(
+      /^\s*\[{1,2}[^\]\r\n]+\]{1,2}\s*(?:#.*)?$/m
+    )[0];
 
     const lines = blockContent.split(/\r?\n/);
     for (const line of lines) {
@@ -137,13 +152,26 @@ export function parseStellarTomlCurrencies(toml: string): TomlCurrency[] {
       if (!stripped || stripped.startsWith("#")) continue;
 
       const eqIdx = stripped.indexOf("=");
-      if (eqIdx === -1) continue;
+      if (eqIdx === -1) {
+        throw new Error(`Malformed TOML line in CURRENCIES: ${stripped}`);
+      }
 
       const key = stripped.slice(0, eqIdx).trim().toLowerCase();
       const rawValue = stripped.slice(eqIdx + 1).trim();
+      const supportedKeys = new Set([
+        "code",
+        "issuer",
+        "name",
+        "desc",
+        "image",
+        "home_domain"
+      ]);
 
-      // Strip surrounding quotes (single or double)
-      const value = rawValue.replace(/^["']|["']$/g, "").trim();
+      if (!supportedKeys.has(key)) {
+        continue;
+      }
+
+      const value = parseTomlStringValue(rawValue, key);
 
       switch (key) {
         case "code":
@@ -176,6 +204,29 @@ export function parseStellarTomlCurrencies(toml: string): TomlCurrency[] {
   return currencies;
 }
 
+function parseTomlStringValue(rawValue: string, key: string): string {
+  const doubleQuoted = rawValue.match(/^"((?:\\.|[^"\\])*)"\s*(?:#.*)?$/);
+  if (doubleQuoted) {
+    try {
+      return JSON.parse(`"${doubleQuoted[1]}"`);
+    } catch {
+      throw new Error(`Malformed TOML string for CURRENCIES.${key}.`);
+    }
+  }
+
+  const singleQuoted = rawValue.match(/^'([^']*)'\s*(?:#.*)?$/);
+  if (singleQuoted) {
+    return singleQuoted[1];
+  }
+
+  const bare = rawValue.match(/^([^#\s]+)\s*(?:#.*)?$/);
+  if (bare) {
+    return bare[1];
+  }
+
+  throw new Error(`Malformed TOML value for CURRENCIES.${key}.`);
+}
+
 // ---------------------------------------------------------------------------
 // Main fetch function
 // ---------------------------------------------------------------------------
@@ -204,7 +255,7 @@ export async function fetchStellarToml(rawDomain: string): Promise<StellarTomlRe
   try {
     response = await fetch(fetchUrl, {
       signal: controller.signal,
-      redirect: "follow",
+      redirect: "manual",
       headers: { Accept: "text/plain, text/x-toml, */*" }
     });
   } catch (error) {
@@ -221,6 +272,17 @@ export async function fetchStellarToml(rawDomain: string): Promise<StellarTomlRe
     globalThis.clearTimeout(timeoutId);
   }
 
+  if (
+    response.type === "opaqueredirect" ||
+    response.redirected ||
+    (response.status >= 300 && response.status < 400)
+  ) {
+    const redirectTarget = response.url || "an untrusted location";
+    throw new Error(
+      `The server attempted to redirect the stellar.toml request to ${redirectTarget}. Redirects are not followed.`
+    );
+  }
+
   if (!response.ok) {
     if (response.status === 404) {
       throw new Error(
@@ -230,18 +292,6 @@ export async function fetchStellarToml(rawDomain: string): Promise<StellarTomlRe
     throw new Error(
       `The server returned HTTP ${response.status} for ${fetchUrl}.`
     );
-  }
-
-  // Guard against redirects to a different origin (fetch follows redirects
-  // automatically; check the final URL)
-  if (response.redirected) {
-    const finalUrl = new URL(response.url);
-    const expectedOrigin = new URL(fetchUrl).origin;
-    if (finalUrl.origin !== expectedOrigin) {
-      throw new Error(
-        `The server redirected to a different origin (${finalUrl.origin}). Cross-origin redirects are not followed for security.`
-      );
-    }
   }
 
   // Read body with size guard
@@ -259,7 +309,7 @@ export async function fetchStellarToml(rawDomain: string): Promise<StellarTomlRe
     throw new Error(`Failed to read the response body from ${fetchUrl}.`);
   }
 
-  if (rawToml.length > MAX_TOML_BYTES) {
+  if (new TextEncoder().encode(rawToml).byteLength > MAX_TOML_BYTES) {
     throw new Error(
       `The stellar.toml response is too large. Maximum accepted size is ${MAX_TOML_BYTES / 1024} KiB.`
     );
