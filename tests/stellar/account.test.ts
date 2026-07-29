@@ -52,16 +52,18 @@ describe("getAccountBalances", () => {
     const balances = await getAccountBalances(publicKey, "testnet");
 
     expect(balances).toEqual([
-      { assetCode: "XLM", amount: "100.0000000" },
+      { assetCode: "XLM", amount: "100.0000000", balanceType: "native" },
       {
         assetCode: "USDC",
         issuer,
-        amount: "50.0000000"
+        amount: "50.0000000",
+        balanceType: "credit"
       },
       {
         assetCode: "Liquidity pool shares",
         issuer: "0000000000000000000000000000000000000000000000000000000000000000",
-        amount: "10.0000000"
+        amount: "10.0000000",
+        balanceType: "liquidity_pool"
       }
     ]);
     expect(getHorizonServerMock).toHaveBeenCalledWith("testnet");
