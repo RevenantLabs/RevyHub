@@ -2,6 +2,7 @@ import {
   BadgeCheck,
   CircleDollarSign,
   Droplets,
+  FileSearch,
   Landmark,
   QrCode,
   Search,
@@ -67,6 +68,14 @@ export const tools = [
     href: "/tools/testnet-faucet",
     status: "Working" as ToolStatus,
     icon: Droplets
+  },
+  {
+    title: "Asset Metadata Inspector",
+    description: "Fetch and browse stellar.toml currency metadata for any issuer domain.",
+    character: "A star librarian leafs through issuer TOML scrolls.",
+    href: "/tools/asset-metadata",
+    status: "Working" as ToolStatus,
+    icon: FileSearch
   }
 ];
 
