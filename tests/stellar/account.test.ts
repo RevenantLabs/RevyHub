@@ -1,62 +1,135 @@
-/**
- * account.ts — migrated to the shared MSW harness.
- *
- * These tests exercise the full browser-request path through getHorizonServer
- * without calling any live Horizon endpoint.
- */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Keypair } from "@stellar/stellar-sdk";
+import { getAccountBalances, getResponseStatus } from "../../lib/stellar/account";
 
-import { describe, expect, it } from "vitest";
-import { server } from "../msw/setup";
-import { scenarioHandlers } from "../msw/handlers";
-import {
-  FIXTURE_ACCOUNT_ID,
-  FIXTURE_ISSUER_ID
-} from "../msw/fixtures";
-import { getAccountBalances } from "../../lib/stellar/account";
+const { loadAccountMock, getHorizonServerMock } = vi.hoisted(() => {
+  const loadAccountMock = vi.fn();
+  const getHorizonServerMock = vi.fn(() => ({
+    loadAccount: loadAccountMock
+  }));
+
+  return { loadAccountMock, getHorizonServerMock };
+});
+
+vi.mock("../../lib/stellar/horizon", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../lib/stellar/horizon")>();
+
+  return {
+    ...actual,
+    getHorizonServer: getHorizonServerMock,
+    STELLAR_NETWORK: "testnet"
+  };
+});
 
 describe("getAccountBalances", () => {
-  it("returns native and issued balances for a funded testnet account", async () => {
-    const balances = await getAccountBalances(FIXTURE_ACCOUNT_ID, "testnet");
+  const publicKey = Keypair.random().publicKey();
+  const issuer = Keypair.random().publicKey();
 
-    expect(balances).toHaveLength(2);
+  beforeEach(() => {
+    loadAccountMock.mockReset();
+    getHorizonServerMock.mockClear();
+  });
 
-    const xlm = balances.find((b) => b.assetCode === "XLM");
-    expect(xlm).toBeDefined();
-    expect(xlm?.amount).toBe("9999.9999600");
+  afterEach(() => {
+    loadAccountMock.mockReset();
+    getHorizonServerMock.mockReset();
+  });
 
-    const usdc = balances.find((b) => b.assetCode === "USDC");
-    expect(usdc).toBeDefined();
-    expect(usdc?.issuer).toBe(FIXTURE_ISSUER_ID);
-    expect(usdc?.amount).toBe("10.0000000");
+  it("normalizes native, credit, and pool balances from Horizon", async () => {
+    loadAccountMock.mockResolvedValue({
+      balances: [
+        { asset_type: "native", balance: "100.0000000" },
+        {
+          asset_type: "credit_alphanum4",
+          asset_code: "USDC",
+          asset_issuer: issuer,
+          balance: "50.0000000"
+        },
+        {
+          asset_type: "liquidity_pool_shares",
+          liquidity_pool_id:
+            "0000000000000000000000000000000000000000000000000000000000000000",
+          balance: "10.0000000"
+        }
+      ]
+    });
+
+    const balances = await getAccountBalances(publicKey, "testnet");
+
+    expect(balances).toEqual([
+      { assetCode: "XLM", amount: "100.0000000" },
+      {
+        assetCode: "USDC",
+        issuer,
+        amount: "50.0000000"
+      },
+      {
+        assetCode: "Liquidity pool shares",
+        issuer: "0000000000000000000000000000000000000000000000000000000000000000",
+        amount: "10.0000000"
+      }
+    ]);
+    expect(getHorizonServerMock).toHaveBeenCalledWith("testnet");
+    expect(loadAccountMock).toHaveBeenCalledWith(publicKey);
+  });
+
+  it("selects the Horizon server for the requested network", async () => {
+    loadAccountMock.mockResolvedValue({ balances: [] });
+
+    await getAccountBalances(publicKey, "mainnet");
+
+    expect(getHorizonServerMock).toHaveBeenCalledWith("mainnet");
+    expect(getHorizonServerMock).not.toHaveBeenCalledWith("testnet");
   });
 
   it("throws a testnet-specific message when the account is not found", async () => {
-    server.use(scenarioHandlers.accountNotFound);
+    loadAccountMock.mockRejectedValue({ response: { status: 404 } });
 
-    await expect(
-      getAccountBalances(FIXTURE_ACCOUNT_ID, "testnet")
-    ).rejects.toThrow(/Fund it with Friendbot/);
+    await expect(getAccountBalances(publicKey, "testnet")).rejects.toThrow(
+      "Account not found on Stellar testnet. Fund it with Friendbot first."
+    );
   });
 
-  it("throws a mainnet-specific message when the account is not found on mainnet", async () => {
-    server.use(scenarioHandlers.accountNotFoundMainnet);
+  it("throws a mainnet-specific message when the account is not found", async () => {
+    loadAccountMock.mockRejectedValue({ response: { status: 404 } });
 
-    await expect(
-      getAccountBalances(FIXTURE_ACCOUNT_ID, "mainnet")
-    ).rejects.toThrow(/not found on Stellar mainnet/);
+    await expect(getAccountBalances(publicKey, "mainnet")).rejects.toThrow(
+      "Account not found on Stellar mainnet."
+    );
   });
 
-  it("throws a generic message for non-404 Horizon errors", async () => {
-    server.use(scenarioHandlers.accountServerError);
+  it("throws a generic message for other Horizon failures", async () => {
+    loadAccountMock.mockRejectedValue({ response: { status: 503 } });
 
-    await expect(
-      getAccountBalances(FIXTURE_ACCOUNT_ID, "testnet")
-    ).rejects.toThrow(/Could not load account balances/);
+    await expect(getAccountBalances(publicKey, "testnet")).rejects.toThrow(
+      "Could not load account balances from Horizon. Try again in a moment."
+    );
   });
 
-  it("rejects invalid public keys before making any network request", async () => {
-    await expect(
-      getAccountBalances("not-a-stellar-address", "testnet")
-    ).rejects.toThrow();
+  it("throws a generic message when Horizon errors lack a response status", async () => {
+    loadAccountMock.mockRejectedValue(new Error("network unavailable"));
+
+    await expect(getAccountBalances(publicKey, "testnet")).rejects.toThrow(
+      "Could not load account balances from Horizon. Try again in a moment."
+    );
+  });
+
+  it("rejects invalid public keys before calling Horizon", async () => {
+    await expect(getAccountBalances("not-a-stellar-address", "testnet")).rejects.toThrow(
+      /Stellar public addresses start with the letter G/
+    );
+
+    expect(getHorizonServerMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("getResponseStatus", () => {
+  it("returns the HTTP status from Horizon-style errors", () => {
+    expect(getResponseStatus({ response: { status: 404 } })).toBe(404);
+  });
+
+  it("returns undefined for non-response errors", () => {
+    expect(getResponseStatus(new Error("timeout"))).toBeUndefined();
+    expect(getResponseStatus(null)).toBeUndefined();
   });
 });
