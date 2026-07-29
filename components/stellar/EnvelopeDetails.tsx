@@ -12,14 +12,22 @@ const variantLabels: Record<EnvelopeVariant, string> = {
   "fee-bump": "Fee bump"
 };
 
-function formatFee(stroops: string) {
-  const fee = Number(stroops);
+export function formatFee(stroops: string) {
+  const normalized = stroops.trim();
 
-  if (!Number.isFinite(fee)) {
+  if (!/^-?\d+$/.test(normalized)) {
     return `${stroops} stroops`;
   }
 
-  return `${fee} stroops (${(fee / 10_000_000).toFixed(7)} XLM)`;
+  const negative = normalized.startsWith("-");
+  const unsigned = negative ? normalized.slice(1) : normalized;
+  const digits = unsigned.replace(/^0+(?=\d)/, "");
+  const padded = digits.padStart(8, "0");
+  const whole = padded.slice(0, -7);
+  const fraction = padded.slice(-7);
+  const sign = negative && digits !== "0" ? "-" : "";
+
+  return `${normalized} stroops (${sign}${whole}.${fraction} XLM)`;
 }
 
 function formatTimePoint(value: string) {
