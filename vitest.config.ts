@@ -11,7 +11,11 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+ feat/error-boundary
+    include: ["tests/**/*.test.{ts,tsx}"]
+
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"]
+ main
   }
 });
