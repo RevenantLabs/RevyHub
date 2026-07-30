@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TransactionDetails, type TransactionSummary } from "@/components/stellar/TransactionDetails";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -10,27 +10,45 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { lookupTransaction } from "@/lib/stellar/transaction";
+import { isCancelledError } from "@/lib/stellar/horizon";
 
 export default function TransactionLookupPage() {
   const { network } = useNetwork();
   const [hash, setHash] = useState("");
   const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a testnet transaction hash to follow the trail." });
+  const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a transaction hash to follow the trail on the selected network." });
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setTransaction(null);
 
     try {
-      const result = await lookupTransaction(hash, network);
+      const result = await lookupTransaction(hash, network, controller.signal);
+      if (abortRef.current !== controller) return;
       setTransaction(result);
       setMessage({ type: "success", text: `The detective comet found the transaction in ${network} Horizon.` });
     } catch (error) {
+      if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
-      setLoading(false);
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setLoading(false);
+      }
     }
   }
 
