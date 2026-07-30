@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Keypair, Networks } from "@stellar/stellar-sdk";
-import { createPaymentUri, validatePaymentForm } from "../../lib/stellar/paymentUri";
+import { createPaymentUri, parsePaymentUri, validatePaymentForm } from "../../lib/stellar/paymentUri";
 
 describe("createPaymentUri", () => {
   const destination = Keypair.random().publicKey();
@@ -212,5 +212,164 @@ describe("createPaymentUri", () => {
       assetCode: expect.any(String),
       assetIssuer: expect.any(String)
     });
+  });
+});
+
+describe("parsePaymentUri", () => {
+  const destination = Keypair.random().publicKey();
+
+  it("parses a valid native XLM payment URI", () => {
+    const result = parsePaymentUri(
+      `web+stellar:pay?destination=${destination}&amount=10.5`
+    );
+
+    expect(result).toEqual({
+      destination,
+      amount: "10.5",
+      asset: "XLM"
+    });
+  });
+
+  it("parses a valid issued asset payment URI", () => {
+    const issuer = Keypair.random().publicKey();
+    const result = parsePaymentUri(
+      `web+stellar:pay?destination=${destination}&amount=25&asset_code=USDC&asset_issuer=${issuer}`
+    );
+
+    expect(result).toEqual({
+      destination,
+      amount: "25",
+      asset: "ISSUED",
+      assetCode: "USDC",
+      assetIssuer: issuer
+    });
+  });
+
+  it("parses a URI with memo and memo_type", () => {
+    const result = parsePaymentUri(
+      `web+stellar:pay?destination=${destination}&amount=10&memo=Invoice%201001&memo_type=MEMO_TEXT`
+    );
+
+    expect(result.memo).toBe("Invoice 1001");
+    expect(result.memoType).toBe("MEMO_TEXT");
+  });
+
+  it("parses a URI with network_passphrase", () => {
+    const result = parsePaymentUri(
+      `web+stellar:pay?destination=${destination}&amount=10&network_passphrase=${encodeURIComponent(Networks.TESTNET)}`
+    );
+
+    expect(result.networkPassphrase).toBe(Networks.TESTNET);
+  });
+
+  it("rejects an unsupported action", () => {
+    expect(() =>
+      parsePaymentUri(
+        `web+stellar:tx?destination=${destination}&amount=10`
+      )
+    ).toThrow(/unsupported action.*tx/i);
+  });
+
+  it("rejects a URI with duplicate destination parameters", () => {
+    expect(() =>
+      parsePaymentUri(
+        `web+stellar:pay?destination=${destination}&amount=10&destination=${destination}`
+      )
+    ).toThrow(/duplicate.*destination/i);
+  });
+
+  it("rejects a URI with duplicate amount parameters", () => {
+    expect(() =>
+      parsePaymentUri(
+        `web+stellar:pay?destination=${destination}&amount=10&amount=20`
+      )
+    ).toThrow(/duplicate.*amount/i);
+  });
+
+  it("rejects a URI missing destination", () => {
+    expect(() =>
+      parsePaymentUri("web+stellar:pay?amount=10")
+    ).toThrow(/must contain a destination/i);
+  });
+
+  it("rejects a URI missing amount", () => {
+    expect(() =>
+      parsePaymentUri(`web+stellar:pay?destination=${destination}`)
+    ).toThrow(/must contain an amount/i);
+  });
+
+  it("rejects a URI with asset_code but no asset_issuer", () => {
+    expect(() =>
+      parsePaymentUri(
+        `web+stellar:pay?destination=${destination}&amount=10&asset_code=USDC`
+      )
+    ).toThrow(/requires both/i);
+  });
+
+  it("rejects a URI with asset_issuer but no asset_code", () => {
+    const issuer = Keypair.random().publicKey();
+    expect(() =>
+      parsePaymentUri(
+        `web+stellar:pay?destination=${destination}&amount=10&asset_issuer=${issuer}`
+      )
+    ).toThrow(/requires both/i);
+  });
+
+  it("rejects a URI with malformed percent-encoding", () => {
+    expect(() =>
+      parsePaymentUri(
+        `web+stellar:pay?destination=${destination}&amount=%ZZ`
+      )
+    ).toThrow(/malformed encoding/i);
+  });
+
+  it("rejects a URI with no query parameters", () => {
+    expect(() => parsePaymentUri("web+stellar:pay")).toThrow(
+      /must contain query parameters/i
+    );
+  });
+
+  it("rejects a URI that uses web+stellar://pay (double slash)", () => {
+    expect(() =>
+      parsePaymentUri("web+stellar://pay?destination=G&amount=1")
+    ).toThrow(/not web\+stellar:\/\/pay/i);
+  });
+
+  it("rejects an empty string", () => {
+    expect(() => parsePaymentUri("")).toThrow(/must start with web\+stellar:/i);
+  });
+
+  it("silently ignores unknown query parameters", () => {
+    const result = parsePaymentUri(
+      `web+stellar:pay?destination=${destination}&amount=10&unknown_param=foo`
+    );
+
+    expect(result.amount).toBe("10");
+    expect(result.destination).toBe(destination);
+    expect(result.asset).toBe("XLM");
+  });
+
+  it("rejects an unsupported memo_type", () => {
+    expect(() =>
+      parsePaymentUri(
+        `web+stellar:pay?destination=${destination}&amount=10&memo=test&memo_type=MEMO_INVALID`
+      )
+    ).toThrow(/unsupported memo_type/i);
+  });
+
+  it("rejects an invalid destination address", () => {
+    expect(() =>
+      parsePaymentUri(
+        "web+stellar:pay?destination=NOTAKEY&amount=10"
+      )
+    ).toThrow(/invalid destination/i);
+  });
+
+  it("rejects a non-positive amount", () => {
+    expect(() =>
+      parsePaymentUri(
+        `web+stellar:pay?destination=${destination}&amount=0`
+      )
+    ).toThrow(/amount must be a positive/i);
   });
 });
