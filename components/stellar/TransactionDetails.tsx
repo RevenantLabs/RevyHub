@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/Badge";
 import { CopyableValue } from "@/components/stellar/CopyableValue";
+import { formatStroopsAsXLM } from "@/lib/stellar/assetAmount";
 import type { StellarNetwork } from "@/lib/stellar/horizon";
 
 const explorerBaseUrls: Record<StellarNetwork, string> = {
@@ -19,13 +20,19 @@ export interface TransactionSummary {
 }
 
 function formatFee(stroops: string) {
-  const fee = Number(stroops);
+  // Reject anything that isn't a non-negative integer stroop count so we
+  // keep the raw value visible rather than coercing through Number().
+  const trimmed = stroops?.trim() ?? "";
 
-  if (!Number.isFinite(fee)) {
+  if (!trimmed || !/^\d+$/.test(trimmed)) {
     return `${stroops} stroops`;
   }
 
-  return `${fee} stroops (${(fee / 10_000_000).toFixed(7)} XLM)`;
+  // The formatter trims trailing zeros by default and never converts
+  // through Number(), so very large fee counts (close to int64) stay exact.
+  const xlm = formatStroopsAsXLM(stroops);
+
+  return `${stroops} stroops (${xlm} XLM)`;
 }
 
 export function TransactionDetails({ transaction }: { transaction: TransactionSummary }) {
