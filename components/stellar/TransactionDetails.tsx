@@ -2,11 +2,17 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { CopyableValue } from "@/components/stellar/CopyableValue";
 import type { StellarNetwork } from "@/lib/stellar/horizon";
+import { explainResultCode, type ResultCodeExplanation } from "@/lib/stellar/resultCodes";
 
 const explorerBaseUrls: Record<StellarNetwork, string> = {
   testnet: "https://stellar.expert/explorer/testnet/tx",
   mainnet: "https://stellar.expert/explorer/public/tx"
 };
+
+export interface TransactionResultCodes {
+  transaction?: string;
+  operations?: string[];
+}
 
 export interface TransactionSummary {
   hash: string;
@@ -18,6 +24,7 @@ export interface TransactionSummary {
   network: StellarNetwork;
   operationCount: number;
   memo?: { type: string; value: string };
+  resultCodes?: TransactionResultCodes;
 }
 
 function formatFee(stroops: string) {
@@ -32,6 +39,42 @@ function formatFee(stroops: string) {
 
 function formatMemo(memo: { type: string; value: string }) {
   return `${memo.value} (${memo.type})`;
+}
+
+function ResultCodeExplanationCard({ explanation }: { explanation: ResultCodeExplanation }) {
+  return (
+    <div
+      className={`rounded-md border px-3 py-2 text-sm ${
+        explanation.recognized
+          ? "border-[#e3b341]/60 bg-[#fff8e6] text-[#5b4600]"
+          : "border-[#c7d6e8] bg-white/60 text-[#29364d]"
+      }`}
+    >
+      <p className="font-semibold">
+        {explanation.code} — {explanation.title}
+      </p>
+      <p>{explanation.explanation}</p>
+      <p className="mt-1 text-xs italic">{explanation.hint}</p>
+    </div>
+  );
+}
+
+function ResultCodesSection({ resultCodes }: { resultCodes: TransactionResultCodes }) {
+  if (!resultCodes.transaction && !resultCodes.operations?.length) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-semibold text-[#172033]">Result codes</p>
+      {resultCodes.transaction ? (
+        <ResultCodeExplanationCard explanation={explainResultCode(resultCodes.transaction, "transaction")} />
+      ) : null}
+      {resultCodes.operations?.map((code, index) => (
+        <ResultCodeExplanationCard key={`${code}-${index}`} explanation={explainResultCode(code, "operation")} />
+      ))}
+    </div>
+  );
 }
 
 export function TransactionDetails({ transaction }: { transaction: TransactionSummary }) {
@@ -63,6 +106,7 @@ export function TransactionDetails({ transaction }: { transaction: TransactionSu
           </div>
         ))}
       </dl>
+      {transaction.resultCodes ? <ResultCodesSection resultCodes={transaction.resultCodes} /> : null}
       <a
         href={explorerUrl}
         target="_blank"
