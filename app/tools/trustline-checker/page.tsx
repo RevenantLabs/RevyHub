@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useFocusResult } from "@/lib/hooks/useFocusResult";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -11,6 +12,7 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { checkTrustline } from "@/lib/stellar/trustline";
+import { isCancelledError } from "@/lib/stellar/horizon";
 
 export default function TrustlineCheckerPage() {
   const { network } = useNetwork();
@@ -20,19 +22,38 @@ export default function TrustlineCheckerPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
   const { resultRef, moveFocusToResult } = useFocusResult();
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
 
     try {
-      const result = await checkTrustline(account, assetCode, issuer, network);
+      const result = await checkTrustline(account, assetCode, issuer, network, controller.signal);
+      if (abortRef.current !== controller) return;
       setMessage({ type: result.exists ? "success" : "warning", text: result.message });
     } catch (error) {
+      if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
       setLoading(false);
       moveFocusToResult();
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setLoading(false);
+      }
     }
   }
 
@@ -61,6 +82,8 @@ export default function TrustlineCheckerPage() {
         <StatusMessage type={message.type} title="Inspector report" description={message.text} />
       </div>
       {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
+      <StatusMessage type={message.type} title="Inspector report" description={message.text} />
+      {network === "testnet" && message.type === "error" && message.text.includes("Account not found") ? (
         <StatusMessage
           type="info"
           title="Fund the testnet account first"
