@@ -221,7 +221,7 @@ Display the active Freighter network and warn users when it does not match the s
 
 ### Maintainer Status
 
-Completed with wallet network display and app-vs-wallet mismatch warning.
+Completed with wallet network display using human-readable labels, app-vs-wallet mismatch warning with Badge indicator, actionable guidance on which network to switch Freighter to, and a future TODO for a network change listener.
 
 ### Acceptance Criteria
 
@@ -301,6 +301,10 @@ Advanced
 ### Description
 
 Improve form validation for the payment QR generator.
+
+### Maintainer Status
+
+Completed with a reusable `validatePaymentForm` function and real-time field-level validation on the payment QR page. Submit button is disabled when any field is invalid.
 
 ### Acceptance Criteria
 
