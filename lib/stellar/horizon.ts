@@ -1,4 +1,4 @@
-import { Horizon } from "@stellar/stellar-sdk";
+import { Horizon, Networks } from "@stellar/stellar-sdk";
 
 export type StellarNetwork = "testnet" | "mainnet";
 
