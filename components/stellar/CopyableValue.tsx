@@ -1,6 +1,10 @@
 "use client";
 
 import { Copy } from "lucide-react";
+ feat/copy-to-clipboard-utility
+
+import { useId, useState } from "react";
+ main
 import { Button } from "@/components/ui/Button";
 import { useCopyToClipboard } from "@/lib/useCopyToClipboard";
 import { truncateMiddle } from "@/lib/utils";
@@ -12,15 +16,32 @@ interface CopyableValueProps {
 }
 
 export function CopyableValue({ label, value, visible = 6 }: CopyableValueProps) {
+ feat/copy-to-clipboard-utility
   const { copied, copy } = useCopyToClipboard();
 
   async function handleCopy() {
     await copy(value);
+
+  const [copied, setCopied] = useState(false);
+  const fullValueId = useId();
+
+  async function handleCopy() {
+    try {
+      await copyText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+ main
   }
 
   return (
     <span className="inline-flex max-w-full items-center gap-2">
-      <span title={value} className="min-w-0 truncate">
+      <span id={fullValueId} className="sr-only">
+        {label}: {value}
+      </span>
+      <span title={value} aria-describedby={fullValueId} className="min-w-0 truncate">
         {truncateMiddle(value, visible)}
       </span>
       <Button
@@ -29,6 +50,7 @@ export function CopyableValue({ label, value, visible = 6 }: CopyableValueProps)
         onClick={handleCopy}
         className="min-h-8 shrink-0 rounded-md px-2 py-1 text-xs"
         aria-label={`Copy ${label}`}
+        aria-describedby={fullValueId}
       >
         <Copy className="h-3.5 w-3.5" aria-hidden />
         {copied ? "Copied" : "Copy"}
