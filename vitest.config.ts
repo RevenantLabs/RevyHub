@@ -1,7 +1,9 @@
+import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  plugins: [react()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL(".", import.meta.url))
@@ -9,10 +11,7 @@ export default defineConfig({
   },
   test: {
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
-    // Component/a11y specs opt into jsdom individually via a
-    // `// @vitest-environment jsdom` docblock; plain unit tests stay on
-    // the faster "node" default.
-    environment: "node",
+    environment: "jsdom",
     setupFiles: ["./tests/setup/vitest.setup.ts"]
   }
 });

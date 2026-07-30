@@ -49,6 +49,10 @@ Screenshots will be added after the first Vercel deployment.
 
 New to Stellar concepts? Read [docs/STELLAR_BASICS.md](./docs/STELLAR_BASICS.md).
 
+## Extending RevyHubX
+
+Want to add another Stellar utility? Read the step-by-step guide: [docs/EXTENDING.md](./docs/EXTENDING.md).
+
 ## Local Setup
 
 ```bash
