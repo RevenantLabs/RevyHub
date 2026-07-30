@@ -17,7 +17,22 @@ vi.mock("@/lib/stellar/horizon", async (importOriginal) => {
 });
 
 import { getHorizonServer } from "@/lib/stellar/horizon";
-import { checkTrustline } from "@/lib/stellar/trustline";
+import { checkTrustline, USDC_TRUSTLINE_PRESETS } from "@/lib/stellar/trustline";
+
+describe("USDC_TRUSTLINE_PRESETS", () => {
+  it("provides the official Circle USDC asset for each Stellar network", () => {
+    expect(USDC_TRUSTLINE_PRESETS).toEqual({
+      testnet: {
+        assetCode: "USDC",
+        issuerAddress: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+      },
+      mainnet: {
+        assetCode: "USDC",
+        issuerAddress: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
+      }
+    });
+  });
+});
 
 describe("checkTrustline", () => {
   const accountAddress = Keypair.random().publicKey();
@@ -30,6 +45,8 @@ describe("checkTrustline", () => {
   });
 
   it("finds an existing trustline and normalizes the asset code", async () => {
+    const mainnetUsdc = USDC_TRUSTLINE_PRESETS.mainnet;
+
     mockLoadAccount.mockResolvedValue({
       balances: [
         {
@@ -39,7 +56,7 @@ describe("checkTrustline", () => {
         {
           asset_type: "credit_alphanum4",
           asset_code: "USDC",
-          asset_issuer: issuerAddress,
+          asset_issuer: mainnetUsdc.issuerAddress,
           balance: "25.0000000",
           limit: "1000.0000000"
         }
@@ -47,7 +64,12 @@ describe("checkTrustline", () => {
     });
 
     await expect(
-      checkTrustline(` ${accountAddress} `, " usdc ", ` ${issuerAddress} `, "mainnet")
+      checkTrustline(
+        ` ${accountAddress} `,
+        ` ${mainnetUsdc.assetCode.toLowerCase()} `,
+        ` ${mainnetUsdc.issuerAddress} `,
+        "mainnet"
+      )
     ).resolves.toEqual({
       exists: true,
       message: "Trustline found for USDC."
