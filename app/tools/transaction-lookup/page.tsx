@@ -12,9 +12,33 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { lookupTransaction } from "@/lib/stellar/transaction";
 import { isCancelledError } from "@/lib/stellar/horizon";
 
-export default function TransactionLookupPage() {
+// Shareable link parameter (see docs/ISSUES.md #38): ?hash=<transaction hash>
+// Prefills the hash field only; a lookup still requires an explicit form submit.
+const MAX_HASH_PARAM_LENGTH = 100;
+const PRINTABLE_ASCII = /^[\x20-\x7E]*$/;
+
+export function sanitizeHashParam(raw: string | null): string | null {
+  if (raw === null) {
+    return null;
+  }
+
+  const value = raw.trim();
+
+  if (!value || value.length > MAX_HASH_PARAM_LENGTH || !PRINTABLE_ASCII.test(value)) {
+    return null;
+  }
+
+  return value;
+}
+
+function TransactionLookupContent() {
   const { network } = useNetwork();
-  const [hash, setHash] = useState("");
+  const searchParams = useSearchParams();
+  const rawHashParam = searchParams.get("hash");
+  const [hash, setHash] = useState(() => sanitizeHashParam(rawHashParam) ?? "");
+  const [paramIgnored] = useState(
+    () => rawHashParam !== null && sanitizeHashParam(rawHashParam) === null
+  );
   const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a transaction hash to follow the trail on the selected network." });
@@ -64,7 +88,13 @@ export default function TransactionLookupPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <label className="block space-y-2">
             <span className="text-sm font-medium text-[#29364d]">Transaction hash</span>
-            <Input value={hash} onChange={(event) => setHash(event.target.value)} placeholder="64 character hash" spellCheck={false} />
+            <Input
+              value={hash}
+              onChange={(event) => setHash(event.target.value)}
+              placeholder="64 character hash"
+              spellCheck={false}
+              maxLength={MAX_HASH_PARAM_LENGTH}
+            />
           </label>
           <Button type="submit" disabled={loading}>
             {loading ? "Following trail..." : "Follow transaction trail"}
@@ -91,5 +121,13 @@ export default function TransactionLookupPage() {
       ) : null}
       {transaction ? <TransactionDetails transaction={transaction} /> : null}
     </div>
+  );
+}
+
+export default function TransactionLookupPage() {
+  return (
+    <Suspense fallback={null}>
+      <TransactionLookupContent />
+    </Suspense>
   );
 }
