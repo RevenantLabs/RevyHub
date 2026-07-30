@@ -8,21 +8,30 @@ import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusMessage } from "@/components/ui/StatusMessage";
-import { CopyableValue } from "@/components/stellar/CopyableValue";
-import { fundTestnetAccount, type FriendbotResult } from "@/lib/stellar/friendbot";
-import { validatePublicKey } from "@/lib/stellar/validateAddress";
+import { TestnetOnlyNotice } from "@/components/stellar/TestnetOnlyNotice";
+import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { getNetworkLabel } from "@/lib/stellar/horizon";
+import { fundTestnetAccount } from "@/lib/stellar/friendbot";
 
 export default function TestnetFaucetPage() {
+  const { network } = useNetwork();
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<FriendbotResult | null>(null);
-  const hasInput = address.trim().length > 0;
-  const validation = useMemo(() => (hasInput ? validatePublicKey(address) : null), [address, hasInput]);
-  const isInvalidAddress = hasInput && validation !== null && !validation.valid;
-  const isSubmitDisabled = loading || !hasInput || isInvalidAddress;
+  const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The faucet helper pours testnet XLM only. No real funds are involved." });
+  const testnetOnlyBlocked = network !== "testnet";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (testnetOnlyBlocked) {
+      setMessage({
+        type: "warning",
+        text: `The faucet helper cannot pour while the app is set to ${getNetworkLabel(network)}. Switch to testnet to continue.`
+      });
+      return;
+    }
+
+    // TODO(issue #24): Add a shared async loading pattern for faucet, balance, and transaction tools.
     setLoading(true);
     setResult(null);
 
@@ -129,34 +138,16 @@ export default function TestnetFaucetPage() {
         eyebrow="Faucet helper"
         title="Testnet Faucet Helper"
         description="The faucet helper pours harmless testnet XLM into a public account through Friendbot."
-      >
-        <span className="inline-flex items-center gap-2 rounded-full border border-[#ffc3a8]/80 bg-[#fff2e9] px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-[#9a513f]">
-          <Droplets className="h-3.5 w-3.5" aria-hidden />
-          Testnet only &mdash; no real value
-        </span>
-      </CharacterPanel>
+      />
+      <TestnetOnlyNotice
+        character="The faucet helper"
+        reason="Friendbot resets often and testnet XLM has no market value."
+      />
       <Card>
         <form onSubmit={handleSubmit} className="space-y-5">
           <AddressInput value={address} onChange={setAddress} />
-          {isInvalidAddress ? (
-            <StatusMessage
-              type="error"
-              title="Cannot pour to this address"
-              description={validation.message}
-            />
-          ) : null}
-          <Button type="submit" disabled={isSubmitDisabled}>
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                Pouring...
-              </>
-            ) : (
-              <>
-                <Droplets className="h-4 w-4" aria-hidden />
-                Ask faucet helper to fund
-              </>
-            )}
+          <Button type="submit" disabled={loading || testnetOnlyBlocked}>
+            {loading ? "Pouring..." : "Ask faucet helper to fund"}
           </Button>
         </form>
       </Card>
@@ -174,7 +165,6 @@ export default function TestnetFaucetPage() {
       ) : (
         <StatusMessage type={message.type} title="Faucet helper status" description={message.text} />
       )}
-      <StatusMessage type="warning" title="Testnet only" description="Friendbot resets and testnet XLM have no market value." />
     </div>
   );
 }
