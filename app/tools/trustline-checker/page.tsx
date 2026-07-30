@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -11,6 +10,7 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { checkTrustline } from "@/lib/stellar/trustline";
+import { isCancelledError } from "@/lib/stellar/horizon";
 
 // Shareable link parameters (see docs/ISSUES.md #38): ?account=...&asset_code=...&issuer=...
 // Prefills fields only; a Horizon check still requires an explicit form submit.
@@ -72,18 +72,36 @@ function TrustlineCheckerContent() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
 
     try {
-      const result = await checkTrustline(account, assetCode, issuer, network);
+      const result = await checkTrustline(account, assetCode, issuer, network, controller.signal);
+      if (abortRef.current !== controller) return;
       setMessage({ type: result.exists ? "success" : "warning", text: result.message });
     } catch (error) {
+      if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
-      setLoading(false);
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setLoading(false);
+      }
     }
   }
 
@@ -114,14 +132,7 @@ function TrustlineCheckerContent() {
         </form>
       </Card>
       <StatusMessage type={message.type} title="Inspector report" description={message.text} />
-      {ignoredParams.length > 0 ? (
-        <StatusMessage
-          type="warning"
-          title="Link parameter ignored"
-          description={`The following link parameter(s) were empty, too long, or contained unsupported characters, so they were not applied: ${ignoredParams.join(", ")}.`}
-        />
-      ) : null}
-      {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
+      {network === "testnet" && message.type === "error" && message.text.includes("Account not found") ? (
         <StatusMessage
           type="info"
           title="Fund the testnet account first"
