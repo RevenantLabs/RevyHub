@@ -8,6 +8,7 @@ import { QRPreview } from "@/components/stellar/QRPreview";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
+import { FieldError } from "@/components/ui/FieldError";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { copyText } from "@/lib/copy";
@@ -36,6 +37,8 @@ export default function PaymentQrPage() {
 
   async function handleGenerate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (hasErrors) return;
 
     try {
       const nextUri = createPaymentUri({ destination, amount, asset, assetCode, assetIssuer, memo, network });
@@ -73,18 +76,11 @@ export default function PaymentQrPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <Card>
           <form onSubmit={handleGenerate} className="space-y-5">
-            <div className="space-y-1">
-              <AddressInput value={destination} onChange={setDestination} label="Destination address" />
-              {fieldErrors.destination ? (
-                <p className="text-xs text-[#9f342d]">{fieldErrors.destination}</p>
-              ) : null}
-            </div>
+            <AddressInput value={destination} onChange={setDestination} label="Destination address" error={fieldErrors.destination} />
             <label className="block space-y-2">
               <span className="text-sm font-medium text-[#29364d]">Amount</span>
               <Input value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="10" inputMode="decimal" />
-              {fieldErrors.amount ? (
-                <p className="text-xs text-[#9f342d]">{fieldErrors.amount}</p>
-              ) : null}
+              <FieldError id="amount-error" message={fieldErrors.amount} />
             </label>
             <label className="block space-y-2">
               <span className="text-sm font-medium text-[#29364d]">Asset</span>
@@ -96,33 +92,22 @@ export default function PaymentQrPage() {
                 <option value="XLM">XLM</option>
                 <option value="ISSUED">Issued asset</option>
               </select>
-              {fieldErrors.asset ? (
-                <p className="text-xs text-[#9f342d]">{fieldErrors.asset}</p>
-              ) : null}
+              <FieldError id="asset-error" message={fieldErrors.asset} />
             </label>
             {asset === "ISSUED" ? (
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="block space-y-1">
                   <span className="text-sm font-medium text-[#29364d]">Asset code</span>
                   <Input value={assetCode} onChange={(event) => setAssetCode(event.target.value)} placeholder="USDC" />
-                  {fieldErrors.assetCode ? (
-                    <p className="text-xs text-[#9f342d]">{fieldErrors.assetCode}</p>
-                  ) : null}
+                  <FieldError id="asset-code-error" message={fieldErrors.assetCode} />
                 </label>
-                <div className="space-y-1">
-                  <AddressInput value={assetIssuer} onChange={setAssetIssuer} label="Asset issuer" />
-                  {fieldErrors.assetIssuer ? (
-                    <p className="text-xs text-[#9f342d]">{fieldErrors.assetIssuer}</p>
-                  ) : null}
-                </div>
+                <AddressInput value={assetIssuer} onChange={setAssetIssuer} label="Asset issuer" error={fieldErrors.assetIssuer} />
               </div>
             ) : null}
             <label className="block space-y-2">
               <span className="text-sm font-medium text-[#29364d]">Memo optional</span>
               <Input value={memo} onChange={(event) => setMemo(event.target.value)} placeholder="Invoice 1001" />
-              {fieldErrors.memo ? (
-                <p className="text-xs text-[#9f342d]">{fieldErrors.memo}</p>
-              ) : null}
+              <FieldError id="memo-error" message={fieldErrors.memo} />
             </label>
             <Button type="submit" disabled={hasErrors}>
               Ask rocket to draw QR

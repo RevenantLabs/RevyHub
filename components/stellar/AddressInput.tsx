@@ -1,3 +1,5 @@
+import { useId } from "react";
+import { FieldError } from "@/components/ui/FieldError";
 import { Input } from "@/components/ui/Input";
 
 interface AddressInputProps {
@@ -5,23 +7,37 @@ interface AddressInputProps {
   onChange: (value: string) => void;
   label?: string;
   placeholder?: string;
+  error?: string | null;
+  id?: string;
 }
 
 export function AddressInput({
   value,
   onChange,
   label = "Stellar public address",
-  placeholder = "G..."
+  placeholder = "G...",
+  error,
+  id: idProp,
 }: AddressInputProps) {
+  const generatedId = useId();
+  const inputId = idProp ?? generatedId;
+  const errorId = `${inputId}-error`;
+
   return (
-    <label className="block space-y-2">
-      <span className="text-sm font-medium text-[#29364d]">{label}</span>
+    <div className="space-y-2">
+      <label htmlFor={inputId} className="text-sm font-medium text-[#29364d]">
+        {label}
+      </label>
       <Input
+        id={inputId}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         spellCheck={false}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
       />
-    </label>
+      <FieldError id={errorId} message={error} />
+    </div>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AddressInput } from "@/components/stellar/AddressInput";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { StatusMessage } from "@/components/ui/StatusMessage";
-import { AddressInput } from "@/components/stellar/AddressInput";
 import { validatePublicKey, type AddressValidationCode } from "@/lib/stellar/validateAddress";
 
 const RESULT_TITLES: Record<AddressValidationCode, string> = {
