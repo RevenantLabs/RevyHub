@@ -99,6 +99,7 @@ export const tools: Tool[] = [
     character: "A lens-eyed archivist unrolls transaction scrolls without leaving the library.",
     href: "/tools/xdr-inspector",
     status: "Working" as ToolStatus,
+    category: "validation",
     icon: ScanSearch
   },
   {
@@ -125,6 +126,7 @@ export const tools: Tool[] = [
     character: "A star librarian leafs through issuer TOML scrolls.",
     href: "/tools/asset-metadata",
     status: "Working" as ToolStatus,
+    category: "validation",
     icon: FileSearch
   },
   {
@@ -133,6 +135,7 @@ export const tools: Tool[] = [
     character: "A diligent wallet-style postmaster routes names to verified destinations.",
     href: "/tools/federation-resolver",
     status: "Working" as ToolStatus,
+    category: "validation",
     icon: AtSign
   },
   {
@@ -141,6 +144,7 @@ export const tools: Tool[] = [
     character: "A gauge gremlin reads the fee market on demand.",
     href: "/tools/fee-stats",
     status: "MVP" as ToolStatus,
+    category: "network",
     icon: Gauge
   }
 ];
