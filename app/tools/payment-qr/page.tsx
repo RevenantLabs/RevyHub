@@ -12,7 +12,9 @@ import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { copyText } from "@/lib/copy";
 import { buildPaymentQrFilename } from "@/lib/qrDownload";
-import { createPaymentUri, validatePaymentForm } from "@/lib/stellar/paymentUri";
+import { createPaymentUri, parsePaymentUri, validatePaymentForm } from "@/lib/stellar/paymentUri";
+import type { ParsedPaymentUri } from "@/lib/stellar/paymentUri";
+import { Textarea } from "@/components/ui/Textarea";
 
 export default function PaymentQrPage() {
   const { network } = useNetwork();
@@ -26,6 +28,9 @@ export default function PaymentQrPage() {
   const [qr, setQr] = useState("");
   const [downloadFilename, setDownloadFilename] = useState("");
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The rocket assistant can turn payment details into a demo QR poster." });
+  const [parseUri, setParseUri] = useState("");
+  const [parsedResult, setParsedResult] = useState<ParsedPaymentUri | null>(null);
+  const [parseError, setParseError] = useState("");
 
   const fieldErrors = useMemo(
     () => validatePaymentForm({ destination, amount, asset, assetCode, assetIssuer, memo }),
@@ -50,6 +55,35 @@ export default function PaymentQrPage() {
       setDownloadFilename("");
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     }
+  }
+
+  function handleParse() {
+    setParseError("");
+    setParsedResult(null);
+    try {
+      const result = parsePaymentUri(parseUri.trim());
+      setParsedResult(result);
+      setParseError("");
+    } catch (error) {
+      setParsedResult(null);
+      setParseError(error instanceof Error ? error.message : "Failed to parse URI.");
+    }
+  }
+
+  function handleFillForm() {
+    if (!parsedResult) return;
+    setDestination(parsedResult.destination);
+    setAmount(parsedResult.amount);
+    if (parsedResult.asset === "ISSUED") {
+      setAsset("ISSUED");
+      setAssetCode(parsedResult.assetCode ?? "");
+      setAssetIssuer(parsedResult.assetIssuer ?? "");
+    } else {
+      setAsset("XLM");
+      setAssetCode("");
+      setAssetIssuer("");
+    }
+    setMemo(parsedResult.memo ?? "");
   }
 
   async function copyUri() {
@@ -144,6 +178,55 @@ export default function PaymentQrPage() {
           <StatusMessage type="warning" title="Rocket safety note" description="This tool does not submit payments. Users must verify destination, amount, asset, and memo in their wallet." />
         </div>
       </div>
+      <Card className="space-y-5">
+        <h2 className="text-sm font-extrabold uppercase tracking-wide text-[#7a8ba6]">Parse &amp; preview existing URI</h2>
+        <Textarea
+          value={parseUri}
+          onChange={(event) => { setParseUri(event.target.value); setParseError(""); setParsedResult(null); }}
+          placeholder="Paste a web+stellar:pay URI here..."
+        />
+        <Button type="button" onClick={handleParse} disabled={!parseUri.trim()}>
+          Preview
+        </Button>
+        {parseError ? (
+          <StatusMessage type="error" title="Invalid payment URI" description={parseError} />
+        ) : null}
+        {parsedResult ? (
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wide text-[#7a8ba6]">Destination</span>
+                <p className="mt-0.5 break-all text-sm text-[#172033]">{parsedResult.destination}</p>
+              </div>
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wide text-[#7a8ba6]">Amount</span>
+                <p className="mt-0.5 text-sm text-[#172033]">{parsedResult.amount}</p>
+              </div>
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wide text-[#7a8ba6]">Asset</span>
+                <p className="mt-0.5 text-sm text-[#172033]">
+                  {parsedResult.asset === "XLM" ? "XLM" : `${parsedResult.assetCode} (issued by ${parsedResult.assetIssuer})`}
+                </p>
+              </div>
+              {parsedResult.memo ? (
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-[#7a8ba6]">Memo</span>
+                  <p className="mt-0.5 text-sm text-[#172033]">{parsedResult.memo}{parsedResult.memoType ? ` (${parsedResult.memoType})` : ""}</p>
+                </div>
+              ) : null}
+              {parsedResult.networkPassphrase ? (
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-[#7a8ba6]">Network</span>
+                  <p className="mt-0.5 text-sm text-[#172033]">{parsedResult.networkPassphrase}</p>
+                </div>
+              ) : null}
+            </div>
+            <Button type="button" variant="secondary" onClick={handleFillForm}>
+              Fill form with these values
+            </Button>
+          </div>
+        ) : null}
+      </Card>
     </div>
   );
 }
