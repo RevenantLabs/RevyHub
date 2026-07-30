@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useFocusResult } from "@/lib/hooks/useFocusResult";
 import { useEffect, useRef, useState } from "react";
 import { TransactionDetails, type TransactionSummary } from "@/components/stellar/TransactionDetails";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +19,8 @@ export default function TransactionLookupPage() {
   const [hash, setHash] = useState("");
   const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a testnet transaction hash to follow the trail." });
+  const { resultRef, moveFocusToResult } = useFocusResult();
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a transaction hash to follow the trail on the selected network." });
   const abortRef = useRef<AbortController | null>(null);
 
@@ -45,6 +49,8 @@ export default function TransactionLookupPage() {
       if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
+      setLoading(false);
+      moveFocusToResult();
       if (abortRef.current === controller) {
         abortRef.current = null;
         setLoading(false);
@@ -71,6 +77,14 @@ export default function TransactionLookupPage() {
           </Button>
         </form>
       </Card>
+      <div ref={resultRef} tabIndex={-1} className="outline-none" aria-live="polite">
+        <StatusMessage type={message.type} title="Detective report" description={message.text} />
+      </div>
+      {transaction ? (
+        <div tabIndex={-1} className="outline-none">
+          <TransactionDetails transaction={transaction} />
+        </div>
+      ) : null}
       <StatusMessage type={message.type} title="Detective report" description={message.text} />
       {loading ? (
         <div className="space-y-3" aria-label="Loading transaction details" role="status">

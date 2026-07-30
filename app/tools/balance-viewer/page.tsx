@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { useFocusResult } from "@/lib/hooks/useFocusResult";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -22,6 +24,7 @@ export default function BalanceViewerPage() {
     text: "The moon wallet is waiting for a funded account address on the selected network."
   });
   const [loading, setLoading] = useState(false);
+  const { resultRef, moveFocusToResult } = useFocusResult();
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -49,6 +52,8 @@ export default function BalanceViewerPage() {
       if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
+      setLoading(false);
+      moveFocusToResult();
       if (abortRef.current === controller) {
         abortRef.current = null;
         setLoading(false);
@@ -72,6 +77,10 @@ export default function BalanceViewerPage() {
           </Button>
         </form>
       </Card>
+      <div ref={resultRef} tabIndex={-1} className="outline-none" aria-live="polite">
+        <StatusMessage type={message.type} title={message.type === "success" ? "Wallet opened" : "Moon wallet status"} description={message.text} />
+      </div>
+      {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
       <StatusMessage type={message.type} title={message.type === "success" ? "Wallet opened" : "Moon wallet status"} description={message.text} />
       {network === "testnet" && message.type === "error" && message.text.includes("Account not found") ? (
         <StatusMessage
@@ -87,6 +96,11 @@ export default function BalanceViewerPage() {
             </Link>
           }
         />
+      ) : null}
+      {balances.length > 0 ? (
+        <div tabIndex={-1} className="outline-none">
+          <BalanceList balances={balances} />
+        </div>
       ) : null}
       {loading ? (
         <div className="space-y-3" aria-label="Loading balances" role="status">

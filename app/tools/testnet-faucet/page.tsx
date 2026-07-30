@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFocusResult } from "@/lib/hooks/useFocusResult";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -17,6 +18,7 @@ export default function TestnetFaucetPage() {
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The faucet helper pours testnet XLM only. No real funds are involved." });
+  const { resultRef, moveFocusToResult } = useFocusResult();
   const testnetOnlyBlocked = network !== "testnet";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -40,6 +42,7 @@ export default function TestnetFaucetPage() {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
       setLoading(false);
+      moveFocusToResult();
     }
   }
 
@@ -63,6 +66,10 @@ export default function TestnetFaucetPage() {
           </Button>
         </form>
       </Card>
+      <div ref={resultRef} tabIndex={-1} className="outline-none" aria-live="polite">
+        <StatusMessage type={message.type} title="Faucet helper status" description={message.text} />
+      </div>
+      <StatusMessage type="warning" title="Testnet only" description="Friendbot resets and testnet XLM have no market value." />
       {loading ? (
         <div aria-label="Funding in progress" role="status">
           <div className="flex gap-3 rounded-lg border border-white/80 bg-white/68 p-4 shadow-[4px_4px_0_rgba(142,220,244,0.22)]">
