@@ -1,43 +1,56 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TransactionDetails, type TransactionSummary } from "@/components/stellar/TransactionDetails";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { lookupTransaction } from "@/lib/stellar/transaction";
-import { isTransientError } from "@/lib/stellar/errors";
+import { isCancelledError } from "@/lib/stellar/horizon";
 
 export default function TransactionLookupPage() {
   const { network } = useNetwork();
   const [hash, setHash] = useState("");
   const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a testnet transaction hash to follow the trail." });
-  const [showRetry, setShowRetry] = useState(false);
+  const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a transaction hash to follow the trail on the selected network." });
+  const abortRef = useRef<AbortController | null>(null);
 
-  // Capture the last submitted hash so Retry can replay without requiring
-  // the user to re-enter valid input.
-  const lastHash = useRef<string>("");
+  useEffect(() => {
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
+  }, []);
 
-  async function fetchTransaction(targetHash: string) {
-    // TODO(issue #24): Add skeleton loading for transaction detail rows while Horizon responds.
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setTransaction(null);
     setShowRetry(false);
 
     try {
-      const result = await lookupTransaction(targetHash, network);
+      const result = await lookupTransaction(hash, network, controller.signal);
+      if (abortRef.current !== controller) return;
       setTransaction(result);
       setMessage({ type: "success", text: `The detective comet found the transaction in ${network} Horizon.` });
     } catch (error) {
+      if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
       setShowRetry(isTransientError(error));
     } finally {
-      setLoading(false);
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setLoading(false);
+      }
     }
   }
 
@@ -70,18 +83,24 @@ export default function TransactionLookupPage() {
           </Button>
         </form>
       </Card>
-      <StatusMessage
-        type={message.type}
-        title="Detective report"
-        description={message.text}
-        action={
-          showRetry ? (
-            <Button variant="secondary" disabled={loading} onClick={handleRetry} type="button">
-              {loading ? "Retrying..." : "Retry"}
-            </Button>
-          ) : undefined
-        }
-      />
+      <StatusMessage type={message.type} title="Detective report" description={message.text} />
+      {loading ? (
+        <div className="space-y-3" aria-label="Loading transaction details" role="status">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-6 w-24 rounded-full" />
+          </div>
+          <dl className="divide-y divide-[#c7d6e8] rounded-lg border border-white/80 bg-white/68">
+            {["Network", "Hash", "Ledger", "Source", "Fee", "Created", "Ops"].map((label) => (
+              <div key={label} className="grid gap-1 px-4 py-3 sm:grid-cols-3">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-4 w-48 sm:col-span-2" />
+              </div>
+            ))}
+          </dl>
+          <span className="sr-only">Loading transaction data from Horizon...</span>
+        </div>
+      ) : null}
       {transaction ? <TransactionDetails transaction={transaction} /> : null}
     </div>
   );
