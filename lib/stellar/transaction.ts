@@ -35,14 +35,15 @@ export async function lookupTransaction(
     );
 
     return {
-      hash: transaction.hash,
-      ledger: transaction.ledger_attr,
-      sourceAccount: transaction.source_account,
-      feeCharged: String(transaction.fee_charged),
-      createdAt: transaction.created_at,
-      successful: transaction.successful,
+      hash: tx.hash,
+      ledger: tx.ledger_attr,
+      sourceAccount: tx.source_account,
+      feeCharged: String(tx.fee_charged),
+      createdAt: tx.created_at,
+      successful: tx.successful,
       network,
-      operationCount: transaction.operation_count
+      operationCount: tx.operation_count,
+      memo
     };
   } catch (error) {
     if (isCancelledError(error)) {
