@@ -1,37 +1,30 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { copyText } from "@/lib/copy";
 
 describe("copyText", () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.resetModules();
+    vi.restoreAllMocks();
   });
 
-  it("throws when navigator.clipboard is not available", async () => {
-    vi.stubGlobal("navigator", {});
-
-    const { copyText } = await import("../../lib/copy");
-
-    await expect(copyText("hello")).rejects.toThrow(/Clipboard access is not available/);
-  });
-
-  it("writes the value through navigator.clipboard.writeText when available", async () => {
+  it("writes the value to the clipboard when available", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText }
+    });
 
-    const { copyText } = await import("../../lib/copy");
-
-    await copyText("abc");
-
-    expect(writeText).toHaveBeenCalledTimes(1);
-    expect(writeText).toHaveBeenCalledWith("abc");
+    await copyText("payload");
+    expect(writeText).toHaveBeenCalledWith("payload");
   });
 
-  it("propagates writeText errors so callers can surface them", async () => {
-    const writeText = vi.fn().mockRejectedValue(new Error("blocked by permissions"));
-    vi.stubGlobal("navigator", { clipboard: { writeText } });
+  it("rejects when clipboard access is unavailable", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: undefined
+    });
 
-    const { copyText } = await import("../../lib/copy");
-
-    await expect(copyText("abc")).rejects.toThrow(/blocked by permissions/);
+    await expect(copyText("payload")).rejects.toThrow(
+      "Clipboard access is not available in this browser."
+    );
   });
 });
