@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Keypair, Networks } from "@stellar/stellar-sdk";
-import { createPaymentUri } from "../../lib/stellar/paymentUri";
+import { createPaymentUri, validatePaymentForm } from "../../lib/stellar/paymentUri";
 
 describe("createPaymentUri", () => {
   const destination = Keypair.random().publicKey();
@@ -88,7 +88,17 @@ describe("createPaymentUri", () => {
         amount: "10",
         asset: "XLM"
       })
-    ).toThrow(/start with G/);
+    ).toThrow(/start with the letter G/);
+
+    const invalidChecksum =
+      destination.slice(0, -1) + (destination.endsWith("A") ? "B" : "A");
+    expect(
+      validatePaymentForm({
+        destination: invalidChecksum,
+        amount: "10",
+        asset: "XLM"
+      }).destination
+    ).toMatch(/checksum/);
   });
 
   it("rejects non-positive and non-numeric amounts", () => {
@@ -99,9 +109,25 @@ describe("createPaymentUri", () => {
     expect(() => createPaymentUri({ destination, amount: "ten", asset: "XLM" })).toThrow(
       /positive payment amount/
     );
+
+    for (const amount of ["-1", "Infinity", "NaN", ""]) {
+      expect(
+        validatePaymentForm({ destination, amount, asset: "XLM" }).amount
+      ).toMatch(/positive payment amount/);
+    }
   });
 
-  it("rejects memo text longer than Stellar memo text limits", () => {
+  it("preserves valid decimal amount boundaries", () => {
+    const uri = createPaymentUri({
+      destination,
+      amount: "0.0000001",
+      asset: "XLM"
+    });
+
+    expect(new URLSearchParams(uri.split("?")[1]).get("amount")).toBe("0.0000001");
+  });
+
+  it("rejects memo text longer than Stellar's 28-byte text-memo limit", () => {
     expect(() =>
       createPaymentUri({
         destination,
@@ -109,6 +135,82 @@ describe("createPaymentUri", () => {
         asset: "XLM",
         memo: "this memo is intentionally too long"
       })
-    ).toThrow(/28 characters or less/);
+    ).toThrow(/28 UTF-8 bytes or less/);
+
+    expect(() =>
+      createPaymentUri({
+        destination,
+        amount: "10",
+        asset: "XLM",
+        memo: "🚀".repeat(8)
+      })
+    ).toThrow(/28 UTF-8 bytes or less/);
+
+    expect(
+      validatePaymentForm({
+        destination,
+        amount: "10",
+        asset: "XLM",
+        memo: "a".repeat(29)
+      }).memo
+    ).toMatch(/28 UTF-8 bytes or less/);
+  });
+
+  it("returns field-level validation errors and accepts a 28-byte memo", () => {
+    const issuer = Keypair.random().publicKey();
+
+    expect(
+      validatePaymentForm({
+        destination,
+        amount: "1",
+        asset: "XLM",
+        memo: "a".repeat(28)
+      })
+    ).toEqual({});
+
+    expect(
+      validatePaymentForm({
+        destination: "invalid",
+        amount: "0",
+        asset: "ISSUED",
+        assetCode: "",
+        assetIssuer: issuer,
+        memo: "🚀".repeat(8)
+      })
+    ).toMatchObject({
+      destination: expect.any(String),
+      amount: expect.any(String),
+      assetCode: expect.any(String),
+      memo: expect.any(String)
+    });
+  });
+
+  it("accepts issued asset-code boundaries and rejects missing issuer data", () => {
+    const issuer = Keypair.random().publicKey();
+
+    for (const assetCode of ["A", "ABCDEFGHIJKL"]) {
+      const uri = createPaymentUri({
+        destination,
+        amount: "2",
+        asset: "ISSUED",
+        assetCode,
+        assetIssuer: issuer
+      });
+
+      expect(new URLSearchParams(uri.split("?")[1]).get("asset_code")).toBe(assetCode);
+    }
+
+    expect(
+      validatePaymentForm({
+        destination,
+        amount: "2",
+        asset: "ISSUED",
+        assetCode: "",
+        assetIssuer: ""
+      })
+    ).toMatchObject({
+      assetCode: expect.any(String),
+      assetIssuer: expect.any(String)
+    });
   });
 });
