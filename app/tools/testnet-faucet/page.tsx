@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Droplets, Loader2 } from "lucide-react";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -32,15 +33,102 @@ export default function TestnetFaucetPage() {
 
     // TODO(issue #24): Add a shared async loading pattern for faucet, balance, and transaction tools.
     setLoading(true);
+    setResult(null);
 
-    try {
-      await fundTestnetAccount(address);
-      setMessage({ type: "success", text: "The faucet helper sent the Friendbot request for this testnet account." });
-    } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
-    } finally {
-      setLoading(false);
+    const outcome = await fundTestnetAccount(address);
+    setResult(outcome);
+    setLoading(false);
+  }
+
+  function renderResultMessage() {
+    if (loading) {
+      return (
+        <StatusMessage
+          type="info"
+          title="Pouring testnet XLM..."
+          description="The faucet helper is sending a Friendbot request for this account."
+        />
+      );
     }
+
+    if (!result) {
+      return (
+        <StatusMessage
+          type="info"
+          title="Faucet helper is ready"
+          description="Enter a Stellar testnet public address and the faucet helper will pour XLM through Friendbot. No real funds are involved."
+        />
+      );
+    }
+
+    if (result.ok) {
+      return (
+        <div className="space-y-3">
+          <StatusMessage
+            type="success"
+            title="Account funded"
+            description="The faucet helper poured testnet XLM into this account."
+          />
+          <Card className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-[#9a6754]">Funded account</span>
+            </div>
+            <CopyableValue label="public address" value={address} />
+            {result.hash ? (
+              <div>
+                <span className="text-xs font-extrabold uppercase tracking-wide text-[#9a6754]">Transaction</span>
+                <CopyableValue label="transaction hash" value={result.hash} />
+              </div>
+            ) : null}
+            {result.ledger > 0 ? (
+              <p className="text-sm text-[#7f8ea3]">
+                Recorded in ledger{" "}
+                <span className="font-extrabold text-[#178fb5]">{result.ledger.toLocaleString()}</span>
+              </p>
+            ) : null}
+          </Card>
+        </div>
+      );
+    }
+
+    // Error case
+    return (
+      <div className="space-y-3">
+        <StatusMessage
+          type="error"
+          title="Faucet helper could not pour"
+          description={result.message}
+        />
+        {result.detail ? (
+          <StatusMessage
+            type="info"
+            title="What happened?"
+            description={result.detail}
+          />
+        ) : null}
+        {result.code === "ALREADY_FUNDED" ? (
+          <StatusMessage
+            type="warning"
+            title="Already funded?"
+            description="Try creating a fresh Stellar keypair or use the Balance Viewer to check existing funds."
+          />
+        ) : null}
+        {result.code === "RATE_LIMITED" ? (
+          <StatusMessage
+            type="warning"
+            title="Pouring too fast"
+            description="Friendbot limits how quickly you can request testnet XLM. Wait about 60 seconds and try again."
+          />
+        ) : null}
+        {result.code === "NETWORK_ERROR" ? (
+          <StatusMessage
+            type="warning"
+            title="Network trouble"
+            description="Check your internet connection. Friendbot (friendbot.stellar.org) may be temporarily unreachable."
+          />
+        ) : null}
+      </div>
+    );
   }
 
   return (
