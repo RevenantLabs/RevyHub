@@ -18,6 +18,10 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+## Extending the Toolkit
+
+To add a new tool end-to-end (utility, page, navigation metadata, tests, and error states), follow [docs/EXTENDING.md](./docs/EXTENDING.md).
+
 ## Branch Naming
 
 Use short, descriptive branch names:
@@ -40,11 +44,13 @@ Prefer clear conventional-style commits:
 
 Start with [docs/ISSUES.md](./docs/ISSUES.md). Choose an issue with a difficulty level that matches your experience, then open a GitHub issue or comment on an existing one before starting larger work.
 
-<!-- TODO(issue #18): Add GitHub issue templates and link them from this section once .github/ISSUE_TEMPLATE exists. -->
+This project includes [GitHub issue templates](.github/ISSUE_TEMPLATE/) to help structure contributions:
+- [Bug report](.github/ISSUE_TEMPLATE/bug_report.md) — for reporting broken workflows or UI states
+- [Feature request](.github/ISSUE_TEMPLATE/feature_request.md) — for proposing new Stellar tools or improvements
+- [Documentation](.github/ISSUE_TEMPLATE/documentation.md) — for suggesting doc or guide updates
+- [Pull request](.github/PULL_REQUEST_TEMPLATE.md) — for submitting your changes
 
 ## Pull Requests
-
-<!-- TODO(issue #19): Add a pull request template and document the required PR checklist here. -->
 
 PRs should include:
 
@@ -54,7 +60,9 @@ PRs should include:
 - Screenshots for UI changes
 - Any follow-up TODOs
 
-GitHub issue and pull request templates are included under `.github/`.
+The pull request template also asks contributors to confirm lint, tests, the production build, documentation updates, and relevant loading or error states.
+
+Use the [bug report](.github/ISSUE_TEMPLATE/bug_report.md), [feature request](.github/ISSUE_TEMPLATE/feature_request.md), or [documentation](.github/ISSUE_TEMPLATE/documentation.md) template when opening issues, and the [pull request template](.github/PULL_REQUEST_TEMPLATE.md) when submitting changes.
 
 ## Code Quality
 
