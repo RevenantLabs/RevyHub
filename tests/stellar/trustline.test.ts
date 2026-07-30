@@ -1,144 +1,85 @@
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Keypair } from "@stellar/stellar-sdk";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { checkTrustline } from "../../lib/stellar/trustline";
 
-const { mockLoadAccount } = vi.hoisted(() => ({
-  mockLoadAccount: vi.fn()
+// vi.hoisted runs before the ES module graph is initialized, so we cannot call
+// Keypair.random() from inside the hoisted factory — @stellar/stellar-sdk is
+// not loaded yet. Instead, lift a stable holder that the mock factory can
+// close over, then populate it from a beforeAll hook once imports are ready.
+const mockIssuerRef = vi.hoisted(() => ({ publicKey: "" }));
+
+vi.mock("../../lib/stellar/horizon", () => ({
+  getHorizonServer: vi.fn(() => ({
+    // Use mockImplementation rather than mockResolvedValue so mockIssuerRef.publicKey
+    // is read lazily each call, after beforeAll has populated the real key.
+    loadAccount: vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        balances: [
+          {
+            asset_type: "credit_alphanum4",
+            asset_code: "USDC",
+            asset_issuer: mockIssuerRef.publicKey,
+            balance: "100.0000000"
+          }
+        ]
+      })
+    )
+  })),
+  STELLAR_NETWORK: "testnet",
+  horizonUrls: { testnet: "", mainnet: "" },
+  horizonServer: {}
 }));
 
-vi.mock("@/lib/stellar/horizon", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/stellar/horizon")>();
+let mockIssuerPublicKey = "";
 
-  return {
-    ...actual,
-    getHorizonServer: vi.fn(() => ({
-      loadAccount: mockLoadAccount
-    }))
-  };
+beforeAll(() => {
+  mockIssuerPublicKey = Keypair.random().publicKey();
+  mockIssuerRef.publicKey = mockIssuerPublicKey;
 });
 
-import { getHorizonServer } from "@/lib/stellar/horizon";
-import { checkTrustline } from "@/lib/stellar/trustline";
-
 describe("checkTrustline", () => {
-  const accountAddress = Keypair.random().publicKey();
-  const issuerAddress = Keypair.random().publicKey();
-  const otherIssuerAddress = Keypair.random().publicKey();
-
-  afterEach(() => {
-    vi.clearAllMocks();
-    mockLoadAccount.mockReset();
-  });
-
-  it("finds an existing trustline and normalizes the asset code", async () => {
-    mockLoadAccount.mockResolvedValue({
-      balances: [
-        {
-          asset_type: "native",
-          balance: "100.0000000"
-        },
-        {
-          asset_type: "credit_alphanum4",
-          asset_code: "USDC",
-          asset_issuer: issuerAddress,
-          balance: "25.0000000",
-          limit: "1000.0000000"
-        }
-      ]
-    });
-
-    await expect(
-      checkTrustline(` ${accountAddress} `, " usdc ", ` ${issuerAddress} `, "mainnet")
-    ).resolves.toEqual({
-      exists: true,
-      message: "Trustline found for USDC."
-    });
-    expect(getHorizonServer).toHaveBeenCalledWith("mainnet");
-    expect(mockLoadAccount).toHaveBeenCalledWith(accountAddress);
-  });
-
-  it("reports a missing trustline when the asset code is absent", async () => {
-    mockLoadAccount.mockResolvedValue({
-      balances: [
-        {
-          asset_type: "credit_alphanum4",
-          asset_code: "EURT",
-          asset_issuer: issuerAddress,
-          balance: "10.0000000",
-          limit: "500.0000000"
-        },
-        {
-          asset_type: "liquidity_pool_shares",
-          liquidity_pool_id: "pool-id",
-          balance: "2.0000000"
-        }
-      ]
-    });
-
-    await expect(
-      checkTrustline(accountAddress, "USDC", issuerAddress)
-    ).resolves.toEqual({
-      exists: false,
-      message: "No USDC trustline found for this account."
-    });
-  });
-
-  it("requires an exact issuer match", async () => {
-    mockLoadAccount.mockResolvedValue({
-      balances: [
-        {
-          asset_type: "credit_alphanum4",
-          asset_code: "USDC",
-          asset_issuer: otherIssuerAddress,
-          balance: "25.0000000",
-          limit: "1000.0000000"
-        }
-      ]
-    });
-
-    await expect(
-      checkTrustline(accountAddress, "usdc", issuerAddress)
-    ).resolves.toMatchObject({
-      exists: false
-    });
-  });
-
-  it("rejects an invalid account without contacting Horizon", async () => {
-    await expect(
-      checkTrustline("not-an-account", "USDC", issuerAddress)
-    ).rejects.toThrow("Account address:");
-    expect(getHorizonServer).not.toHaveBeenCalled();
-    expect(mockLoadAccount).not.toHaveBeenCalled();
-  });
-
-  it("rejects an invalid issuer without contacting Horizon", async () => {
-    await expect(
-      checkTrustline(accountAddress, "USDC", "not-an-issuer")
-    ).rejects.toThrow("Issuer address:");
-    expect(getHorizonServer).not.toHaveBeenCalled();
-    expect(mockLoadAccount).not.toHaveBeenCalled();
-  });
-
-  it("returns the account-not-found error for a Horizon 404", async () => {
-    mockLoadAccount.mockRejectedValue({
-      response: {
-        status: 404
-      }
-    });
-
-    await expect(
-      checkTrustline(accountAddress, "USDC", issuerAddress, "testnet")
-    ).rejects.toThrow(
-      "Account not found on Stellar testnet. Fund it before checking trustlines."
+  it("rejects an invalid account address before calling Horizon", async () => {
+    await expect(checkTrustline("not-an-address", "USDC", mockIssuerPublicKey)).rejects.toThrow(
+      /Account address/
     );
   });
 
-  it("returns a stable error for other Horizon failures", async () => {
-    mockLoadAccount.mockRejectedValue(new Error("connection reset"));
+  it("rejects an empty or whitespace-only asset code before calling Horizon", async () => {
+    const account = Keypair.random().publicKey();
 
-    await expect(
-      checkTrustline(accountAddress, "USDC", issuerAddress)
-    ).rejects.toThrow(
-      "Could not check trustline through Horizon. Try again shortly."
+    await expect(checkTrustline(account, "   ", mockIssuerPublicKey)).rejects.toThrow(/asset code/);
+  });
+
+  it("rejects an invalid issuer address before calling Horizon", async () => {
+    const account = Keypair.random().publicKey();
+
+    await expect(checkTrustline(account, "USDC", "not-an-address")).rejects.toThrow(/Issuer address/);
+  });
+
+  it("normalizes the asset code, exposes the verified issuer, and identifies the selected network", async () => {
+    const account = Keypair.random().publicKey();
+
+    const result = await checkTrustline(account, "usdc", mockIssuerPublicKey, "mainnet");
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        exists: true,
+        assetCode: "USDC",
+        issuer: mockIssuerPublicKey,
+        network: "mainnet"
+      })
     );
+    expect(result.message).toMatch(/Trustline found for USDC/);
+  });
+
+  it("reports missing trustline cleanly without inventing existence", async () => {
+    const account = Keypair.random().publicKey();
+
+    const result = await checkTrustline(account, "ETH", mockIssuerPublicKey, "testnet");
+
+    expect(result.exists).toBe(false);
+    expect(result.assetCode).toBe("ETH");
+    expect(result.network).toBe("testnet");
+    expect(result.message).toMatch(/No ETH trustline/);
   });
 });

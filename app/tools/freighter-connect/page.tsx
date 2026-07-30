@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { normalizeFreighterNetwork } from "@/lib/stellar/freighter";
 
 declare global {
   interface Window {
@@ -47,11 +48,16 @@ export default function FreighterConnectPage() {
   const [available, setAvailable] = useState(false);
   const [connected, setConnected] = useState(false);
   const [publicKey, setPublicKey] = useState("");
-  const [walletNetwork, setWalletNetwork] = useState("");
-  const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The wallet mascot is listening for Freighter in this browser." });
-  const walletNetworkKind = walletNetwork ? normalizeFreighterNetwork(walletNetwork) : "";
+  const [walletNetwork, setWalletNetwork] = useState<string | null | undefined>(undefined);
+  const [message, setMessage] = useState({
+    type: "info" as "info" | "success" | "warning" | "error",
+    text: "The wallet mascot is listening for Freighter in this browser."
+  });
+  const networkState = normalizeFreighterNetwork(walletNetwork);
+  const reportedLabel =
+    networkState.status === "missing" ? "not yet reported" : networkState.reported;
   const networkMismatch =
-    walletNetworkKind !== "" && walletNetworkKind !== "unknown" && walletNetworkKind !== network;
+    networkState.status === "supported" && networkState.network !== network;
 
   useEffect(() => {
     let active = true;
@@ -64,7 +70,7 @@ export default function FreighterConnectPage() {
 
       if (!detected) {
         setConnected(false);
-        setWalletNetwork("");
+        setWalletNetwork(undefined);
         setMessage({
           type: "warning",
           text: "The wallet mascot could not find Freighter. Install the extension to try connection examples."
@@ -75,12 +81,14 @@ export default function FreighterConnectPage() {
       const api = window.freighterApi;
       const isConnected = api?.isConnected ? await api.isConnected().catch(() => false) : false;
       const isAllowed = api?.isAllowed ? await api.isAllowed().catch(() => false) : false;
-      const nextWalletNetwork = api?.getNetwork ? await api.getNetwork().catch(() => "") : "";
+      const nextWalletNetwork = api?.getNetwork
+        ? await api.getNetwork().catch(() => undefined)
+        : undefined;
 
       if (!active) return;
 
       setConnected(isConnected || isAllowed);
-      setWalletNetwork(nextWalletNetwork);
+      setWalletNetwork(nextWalletNetwork ?? undefined);
       setMessage({
         type: isConnected || isAllowed ? "success" : "info",
         text:
@@ -106,17 +114,53 @@ export default function FreighterConnectPage() {
     try {
       const key = await window.freighterApi.getPublicKey();
       const nextWalletNetwork = window.freighterApi.getNetwork
-        ? await window.freighterApi.getNetwork().catch(() => "")
+        ? await window.freighterApi.getNetwork().catch(() => undefined)
         : walletNetwork;
       setPublicKey(key);
       setConnected(true);
-      setWalletNetwork(nextWalletNetwork);
+      setWalletNetwork(nextWalletNetwork ?? undefined);
       setMessage({ type: "success", text: "The wallet mascot received the Freighter public key." });
     } catch {
       setMessage({ type: "error", text: "Connection request was rejected or could not be completed." });
     }
   }
 
+  // The four educational states are rendered explicitly so that an unsupported
+  // or missing wallet network never produces a misleading "match" against the
+  // app-selected network.
+  let networkCheck: React.ReactNode;
+  if (networkState.status === "missing") {
+    networkCheck = (
+      <StatusMessage
+        type="info"
+        title="Wallet network not yet reported"
+        description="Freighter will share its active network here once the extension is allowed to read it."
+      />
+    );
+  } else if (networkState.status === "unsupported") {
+    networkCheck = (
+      <StatusMessage
+        type="info"
+        title="Wallet network not supported"
+        description={`RevyHubX currently supports Stellar testnet and mainnet only. Freighter is reporting "${networkState.reported}", which the app does not support. Switch Freighter to testnet or mainnet, or return here once it does.`}
+      />
+    );
+  } else if (networkMismatch) {
+    networkCheck = (
+      <StatusMessage
+        type="warning"
+        title="Network mismatch"
+        description={`The app is set to ${network}, but Freighter reports ${networkState.reported}. Switch one of them before testing wallet-driven workflows.`}
+      />
+    );
+  } else {
+    networkCheck = (
+      <StatusMessage
+        type="success"
+        title="Networks aligned"
+        description={`Both the app and Freighter are using ${network}. You can run wallet-driven tests safely.`}
+      />
+    );
   function clearLocalConnection() {
     setPublicKey("");
     setWalletNetwork("");
@@ -162,6 +206,7 @@ export default function FreighterConnectPage() {
           </div>
           <div className="rounded-lg border border-white/80 bg-white/60 p-4">
             <p className="text-xs font-extrabold uppercase tracking-wide text-[#9a6754]">Wallet network</p>
+            <p className="mt-2 text-sm text-[#29364d]">{reportedLabel}</p>
             <div className="mt-2 flex items-center gap-2">
               <p className="text-sm text-[#29364d]">{walletNetwork ? displayNetwork(walletNetwork) : "Unknown"}</p>
               {walletNetwork ? (
@@ -184,6 +229,7 @@ export default function FreighterConnectPage() {
         </a>
       </Card>
       <StatusMessage type={message.type} title="Wallet mascot status" description={message.text} />
+      {networkCheck}
       {networkMismatch ? (
         <StatusMessage
           type="warning"
