@@ -2,12 +2,12 @@ import {
   getHorizonServer,
   isCancelledError,
   isTimeoutError,
+  mapHorizonError,
   runHorizonRequest,
   STELLAR_NETWORK,
   type StellarNetwork
 } from "@/lib/stellar/horizon";
 import { validatePublicKey } from "@/lib/stellar/validateAddress";
-import { getResponseStatus } from "@/lib/stellar/account";
 
 export interface TrustlineCheck {
   exists: boolean;
@@ -67,7 +67,9 @@ export async function checkTrustline(
       throw new Error("The Horizon trustline request timed out. Try again.");
     }
 
-    if (getResponseStatus(error) === 404) {
+    const mapped = mapHorizonError(error, "account");
+
+    if (mapped.code === "not_found") {
       throw new Error(
         network === "testnet"
           ? "Account not found on Stellar testnet. Fund it before checking trustlines."
@@ -75,7 +77,7 @@ export async function checkTrustline(
       );
     }
 
-    throw new Error("Could not check trustline through Horizon. Try again shortly.");
+    throw mapped;
   }
 }
 

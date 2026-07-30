@@ -122,3 +122,62 @@ export function getNetworkLabel(network: StellarNetwork) {
 export function getHorizonServer(network: StellarNetwork = STELLAR_NETWORK) {
   return new Horizon.Server(horizonUrls[network]);
 }
+
+// ---------------------------------------------------------------------------
+// Typed error codes returned by all Horizon utilities
+// ---------------------------------------------------------------------------
+
+export type HorizonErrorCode =
+  | "not_found"
+  | "rate_limited"
+  | "timeout"
+  | "server_error"
+  | "unknown";
+
+export class HorizonError extends Error {
+  constructor(
+    public readonly code: HorizonErrorCode,
+    message: string
+  ) {
+    super(message);
+    this.name = "HorizonError";
+  }
+}
+
+function getResponseStatus(error: unknown): number | undefined {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const response = (error as { response?: { status?: number } }).response;
+    return response?.status;
+  }
+  return undefined;
+}
+
+/**
+ * Maps a raw Horizon / network error to a stable {@link HorizonError}.
+ * Pass a `context` string (e.g. "account", "transaction") for readable messages.
+ */
+export function mapHorizonError(error: unknown, context: string): HorizonError {
+  const status = getResponseStatus(error);
+
+  if (status === 404) {
+    return new HorizonError("not_found", `${context} not found.`);
+  }
+
+  if (status === 429) {
+    return new HorizonError("rate_limited", "Horizon rate limit reached. Wait a moment and try again.");
+  }
+
+  if (
+    status === undefined &&
+    error instanceof Error &&
+    /timeout|network|fetch/i.test(error.message)
+  ) {
+    return new HorizonError("timeout", "Could not reach Horizon. Check your connection and try again.");
+  }
+
+  if (status !== undefined && status >= 500) {
+    return new HorizonError("server_error", "Horizon returned a server error. Try again shortly.");
+  }
+
+  return new HorizonError("unknown", `Could not load ${context} from Horizon. Try again in a moment.`);
+}

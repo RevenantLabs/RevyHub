@@ -2,6 +2,7 @@ import {
   getHorizonServer,
   isCancelledError,
   isTimeoutError,
+  mapHorizonError,
   runHorizonRequest,
   STELLAR_NETWORK,
   type StellarNetwork
@@ -70,9 +71,9 @@ export async function getAccountBalances(
       throw new Error("The Horizon balance request timed out. Try again.");
     }
 
-    const responseStatus = getResponseStatus(error);
+    const mapped = mapHorizonError(error, "account");
 
-    if (responseStatus === 404) {
+    if (mapped.code === "not_found") {
       throw new Error(
         network === "testnet"
           ? "Account not found on Stellar testnet. Fund it with Friendbot first."
@@ -80,15 +81,6 @@ export async function getAccountBalances(
       );
     }
 
-    throw new Error("Could not load account balances from Horizon. Try again in a moment.");
+    throw mapped;
   }
-}
-
-export function getResponseStatus(error: unknown) {
-  if (typeof error === "object" && error !== null && "response" in error) {
-    const response = (error as { response?: { status?: number } }).response;
-    return response?.status;
-  }
-
-  return undefined;
 }
