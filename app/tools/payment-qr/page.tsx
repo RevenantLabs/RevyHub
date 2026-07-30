@@ -1,8 +1,9 @@
 "use client";
 
 import QRCode from "qrcode";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AddressInput } from "@/components/stellar/AddressInput";
+import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { QRPreview } from "@/components/stellar/QRPreview";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -11,56 +12,11 @@ import { FieldError } from "@/components/ui/FieldError";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { copyText } from "@/lib/copy";
-import { createPaymentUri } from "@/lib/stellar/paymentUri";
-import { validatePublicKey } from "@/lib/stellar/validateAddress";
-
-interface FieldErrors {
-  destination?: string;
-  amount?: string;
-  assetCode?: string;
-  assetIssuer?: string;
-  memo?: string;
-}
-
-function validateForm(
-  destination: string,
-  amount: string,
-  asset: "XLM" | "ISSUED",
-  assetCode: string,
-  assetIssuer: string,
-  memo: string,
-): FieldErrors {
-  const errors: FieldErrors = {};
-
-  const destValidation = validatePublicKey(destination);
-  if (!destValidation.valid) errors.destination = destValidation.message;
-
-  const amountNum = Number(amount);
-  if (!amount || !Number.isFinite(amountNum) || amountNum <= 0) {
-    errors.amount = "Enter a positive payment amount.";
-  }
-
-  if (asset === "ISSUED") {
-    if (!assetCode.trim()) {
-      errors.assetCode = "Enter an issued asset code.";
-    } else if (!/^[a-zA-Z0-9]{1,12}$/.test(assetCode.trim().toUpperCase())) {
-      errors.assetCode = "Asset codes must be 1 to 12 letters or numbers.";
-    }
-
-    const issuerValidation = validatePublicKey(assetIssuer);
-    if (!issuerValidation.valid) {
-      errors.assetIssuer = issuerValidation.message;
-    }
-  }
-
-  if (memo && memo.length > 28) {
-    errors.memo = "Memo text should be 28 characters or less for a simple Stellar text memo.";
-  }
-
-  return errors;
-}
+import { buildPaymentQrFilename } from "@/lib/qrDownload";
+import { createPaymentUri, validatePaymentForm } from "@/lib/stellar/paymentUri";
 
 export default function PaymentQrPage() {
+  const { network } = useNetwork();
   const [destination, setDestination] = useState("");
   const [amount, setAmount] = useState("");
   const [asset, setAsset] = useState<"XLM" | "ISSUED">("XLM");
@@ -69,34 +25,32 @@ export default function PaymentQrPage() {
   const [memo, setMemo] = useState("");
   const [uri, setUri] = useState("");
   const [qr, setQr] = useState("");
+  const [downloadFilename, setDownloadFilename] = useState("");
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The rocket assistant can turn payment details into a demo QR poster." });
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  function clearFieldError(field: keyof FieldErrors) {
-    setFieldErrors((prev) => {
-      const next = { ...prev };
-      delete next[field];
-      return next;
-    });
-  }
+  const fieldErrors = useMemo(
+    () => validatePaymentForm({ destination, amount, asset, assetCode, assetIssuer, memo }),
+    [destination, amount, asset, assetCode, assetIssuer, memo]
+  );
+
+  const hasErrors = Object.keys(fieldErrors).length > 0;
 
   async function handleGenerate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const errors = validateForm(destination, amount, asset, assetCode, assetIssuer, memo);
-    setFieldErrors(errors);
-
-    if (Object.keys(errors).length > 0) return;
+    if (hasErrors) return;
 
     try {
-      const nextUri = createPaymentUri({ destination, amount, asset, assetCode, assetIssuer, memo });
+      const nextUri = createPaymentUri({ destination, amount, asset, assetCode, assetIssuer, memo, network });
       const nextQr = await QRCode.toDataURL(nextUri, { margin: 1, width: 256 });
       setUri(nextUri);
       setQr(nextQr);
-      setMessage({ type: "success", text: "The rocket assistant finished the QR poster." });
+      setDownloadFilename(buildPaymentQrFilename({ asset, assetCode }));
+      setMessage({ type: "success", text: "The rocket assistant validated the details and finished the QR poster." });
     } catch (error) {
       setUri("");
       setQr("");
+      setDownloadFilename("");
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     }
   }
@@ -117,32 +71,17 @@ export default function PaymentQrPage() {
         tone="rocket"
         eyebrow="Rocket assistant"
         title="Payment QR Generator"
-        description="The rocket assistant frames destination, amount, asset, and memo into a readable demo payment poster."
+        description="The rocket assistant frames destination, amount, asset, and memo into a SEP-0007 formatted web+stellar:pay payment URI and QR poster."
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <Card>
           <form onSubmit={handleGenerate} className="space-y-5">
-            <AddressInput
-              value={destination}
-              onChange={(value) => { setDestination(value); clearFieldError("destination"); }}
-              label="Destination address"
-              error={fieldErrors.destination}
-            />
-            <div className="space-y-2">
-              <label htmlFor="payment-amount" className="text-sm font-medium text-[#29364d]">
-                Amount
-              </label>
-              <Input
-                id="payment-amount"
-                value={amount}
-                onChange={(event) => { setAmount(event.target.value); clearFieldError("amount"); }}
-                placeholder="10"
-                inputMode="decimal"
-                aria-invalid={fieldErrors.amount ? true : undefined}
-                aria-describedby={fieldErrors.amount ? "payment-amount-error" : undefined}
-              />
-              <FieldError id="payment-amount-error" message={fieldErrors.amount} />
-            </div>
+            <AddressInput value={destination} onChange={setDestination} label="Destination address" error={fieldErrors.destination} />
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-[#29364d]">Amount</span>
+              <Input value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="10" inputMode="decimal" />
+              <FieldError id="amount-error" message={fieldErrors.amount} />
+            </label>
             <label className="block space-y-2">
               <span className="text-sm font-medium text-[#29364d]">Asset</span>
               <select
@@ -153,53 +92,34 @@ export default function PaymentQrPage() {
                 <option value="XLM">XLM</option>
                 <option value="ISSUED">Issued asset</option>
               </select>
+              <FieldError id="asset-error" message={fieldErrors.asset} />
             </label>
             {asset === "ISSUED" ? (
               <div className="grid gap-5 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="payment-asset-code" className="text-sm font-medium text-[#29364d]">
-                    Asset code
-                  </label>
-                  <Input
-                    id="payment-asset-code"
-                    value={assetCode}
-                    onChange={(event) => { setAssetCode(event.target.value); clearFieldError("assetCode"); }}
-                    placeholder="USDC"
-                    aria-invalid={fieldErrors.assetCode ? true : undefined}
-                    aria-describedby={fieldErrors.assetCode ? "payment-asset-code-error" : undefined}
-                  />
-                  <FieldError id="payment-asset-code-error" message={fieldErrors.assetCode} />
-                </div>
-                <AddressInput
-                  value={assetIssuer}
-                  onChange={(value) => { setAssetIssuer(value); clearFieldError("assetIssuer"); }}
-                  label="Asset issuer"
-                  error={fieldErrors.assetIssuer}
-                />
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-[#29364d]">Asset code</span>
+                  <Input value={assetCode} onChange={(event) => setAssetCode(event.target.value)} placeholder="USDC" />
+                  <FieldError id="asset-code-error" message={fieldErrors.assetCode} />
+                </label>
+                <AddressInput value={assetIssuer} onChange={setAssetIssuer} label="Asset issuer" error={fieldErrors.assetIssuer} />
               </div>
             ) : null}
-            <div className="space-y-2">
-              <label htmlFor="payment-memo" className="text-sm font-medium text-[#29364d]">
-                Memo optional
-              </label>
-              <Input
-                id="payment-memo"
-                value={memo}
-                onChange={(event) => setMemo(event.target.value)}
-                placeholder="Invoice 1001"
-                aria-invalid={fieldErrors.memo ? true : undefined}
-                aria-describedby={fieldErrors.memo ? "payment-memo-error" : undefined}
-              />
-              <FieldError id="payment-memo-error" message={fieldErrors.memo} />
-            </div>
-            <Button type="submit">Ask rocket to draw QR</Button>
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-[#29364d]">Memo optional</span>
+              <Input value={memo} onChange={(event) => setMemo(event.target.value)} placeholder="Invoice 1001" />
+              <FieldError id="memo-error" message={fieldErrors.memo} />
+            </label>
+            <Button type="submit" disabled={hasErrors}>
+              Ask rocket to draw QR
+            </Button>
           </form>
         </Card>
         <div className="space-y-4">
           <StatusMessage type={message.type} title="Rocket desk status" description={message.text} />
-          {qr ? <QRPreview dataUrl={qr} /> : null}
+          {qr && downloadFilename ? <QRPreview dataUrl={qr} filename={downloadFilename} /> : null}
           {uri ? (
             <Card className="space-y-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#7a8ba6]">SEP-0007 payment URI</span>
               <p className="break-all text-xs text-[#4e5c73]">{uri}</p>
               <Button type="button" variant="secondary" onClick={copyUri}>
                 Copy URI
