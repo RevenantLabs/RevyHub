@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { copyText } from "@/lib/copy";
+import { buildPaymentQrFilename } from "@/lib/qrDownload";
 import { createPaymentUri, validatePaymentForm } from "@/lib/stellar/paymentUri";
 
 export default function PaymentQrPage() {
@@ -24,6 +25,7 @@ export default function PaymentQrPage() {
   const [memo, setMemo] = useState("");
   const [uri, setUri] = useState("");
   const [qr, setQr] = useState("");
+  const [downloadFilename, setDownloadFilename] = useState("");
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The rocket assistant can turn payment details into a demo QR poster." });
 
   const fieldErrors = useMemo(
@@ -41,10 +43,12 @@ export default function PaymentQrPage() {
       const nextQr = await QRCode.toDataURL(nextUri, { margin: 1, width: 256 });
       setUri(nextUri);
       setQr(nextQr);
+      setDownloadFilename(buildPaymentQrFilename({ asset, assetCode }));
       setMessage({ type: "success", text: "The rocket assistant validated the details and finished the QR poster." });
     } catch (error) {
       setUri("");
       setQr("");
+      setDownloadFilename("");
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     }
   }
@@ -127,7 +131,7 @@ export default function PaymentQrPage() {
         </Card>
         <div className="space-y-4">
           <StatusMessage type={message.type} title="Rocket desk status" description={message.text} />
-          {qr ? <QRPreview dataUrl={qr} /> : null}
+          {qr && downloadFilename ? <QRPreview dataUrl={qr} filename={downloadFilename} /> : null}
           {uri ? (
             <Card className="space-y-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-[#7a8ba6]">SEP-0007 payment URI</span>
