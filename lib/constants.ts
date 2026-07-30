@@ -15,22 +15,47 @@ import {
 
 export type ToolStatus = "Working" | "MVP" | "Coming Soon";
 
-export const tools = [
+export type ToolCategory = "validation" | "balances" | "network";
+
+export interface ToolCategoryInfo {
+  label: string;
+  description: string;
+}
+
+export const toolCategories: Record<ToolCategory, ToolCategoryInfo> = {
+  validation: {
+    label: "Validation & Security",
+    description: "Check addresses, trustlines, and asset integrity."
+  },
+  balances: {
+    label: "Balances & Transactions",
+    description: "View balances, generate payments, and inspect transactions."
+  },
+  network: {
+    label: "Network & Wallets",
+    description: "Connect wallets, fund accounts, and interact with the network."
+  }
+};
+
+export interface Tool {
+  title: string;
+  description: string;
+  character: string;
+  href: string;
+  status: ToolStatus;
+  category: ToolCategory;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+export const tools: Tool[] = [
   {
     title: "Address Validator",
     description: "Validate Stellar public keys and explain address format issues.",
     character: "A careful star clerk checks every public key badge.",
     href: "/tools/address-validator",
     status: "Working" as ToolStatus,
+    category: "validation",
     icon: ShieldCheck
-  },
-  {
-    title: "Balance Viewer",
-    description: "Inspect testnet account balances through Horizon.",
-    character: "A moon wallet opens its pockets for testnet balances.",
-    href: "/tools/balance-viewer",
-    status: "Working" as ToolStatus,
-    icon: CircleDollarSign
   },
   {
     title: "Trustline Checker",
@@ -38,7 +63,17 @@ export const tools = [
     character: "A tiny inspector looks for asset handshakes.",
     href: "/tools/trustline-checker",
     status: "MVP" as ToolStatus,
+    category: "validation",
     icon: BadgeCheck
+  },
+  {
+    title: "Balance Viewer",
+    description: "Inspect account balances on the selected network through Horizon.",
+    character: "A moon wallet opens its pockets for the selected network's balances.",
+    href: "/tools/balance-viewer",
+    status: "Working" as ToolStatus,
+    category: "balances",
+    icon: CircleDollarSign
   },
   {
     title: "Payment QR Generator",
@@ -46,14 +81,16 @@ export const tools = [
     character: "A rocket assistant frames payment details as a QR poster.",
     href: "/tools/payment-qr",
     status: "Working" as ToolStatus,
+    category: "balances",
     icon: QrCode
   },
   {
     title: "Transaction Lookup",
-    description: "Look up testnet transactions by hash.",
+    description: "Look up transactions by hash on the selected network.",
     character: "A detective comet follows transaction trails through Horizon.",
     href: "/tools/transaction-lookup",
     status: "MVP" as ToolStatus,
+    category: "balances",
     icon: Search
   },
   {
@@ -62,6 +99,7 @@ export const tools = [
     character: "A lens-eyed archivist unrolls transaction scrolls without leaving the library.",
     href: "/tools/xdr-inspector",
     status: "Working" as ToolStatus,
+    category: "validation",
     icon: ScanSearch
   },
   {
@@ -70,6 +108,7 @@ export const tools = [
     character: "A friendly wallet mascot waves when Freighter is nearby.",
     href: "/tools/freighter-connect",
     status: "MVP" as ToolStatus,
+    category: "network",
     icon: WalletCards
   },
   {
@@ -78,6 +117,7 @@ export const tools = [
     character: "A faucet character pours harmless testnet XLM.",
     href: "/tools/testnet-faucet",
     status: "Working" as ToolStatus,
+    category: "network",
     icon: Droplets
   },
   {
@@ -86,6 +126,7 @@ export const tools = [
     character: "A star librarian leafs through issuer TOML scrolls.",
     href: "/tools/asset-metadata",
     status: "Working" as ToolStatus,
+    category: "validation",
     icon: FileSearch
   },
   {
@@ -94,6 +135,7 @@ export const tools = [
     character: "A diligent wallet-style postmaster routes names to verified destinations.",
     href: "/tools/federation-resolver",
     status: "Working" as ToolStatus,
+    category: "validation",
     icon: AtSign
   },
   {
@@ -102,6 +144,7 @@ export const tools = [
     character: "A gauge gremlin reads the fee market on demand.",
     href: "/tools/fee-stats",
     status: "MVP" as ToolStatus,
+    category: "network",
     icon: Gauge
   }
 ];
