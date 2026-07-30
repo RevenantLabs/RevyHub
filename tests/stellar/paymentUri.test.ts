@@ -214,3 +214,106 @@ describe("createPaymentUri", () => {
     });
   });
 });
+
+describe("parsePaymentUri", () => {
+  const destination = Keypair.random().publicKey();
+
+  it("parses a valid native XLM payment URI", () => {
+    const uri = `web+stellar:pay?destination=${destination}&amount=10.5&asset_code=XLM&memo=Invoice%201001`;
+    const result = parsePaymentUri(uri);
+
+    expect(result.destination).toBe(destination);
+    expect(result.amount).toBe("10.5");
+    expect(result.asset).toBe("XLM");
+    expect(result.memo).toBe("Invoice 1001");
+    expect(result.assetCode).toBeUndefined();
+    expect(result.assetIssuer).toBeUndefined();
+  });
+
+  it("parses a valid issued asset payment URI", () => {
+    const issuer = Keypair.random().publicKey();
+    const uri = `web+stellar:pay?destination=${destination}&amount=25&asset_code=USDC&asset_issuer=${issuer}&memo=Payment`;
+    const result = parsePaymentUri(uri);
+
+    expect(result.destination).toBe(destination);
+    expect(result.amount).toBe("25");
+    expect(result.asset).toBe("ISSUED");
+    expect(result.assetCode).toBe("USDC");
+    expect(result.assetIssuer).toBe(issuer);
+    expect(result.memo).toBe("Payment");
+  });
+
+  it("parses a URI without optional memo", () => {
+    const uri = `web+stellar:pay?destination=${destination}&amount=5&asset_code=XLM`;
+    const result = parsePaymentUri(uri);
+
+    expect(result.destination).toBe(destination);
+    expect(result.amount).toBe("5");
+    expect(result.asset).toBe("XLM");
+    expect(result.memo).toBeUndefined();
+  });
+
+  it("parses a URI where XLM is inferred as default asset_code", () => {
+    const uri = `web+stellar:pay?destination=${destination}&amount=1`;
+    const result = parsePaymentUri(uri);
+
+    expect(result.destination).toBe(destination);
+    expect(result.amount).toBe("1");
+    expect(result.asset).toBe("XLM");
+  });
+
+  it("rejects a URI missing the web+stellar:pay prefix", () => {
+    expect(() =>
+      parsePaymentUri(`https://evil.com/?destination=${destination}`)
+    ).toThrow(/must start with/);
+  });
+
+  it("rejects a URI missing destination parameter", () => {
+    expect(() =>
+      parsePaymentUri("web+stellar:pay?amount=10")
+    ).toThrow(/destination/);
+  });
+
+  it("rejects a URI missing amount parameter", () => {
+    expect(() =>
+      parsePaymentUri(`web+stellar:pay?destination=${destination}`)
+    ).toThrow(/amount/);
+  });
+
+  it("rejects a URI with invalid destination address", () => {
+    expect(() =>
+      parsePaymentUri("web+stellar:pay?destination=invalid&amount=10")
+    ).toThrow(/start with G/);
+  });
+
+  it("rejects a URI with non-positive amount", () => {
+    expect(() =>
+      parsePaymentUri(`web+stellar:pay?destination=${destination}&amount=0`)
+    ).toThrow(/positive payment amount/);
+  });
+
+  it("rejects a URI with an invalid asset code", () => {
+    const issuer = Keypair.random().publicKey();
+    expect(() =>
+      parsePaymentUri(`web+stellar:pay?destination=${destination}&amount=10&asset_code=TOO-LONG&asset_issuer=${issuer}`)
+    ).toThrow(/1 to 12/);
+  });
+
+  it("rejects a URI with an invalid issuer address", () => {
+    expect(() =>
+      parsePaymentUri(`web+stellar:pay?destination=${destination}&amount=10&asset_code=USDC&asset_issuer=not-an-issuer`)
+    ).toThrow(/Asset issuer/);
+  });
+
+  it("rejects a URI with memo exceeding length limit", () => {
+    expect(() =>
+      parsePaymentUri(`web+stellar:pay?destination=${destination}&amount=10&memo=${encodeURIComponent("this memo is intentionally too long")}`)
+    ).toThrow(/28 characters or less/);
+  });
+
+  it("does not throw for arbitrary URLs — they fail the prefix check", () => {
+    expect(() => parsePaymentUri("javascript:alert(1)")).toThrow(/must start with/);
+    expect(() => parsePaymentUri("https://phishing.example.com")).toThrow(/must start with/);
+    expect(() => parsePaymentUri("data:text/html,<script>alert(1)</script>")).toThrow(/must start with/);
+  });
+});

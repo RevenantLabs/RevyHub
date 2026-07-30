@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { QRPreview } from "@/components/stellar/QRPreview";
+import { QRScanner } from "@/components/stellar/QRScanner";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -52,6 +53,35 @@ export default function PaymentQrPage() {
     }
   }
 
+  async function handleScanResult(data: string) {
+    try {
+      const parsed = parsePaymentUri(data);
+      setDestination(parsed.destination);
+      setAmount(parsed.amount);
+      setAsset(parsed.asset);
+      if (parsed.asset === "ISSUED") {
+        setAssetCode(parsed.assetCode ?? "");
+        setAssetIssuer(parsed.assetIssuer ?? "");
+      } else {
+        setAssetCode("");
+        setAssetIssuer("");
+      }
+      setMemo(parsed.memo ?? "");
+
+      // Generate preview from the scanned data
+      const nextUri = createPaymentUri(parsed);
+      await generateQr(nextUri);
+
+      setScanTab(false);
+      setMessage({ type: "success", text: "The rocket assistant parsed the scanned QR code and filled in the details." });
+
+      // Scroll the form into view on small screens
+      viewportRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Invalid QR content." });
+    }
+  }
+
   async function copyUri() {
     if (!uri) return;
     try {
@@ -63,7 +93,7 @@ export default function PaymentQrPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6" ref={viewportRef}>
       <CharacterPanel
         tone="rocket"
         eyebrow="Rocket assistant"
