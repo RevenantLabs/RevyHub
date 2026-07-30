@@ -1,10 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Copy } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { AddressInput } from "@/components/stellar/AddressInput";
+ feat/copy-to-clipboard-utility
+import { Button } from "@/components/ui/Button";
+import { useCopyToClipboard } from "@/lib/useCopyToClipboard";
+import { validatePublicKey } from "@/lib/stellar/validateAddress";
+
 import { validatePublicKey, type AddressValidationCode } from "@/lib/stellar/validateAddress";
 
 const RESULT_TITLES: Record<AddressValidationCode, string> = {
@@ -19,9 +25,11 @@ const RESULT_TITLES: Record<AddressValidationCode, string> = {
 };
 
 const WARNING_CODES: AddressValidationCode[] = ["secret-key", "muxed-account"];
+ main
 
 export default function AddressValidatorPage() {
   const [address, setAddress] = useState("");
+  const { copied, copy } = useCopyToClipboard();
   const result = useMemo(() => validatePublicKey(address), [address]);
   const hasInput = address.trim().length > 0;
 
@@ -43,6 +51,34 @@ export default function AddressValidatorPage() {
       />
       <Card className="space-y-5">
         <AddressInput value={address} onChange={setAddress} />
+ feat/copy-to-clipboard-utility
+        {hasInput ? (
+          <div className="space-y-3">
+            <StatusMessage
+              type={result.valid ? "success" : "error"}
+              title={result.valid ? "Valid public address" : "Invalid public address"}
+              description={result.message}
+            />
+            {result.valid ? (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => copy(address)}
+                className="w-full sm:w-auto"
+              >
+                <Copy className="mr-1.5 h-4 w-4" aria-hidden />
+                {copied ? "Copied" : "Copy address"}
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <StatusMessage
+            type="info"
+            title="Hand the badge to the star clerk"
+            description="Stellar public keys normally start with G. Never enter a secret key or seed phrase."
+          />
+        )}
+
         <StatusMessage
           type={statusType}
           title={hasInput ? RESULT_TITLES[result.code] : RESULT_TITLES.empty}
@@ -72,6 +108,7 @@ export default function AddressValidatorPage() {
           <span className="font-bold text-[#172033]">S</span> and must never be shared with
           anyone or entered into a tool like this one.
         </p>
+ main
       </Card>
     </div>
   );

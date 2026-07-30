@@ -10,9 +10,14 @@ import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
+ feat/copy-to-clipboard-utility
+import { useCopyToClipboard } from "@/lib/useCopyToClipboard";
+import { createPaymentUri } from "@/lib/stellar/paymentUri";
+
 import { copyText } from "@/lib/copy";
 import { buildPaymentQrFilename } from "@/lib/qrDownload";
 import { createPaymentUri, validatePaymentForm } from "@/lib/stellar/paymentUri";
+ main
 
 export default function PaymentQrPage() {
   const { network } = useNetwork();
@@ -26,6 +31,7 @@ export default function PaymentQrPage() {
   const [qr, setQr] = useState("");
   const [downloadFilename, setDownloadFilename] = useState("");
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The rocket assistant can turn payment details into a demo QR poster." });
+  const { copied: uriCopied, copy: copyUri } = useCopyToClipboard();
 
   const fieldErrors = useMemo(
     () => validatePaymentForm({ destination, amount, asset, assetCode, assetIssuer, memo }),
@@ -49,16 +55,6 @@ export default function PaymentQrPage() {
       setQr("");
       setDownloadFilename("");
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
-    }
-  }
-
-  async function copyUri() {
-    if (!uri) return;
-    try {
-      await copyText(uri);
-      setMessage({ type: "success", text: "Payment URI copied from the rocket assistant." });
-    } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Clipboard permission failed." });
     }
   }
 
@@ -136,8 +132,8 @@ export default function PaymentQrPage() {
             <Card className="space-y-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-[#7a8ba6]">SEP-0007 payment URI</span>
               <p className="break-all text-xs text-[#4e5c73]">{uri}</p>
-              <Button type="button" variant="secondary" onClick={copyUri}>
-                Copy URI
+              <Button type="button" variant="secondary" onClick={() => copyUri(uri)}>
+                {uriCopied ? "Copied" : "Copy URI"}
               </Button>
             </Card>
           ) : null}
