@@ -75,6 +75,8 @@ export function runHorizonRequest<T>(
   });
 }
 
+export const stellarNetworks: StellarNetwork[] = ["testnet", "mainnet"];
+
 export const STELLAR_NETWORK: StellarNetwork =
   process.env.NEXT_PUBLIC_STELLAR_NETWORK === "mainnet" ? "mainnet" : "testnet";
 
@@ -84,7 +86,38 @@ export const horizonUrls = {
   mainnet: process.env.NEXT_PUBLIC_HORIZON_MAINNET_URL ?? "https://horizon.stellar.org"
 };
 
-export const horizonServer = new Horizon.Server(horizonUrls[STELLAR_NETWORK]);
+interface NetworkMeta {
+  label: string;
+  /** Short line the helper cast uses when explaining which chain it is talking to. */
+  blurb: string;
+  /** Mainnet moves real value, so the UI gives it the cautious tone. */
+  tone: "info" | "warning";
+}
+
+export const networkMeta: Record<StellarNetwork, NetworkMeta> = {
+  testnet: {
+    label: "Testnet",
+    blurb: "a practice network where XLM has no market value",
+    tone: "info"
+  },
+  mainnet: {
+    label: "Mainnet",
+    blurb: "the public network where balances hold real value",
+    tone: "warning"
+  }
+};
+
+/**
+ * Narrows untrusted input (localStorage, env vars, select values) to a known network.
+ * Anything unrecognized falls back to testnet, the safer default for a helper toolkit.
+ */
+export function normalizeNetwork(value: unknown): StellarNetwork {
+  return value === "mainnet" ? "mainnet" : "testnet";
+}
+
+export function getNetworkLabel(network: StellarNetwork) {
+  return networkMeta[network].label;
+}
 
 export function getHorizonServer(network: StellarNetwork = STELLAR_NETWORK) {
   return new Horizon.Server(horizonUrls[network]);

@@ -8,106 +8,13 @@ RevyHubX is a [Next.js](https://nextjs.org/) App Router application that organis
 
 ## Application Layers
 
-```
-app/              Route-level tool pages and the root layout
-components/       Reusable React components
-  layout/         App shell, header, sidebar
-  ui/             Generic presentation components (Button, Card, Badge, etc.)
-  stellar/        Stellar-specific display and input components
-lib/              Shared utilities and Stellar API helpers
-  stellar/        SDK-facing Horizon, Friendbot, and validation logic
-docs/             Contributor documentation, roadmap, issue ideas
-tests/            Unit tests for core utilities
-scripts/          Automation scripts (GitHub issue creation)
-```
-
-### How the layers interact
-
-1. **`app/` pages** own their form state, loading state, and user-facing strings.
-2. Pages import **`components/`** parts to render the user interface.
-3. Pages call **`lib/stellar/`** helpers to interact with the Stellar network.
-4. Helpers in **`lib/stellar/`** use the `@stellar/stellar-sdk` package and return typed results.
-5. Pages wrap results with **`components/ui/StatusMessage`** or dedicated result components to show feedback.
-
-```
-  Tool Page (app/tools/*)
-      │
-      ├── imports CharacterPanel, Card, Button, Input, AddressInput (components/)
-      ├── calls lib/stellar/* helper
-      ├── wraps result in StatusMessage (components/ui/)
-      └── renders result in dedicated display (e.g., BalanceList, TransactionDetails)
-```
-
----
-
-## Folder Structure Explained
-
-### `app/` — Route-level pages
-
-The root layout (`app/layout.tsx`) defines HTML metadata, imports `AppShell`, and wraps all children with shared layout.
-
-#### `app/page.tsx` — Home dashboard
-
-Introduces the project with a hero section, feature highlights, project stats, and a grid of `ToolCard` links to every tool page. Uses `tools` from `lib/constants.ts` to render each card.
-
-#### `app/tools/*` — Tool pages
-
-Each tool lives in its own route directory:
-
-| Route | Tool | Network-aware |
-|---|---|---|
-| `/tools/address-validator` | Validate Stellar public addresses | No |
-| `/tools/balance-viewer` | Inspect account balances | Yes |
-| `/tools/trustline-checker` | Check issued-asset trustlines | Yes |
-| `/tools/payment-qr` | Generate payment QR codes | No |
-| `/tools/transaction-lookup` | Look up transactions by hash | Yes |
-| `/tools/freighter-connect` | Connect to Freighter wallet | Partial |
-| `/tools/testnet-faucet` | Fund testnet accounts via Friendbot | Testnet-only |
-
-### `components/` — Reusable React components
-
-#### `components/layout/`
-
-| Component | Role |
-|---|---|
-| `AppShell.tsx` | Wraps the entire app with `NetworkProvider`, the header, sidebar, and a scrollable `<main>` area. Sets up the glass-morphism background container. |
-| `AppHeader.tsx` | Sticky top bar with logo, app name, network selector `<select>`, live network badge, and a link to the GitHub repo. |
-| `Sidebar.tsx` | Desktop-only navigation sidebar listing all tools with active-route highlighting. Uses the `tools` array from `lib/constants.ts` and the `lucide-react` icon from each tool definition. |
-
-#### `components/ui/` — Generic presentation components
-
-| Component | Props | Purpose |
-|---|---|---|
-| `Button` | `variant` (`primary`, `secondary`, `ghost`, `danger`), `disabled` | Themed action button with character-filled shadow styles and disabled state. |
-| `Card` | `className` | Semi-transparent white card with rounded corners, border, and a pink shadow. |
-| `Badge` | `tone` (`success`, `info`, `warning`, `muted`) | Small rounded pill for tags (network badge, tool status, transaction status). |
-| `StatusMessage` | `type` (`success`, `error`, `warning`, `info`), `title`, `description`, `action` | Themed alert-style block with an icon, title, optional description, and optional action link (used for "account not found — fund via faucet" guidance). |
-| `Input` | Standard HTML input props | Styled text input with focus ring matching the theme. |
-| `ToolCard` | `title`, `description`, `character`, `href`, `status`, `icon` | Homepage card for each tool with hover animation, status badge, character quote, and "Meet helper" link. |
-| `CharacterPanel` | `tone`, `eyebrow`, `title`, `description` | Header section for each tool page showing an expressive character face (coloured for each tone), a title, and a description. |
-
-#### `components/stellar/` — Stellar-specific components
-
-| Component | Purpose |
-|---|---|
-| `NetworkProvider.tsx` | React context that persists the user's selected network (`testnet` / `mainnet`) in `localStorage`. Provides `useNetwork()` hook. Wraps the entire app. |
-| `AddressInput.tsx` | Label + Input combo for Stellar public addresses. Defaults placeholder to `G...`. |
-| `CopyableValue.tsx` | Displays a truncated Stellar address with a "Copy" button. Handles clipboard fallback. |
-| `BalanceList.tsx` | Renders a list of `DisplayBalance` items (asset code, issuer/truncated address, amount badge). |
-| `TransactionDetails.tsx` | Displays a `TransactionSummary` as a key-value definition list with a `Badge` for success/failure status and a link to Stellar Expert. |
-| `QRPreview.tsx` | Displays a QR code image from a data URL. |
-
-### `lib/` — Shared utilities
-
-#### `lib/utils.ts`
-
-Contains:
-- `cn(...inputs)` — Merges Tailwind class names using `clsx` and `tailwind-merge`.
-- `truncateMiddle(value, visible)` — Truncates a long string like `GABCDE...WXYZ`.
-
-#### `lib/constants.ts`
-
-Defines the canonical `tools` array used by `Sidebar`, `ToolCard`, and the home page. Each tool entry includes `title`, `description`, `character` (anthropomorphic description), `href`, `status` (`"Working"`, `"MVP"`, or `"Coming Soon"`), and `icon`.
+- `app/` contains route-level pages. Each tool route owns its form state, loading state, and user-facing copy.
+- `components/ui/` contains shared presentation components such as buttons, cards, badges, and status messages.
+- `components/stellar/` contains Stellar-specific display and input components such as address inputs, balance lists, QR previews, and transaction details.
+- `lib/stellar/` contains SDK-facing logic, validation, and Horizon/Friendbot helpers. Route components should call these helpers instead of using the Stellar SDK directly.
+- `docs/` contains contributor roadmap, issue scope, and project-level documentation.
+- `docs/EXTENDING.md` is the step-by-step tutorial for adding a new tool (page, helper, tests, navigation).
+- `docs/DEPLOYMENT.md` and `docs/STELLAR_BASICS.md` support operators and new Stellar developers.
 
 #### `lib/copy.ts`
 
@@ -159,29 +66,13 @@ app/tools/<tool-name>/page.tsx  ("use client")
 
 ## Network Model
 
-```
-Environment variable: NEXT_PUBLIC_STELLAR_NETWORK (default: "testnet")
-                           │
-                           ▼
-                   lib/stellar/horizon.ts
-                    ┌──────────────────┐
-                    │ STELLAR_NETWORK   │
-                    │ horizonUrls       │
-                    │ getHorizonServer()│
-                    └────────┬─────────┘
-                             │
-              ┌──────────────┴──────────────┐
-              ▼                              ▼
-   components/stellar/               Tool pages via
-   NetworkProvider.tsx               useNetwork() hook
-   (persists in localStorage)        (pass network to helpers)
-```
+`lib/stellar/horizon.ts` owns the default network, Horizon URLs, and the display metadata for each network (`networkMeta`, `getNetworkLabel`, `normalizeNetwork`). The app defaults to testnet unless `NEXT_PUBLIC_STELLAR_NETWORK=mainnet` is provided.
 
-The default network is `testnet`. Users can switch between testnet and mainnet using the header dropdown. The selection persists in `localStorage` under the key `revyhubx-network`.
+`components/stellar/NetworkProvider.tsx` treats the selection as an external store: the choice lives in `localStorage` and is read through `useSyncExternalStore`. The server and the first client render both use the build-time default, so a stored `mainnet` preference applies without a hydration mismatch. A `storage` listener keeps open tabs in sync, and an in-memory mirror keeps the switch working when `localStorage` is unavailable.
 
-Tools that should always use testnet (e.g., Testnet Faucet Helper) hardcode testnet and display a permanent warning.
+New Horizon helpers should accept an optional `StellarNetwork` argument and default to `STELLAR_NETWORK`. Any user-facing copy that names a network should read it from context rather than hardcoding "testnet", so it stays correct on both networks.
 
----
+Testnet-only tools should render `components/stellar/TestnetOnlyNotice.tsx`. It states the limitation on testnet, and on any other network it warns that the tool is paused, disables the action, and offers a one-click switch back to testnet. The Friendbot faucet is the current example.
 
 ## Quality Gates
 

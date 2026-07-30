@@ -74,7 +74,7 @@ export default function TrustlineCheckerPage() {
         </form>
       </Card>
       <StatusMessage type={message.type} title="Inspector report" description={message.text} />
-      {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
+      {network === "testnet" && message.type === "error" && message.text.includes("Account not found") ? (
         <StatusMessage
           type="info"
           title="Fund the testnet account first"
