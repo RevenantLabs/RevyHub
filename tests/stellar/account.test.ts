@@ -57,14 +57,17 @@ describe("getAccountBalances", () => {
     const balances = await getAccountBalances(publicKey, "testnet");
 
     expect(balances).toEqual([
-      { assetCode: "XLM", amount: "100", isNative: true },
+      { assetCode: "XLM", assetType: "native", amount: "100", isNative: true },
       {
         assetCode: "USDC",
+        assetType: "issued",
         issuer,
         amount: "50"
       },
       {
         assetCode: "Liquidity pool shares",
+        assetType: "liquidity_pool_shares",
+        poolId: "0000000000000000000000000000000000000000000000000000000000000000",
         issuer: "0000000000000000000000000000000000000000000000000000000000000000",
         amount: "10"
       }

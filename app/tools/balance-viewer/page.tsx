@@ -88,6 +88,7 @@ export default function BalanceViewerPage() {
           }
         />
       ) : null}
+
       {loading ? (
         <div className="space-y-3" aria-label="Loading balances" role="status">
           {[1, 2, 3].map((i) => (
@@ -107,7 +108,7 @@ export default function BalanceViewerPage() {
           <span className="sr-only">Loading balance data from Horizon...</span>
         </div>
       ) : null}
-      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
+      {balances.length > 0 ? <BalanceList balances={balances} network={network} /> : null}
     </div>
   );
 }
