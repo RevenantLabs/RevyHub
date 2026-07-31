@@ -88,6 +88,7 @@ export default function BalanceViewerPage() {
           }
         />
       ) : null}
+
       {loading ? (
         <div className="space-y-3" aria-label="Loading balances" role="status">
           {[1, 2, 3].map((i) => (
