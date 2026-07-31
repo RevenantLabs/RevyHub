@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -11,6 +11,7 @@ import { BalanceList, type DisplayBalance } from "@/components/stellar/BalanceLi
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { getAccountBalances } from "@/lib/stellar/account";
+import { isCancelledError } from "@/lib/stellar/horizon";
 
 export default function BalanceViewerPage() {
   const { network } = useNetwork();
@@ -18,23 +19,40 @@ export default function BalanceViewerPage() {
   const [balances, setBalances] = useState<DisplayBalance[]>([]);
   const [message, setMessage] = useState<{ type: "info" | "success" | "error"; text: string }>({
     type: "info",
-    text: "The moon wallet is waiting for a funded testnet account address."
+    text: "The moon wallet is waiting for a funded account address on the selected network."
   });
   const [loading, setLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setBalances([]);
 
     try {
-      const nextBalances = await getAccountBalances(address, network);
+      const nextBalances = await getAccountBalances(address, network, controller.signal);
+      if (abortRef.current !== controller) return;
       setBalances(nextBalances);
       setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
     } catch (error) {
+      if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
-      setLoading(false);
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setLoading(false);
+      }
     }
   }
 
@@ -55,7 +73,7 @@ export default function BalanceViewerPage() {
         </form>
       </Card>
       <StatusMessage type={message.type} title={message.type === "success" ? "Wallet opened" : "Moon wallet status"} description={message.text} />
-      {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
+      {network === "testnet" && message.type === "error" && message.text.includes("Account not found") ? (
         <StatusMessage
           type="info"
           title="Create the testnet account"

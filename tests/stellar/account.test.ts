@@ -89,10 +89,15 @@ const { loadAccountMock, getHorizonServerMock } = vi.hoisted(() => {
   return { loadAccountMock, getHorizonServerMock };
 });
 
-vi.mock("../../lib/stellar/horizon", () => ({
-  getHorizonServer: getHorizonServerMock,
-  STELLAR_NETWORK: "testnet"
-}));
+vi.mock("../../lib/stellar/horizon", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../lib/stellar/horizon")>();
+
+  return {
+    ...actual,
+    getHorizonServer: getHorizonServerMock,
+    STELLAR_NETWORK: "testnet"
+  };
+});
 
 describe("getAccountBalances", () => {
   const publicKey = Keypair.random().publicKey();
@@ -130,16 +135,16 @@ describe("getAccountBalances", () => {
     const balances = await getAccountBalances(publicKey, "testnet");
 
     expect(balances).toEqual([
-      { assetCode: "XLM", amount: "100.0000000" },
+      { assetCode: "XLM", amount: "100", isNative: true },
       {
         assetCode: "USDC",
         issuer,
-        amount: "50.0000000"
+        amount: "50"
       },
       {
         assetCode: "Liquidity pool shares",
         issuer: "0000000000000000000000000000000000000000000000000000000000000000",
-        amount: "10.0000000"
+        amount: "10"
       }
     ]);
     expect(getHorizonServerMock).toHaveBeenCalledWith("testnet");
@@ -189,7 +194,7 @@ describe("getAccountBalances", () => {
 
   it("rejects invalid public keys before calling Horizon", async () => {
     await expect(getAccountBalances("not-a-stellar-address", "testnet")).rejects.toThrow(
-      /Stellar public addresses usually start with G/
+      /Stellar public addresses start with the letter G/
     );
 
     expect(getHorizonServerMock).not.toHaveBeenCalled();
