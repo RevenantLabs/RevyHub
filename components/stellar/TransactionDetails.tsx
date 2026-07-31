@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, Copy } from "lucide-react";
+import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { CopyableValue } from "@/components/stellar/CopyableValue";
 import { copyText } from "@/lib/copy";
@@ -23,6 +24,8 @@ export interface TransactionSummary {
   network: StellarNetwork;
   operationCount?: number;
   raw?: RawTransactionData;
+  operationCount: number;
+  memo?: { type: string; value: string };
 }
 
 function formatFee(stroops: string) {
@@ -98,30 +101,33 @@ function RawTransactionPanel({ raw }: { raw: RawTransactionData }) {
       </div>
     </details>
   );
+function formatMemo(memo: { type: string; value: string }) {
+  return `${memo.value} (${memo.type})`;
 }
 
 export function TransactionDetails({ transaction }: { transaction: TransactionSummary }) {
-  const rows = [
+  const baseRows: [string, ReactNode][] = [
+    ["Status", <Badge key="status" tone={transaction.successful ? "success" : "warning"}>{transaction.successful ? "Successful" : "Failed"}</Badge>],
     ["Network", transaction.network],
     ["Hash", <CopyableValue key="hash" label="transaction hash" value={transaction.hash} visible={10} />],
     ["Ledger", String(transaction.ledger)],
     ["Source account", <CopyableValue key="source" label="source account" value={transaction.sourceAccount} />],
     ["Fee charged", formatFee(transaction.feeCharged)],
-    ["Created at", new Date(transaction.createdAt).toLocaleString()],
-    ["Operations", String(transaction.operationCount ?? "Not loaded")]
-  ] as const;
+    ["Operations", String(transaction.operationCount)],
+    ["Created at", new Date(transaction.createdAt).toLocaleString()]
+  ];
+
+  if (transaction.memo) {
+    baseRows.push(["Memo", formatMemo(transaction.memo)]);
+  }
+
   const explorerUrl = `${explorerBaseUrls[transaction.network]}/${transaction.hash}`;
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-[#172033]">Transaction result</p>
-        <Badge tone={transaction.successful ? "success" : "warning"}>
-          {transaction.successful ? "Successful" : "Failed"}
-        </Badge>
-      </div>
+      <p className="text-sm font-semibold text-[#172033]">Transaction result</p>
       <dl className="divide-y divide-[#c7d6e8] rounded-lg border border-white/80 bg-white/68">
-        {rows.map(([label, value]) => (
+        {baseRows.map(([label, value]) => (
           <div key={label} className="grid gap-1 px-4 py-3 sm:grid-cols-3">
             <dt className="text-xs uppercase tracking-wide text-[#68758a]">{label}</dt>
             <dd className="break-words text-sm text-[#29364d] sm:col-span-2">{value}</dd>
@@ -135,7 +141,7 @@ export function TransactionDetails({ transaction }: { transaction: TransactionSu
         rel="noreferrer"
         className="inline-flex rounded-md border border-[#82cbe3]/80 bg-white/60 px-3 py-2 text-sm font-extrabold text-[#178fb5] hover:bg-[#e0f6ff]"
       >
-        Open in Stellar Expert
+        Open in Stellar Expert ↗
       </a>
     </div>
   );
