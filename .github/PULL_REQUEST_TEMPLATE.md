@@ -1,25 +1,41 @@
 ## Summary
 
-Describe what changed and why.
+Describe what changed and why. Link the relevant issue or roadmap item.
 
-## Type
+## Type of Change
 
 - [ ] Stellar utility
 - [ ] Frontend/UI
 - [ ] Wallet integration
 - [ ] Documentation
 - [ ] Tests/CI
+- [ ] Developer Experience
 
-## Validation
+## How to Test
 
-- [ ] `npm run lint`
-- [ ] `npm run test`
-- [ ] `npm run build`
+Describe the steps a reviewer should follow to verify your changes.
+
+1. Go to ...
+2. Enter ...
+3. See ...
 
 ## Screenshots
 
-Add screenshots for UI changes.
+Add screenshots for UI changes. Drag and drop images directly into this section.
 
-## Notes
+## Checklist
 
-Call out any follow-up issue, known limitation, or deployment consideration.
+- [ ] I have run `npm run lint` and fixed any issues
+- [ ] I have run `npm run test` and all tests pass
+- [ ] I have run `npm run build` and the build succeeds
+- [ ] I have updated documentation if behavior changed
+- [ ] I have handled empty, loading, success, and error states where applicable
+- [ ] My changes follow the project's anthropomorphic UI theme
+
+## Related Issues
+
+Closes #
+
+## Follow-Up
+
+Call out any known limitations, future work, or deployment considerations.
