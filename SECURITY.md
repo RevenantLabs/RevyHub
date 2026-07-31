@@ -26,3 +26,12 @@ npm run build
 - Public key validation and public Horizon lookups are in scope.
 - Friendbot usage is testnet-only and has no real asset value.
 - The app does not store wallet keys or submit signed transactions.
+
+
+## Browser Security Headers
+
+RevyHubX configures browser security headers for every route in `next.config.mjs`, including Content Security Policy, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, HTTP Strict Transport Security, and Cross-Origin Opener Policy.
+
+The production CSP permits network connections only to this app, the configured Stellar Horizon testnet and mainnet origins, and the configured Friendbot origin. Keep these origins environment-aware through `NEXT_PUBLIC_HORIZON_TESTNET_URL`, `NEXT_PUBLIC_HORIZON_MAINNET_URL`, and `NEXT_PUBLIC_FRIENDBOT_URL`; do not replace them with wildcard hosts. Development mode adds localhost connection sources and `unsafe-eval` for Next.js tooling, but those relaxations are not emitted for production builds.
+
+When adding external services, document the exact origin here and in `README.md`, add it to the CSP builder, and extend `tests/securityHeaders.test.ts` so production headers stay auditable.
