@@ -13,6 +13,16 @@ export function isLikelyTransactionHash(value: string) {
   return /^[a-fA-F0-9]{64}$/.test(value.trim());
 }
 
+export interface RawTransactionData {
+  pagingToken: string;
+  envelopeXdr: string;
+  resultXdr: string;
+  resultMetaXdr?: string;
+  feeMetaXdr?: string;
+  maxFee: string;
+  feeAccount?: string;
+}
+
 export async function lookupTransaction(
   hash: string,
   network: StellarNetwork = STELLAR_NETWORK,
@@ -34,6 +44,16 @@ export async function lookupTransaction(
       { signal }
     );
 
+    const raw: RawTransactionData = {
+      pagingToken: transaction.paging_token,
+      envelopeXdr: transaction.envelope_xdr,
+      resultXdr: transaction.result_xdr,
+      resultMetaXdr: transaction.result_meta_xdr,
+      feeMetaXdr: transaction.fee_meta_xdr,
+      maxFee: String(transaction.max_fee),
+      feeAccount: transaction.fee_account,
+    };
+
     return {
       hash: tx.hash,
       ledger: tx.ledger_attr,
@@ -42,6 +62,8 @@ export async function lookupTransaction(
       createdAt: tx.created_at,
       successful: tx.successful,
       network,
+      operationCount: transaction.operation_count,
+      raw,
       operationCount: tx.operation_count,
       memo
     };
