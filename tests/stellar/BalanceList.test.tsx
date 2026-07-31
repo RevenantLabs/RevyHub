@@ -20,7 +20,7 @@ describe("BalanceList", () => {
     render(<BalanceList balances={balances} network="mainnet" />);
 
     // Shows asset code and amount
-    expect(screen.getByText("Liquidity pool shares")).toBeDefined();
+    expect(screen.getByText("Liquidity Pool Shares")).toBeDefined();
     expect(screen.getByText("100.0000000")).toBeDefined();
 
     // Verifies the CopyableValue renders the full ID in the title attribute
