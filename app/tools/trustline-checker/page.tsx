@@ -11,6 +11,13 @@ import { AddressInput } from "@/components/stellar/AddressInput";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { checkTrustline } from "@/lib/stellar/trustline";
 import { isCancelledError } from "@/lib/stellar/horizon";
+import { isTransientError } from "@/lib/stellar/errors";
+
+interface TrustlineParams {
+  account: string;
+  assetCode: string;
+  issuer: string;
+}
 
 export default function TrustlineCheckerPage() {
   const { network } = useNetwork();
@@ -18,8 +25,10 @@ export default function TrustlineCheckerPage() {
   const [assetCode, setAssetCode] = useState("");
   const [issuer, setIssuer] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showRetry, setShowRetry] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
   const abortRef = useRef<AbortController | null>(null);
+  const lastParams = useRef<TrustlineParams>({ account: "", assetCode: "", issuer: "" });
 
   useEffect(() => {
     return () => {
@@ -29,27 +38,39 @@ export default function TrustlineCheckerPage() {
     };
   }, []);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function fetchTrustline(params: TrustlineParams) {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
     setLoading(true);
+    setShowRetry(false);
 
     try {
-      const result = await checkTrustline(account, assetCode, issuer, network, controller.signal);
+      const result = await checkTrustline(params.account, params.assetCode, params.issuer, network, controller.signal);
       if (abortRef.current !== controller) return;
       setMessage({ type: result.exists ? "success" : "warning", text: result.message });
     } catch (error) {
       if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
+      setShowRetry(isTransientError(error));
     } finally {
       if (abortRef.current === controller) {
         abortRef.current = null;
         setLoading(false);
       }
     }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const params: TrustlineParams = { account, assetCode, issuer };
+    lastParams.current = params;
+    await fetchTrustline(params);
+  }
+
+  async function handleRetry() {
+    await fetchTrustline(lastParams.current);
   }
 
   return (
@@ -68,9 +89,16 @@ export default function TrustlineCheckerPage() {
             <Input value={assetCode} onChange={(event) => setAssetCode(event.target.value)} placeholder="USDC" />
           </label>
           <AddressInput value={issuer} onChange={setIssuer} label="Issuer address" />
-          <Button type="submit" disabled={loading}>
-            {loading ? "Inspecting..." : "Inspect handshake"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" disabled={loading}>
+              {loading ? "Inspecting..." : "Inspect handshake"}
+            </Button>
+            {showRetry ? (
+              <Button type="button" variant="ghost" onClick={handleRetry} disabled={loading}>
+                Retry
+              </Button>
+            ) : null}
+          </div>
         </form>
       </Card>
       <StatusMessage type={message.type} title="Inspector report" description={message.text} />

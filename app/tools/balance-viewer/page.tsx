@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { getAccountBalances } from "@/lib/stellar/account";
 import { isCancelledError } from "@/lib/stellar/horizon";
+import { isTransientError } from "@/lib/stellar/errors";
 
 export default function BalanceViewerPage() {
   const { network } = useNetwork();
@@ -22,7 +23,9 @@ export default function BalanceViewerPage() {
     text: "The moon wallet is waiting for a funded account address on the selected network."
   });
   const [loading, setLoading] = useState(false);
+  const [showRetry, setShowRetry] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const lastAddress = useRef("");
 
   useEffect(() => {
     return () => {
@@ -32,28 +35,39 @@ export default function BalanceViewerPage() {
     };
   }, []);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function fetchBalances(target: string) {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true);
     setBalances([]);
+    setShowRetry(false);
 
     try {
-      const nextBalances = await getAccountBalances(address, network, controller.signal);
+      const nextBalances = await getAccountBalances(target, network, controller.signal);
       if (abortRef.current !== controller) return;
       setBalances(nextBalances);
       setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
     } catch (error) {
       if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
+      setShowRetry(isTransientError(error));
     } finally {
       if (abortRef.current === controller) {
         abortRef.current = null;
         setLoading(false);
       }
     }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    lastAddress.current = address;
+    await fetchBalances(address);
+  }
+
+  async function handleRetry() {
+    await fetchBalances(lastAddress.current);
   }
 
   return (
@@ -67,9 +81,16 @@ export default function BalanceViewerPage() {
       <Card>
         <form onSubmit={handleSubmit} className="space-y-5">
           <AddressInput value={address} onChange={setAddress} />
-          <Button type="submit" disabled={loading}>
-            {loading ? "Counting..." : "Open moon wallet"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" disabled={loading}>
+              {loading ? "Counting..." : "Open moon wallet"}
+            </Button>
+            {showRetry ? (
+              <Button type="button" variant="ghost" onClick={handleRetry} disabled={loading}>
+                Retry
+              </Button>
+            ) : null}
+          </div>
         </form>
       </Card>
       <StatusMessage type={message.type} title={message.type === "success" ? "Wallet opened" : "Moon wallet status"} description={message.text} />
