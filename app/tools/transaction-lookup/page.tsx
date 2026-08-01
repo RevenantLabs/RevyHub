@@ -11,14 +11,17 @@ import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { lookupTransaction } from "@/lib/stellar/transaction";
 import { isCancelledError } from "@/lib/stellar/horizon";
+import { isTransientError } from "@/lib/stellar/errors";
 
 export default function TransactionLookupPage() {
   const { network } = useNetwork();
   const [hash, setHash] = useState("");
   const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showRetry, setShowRetry] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a transaction hash to follow the trail on the selected network." });
   const abortRef = useRef<AbortController | null>(null);
+  const lastHash = useRef("");
 
   useEffect(() => {
     return () => {
@@ -28,8 +31,7 @@ export default function TransactionLookupPage() {
     };
   }, []);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function fetchTransaction(target: string) {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -38,7 +40,7 @@ export default function TransactionLookupPage() {
     setShowRetry(false);
 
     try {
-      const result = await lookupTransaction(hash, network, controller.signal);
+      const result = await lookupTransaction(target, network, controller.signal);
       if (abortRef.current !== controller) return;
       setTransaction(result);
       setMessage({ type: "success", text: `The detective comet found the transaction in ${network} Horizon.` });
@@ -78,9 +80,16 @@ export default function TransactionLookupPage() {
             <span className="text-sm font-medium text-[#29364d]">Transaction hash</span>
             <Input value={hash} onChange={(event) => setHash(event.target.value)} placeholder="64 character hash" spellCheck={false} />
           </label>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Following trail..." : "Follow transaction trail"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" disabled={loading}>
+              {loading ? "Following trail..." : "Follow transaction trail"}
+            </Button>
+            {showRetry ? (
+              <Button type="button" variant="ghost" onClick={handleRetry} disabled={loading}>
+                Retry
+              </Button>
+            ) : null}
+          </div>
         </form>
       </Card>
       <StatusMessage type={message.type} title="Detective report" description={message.text} />
