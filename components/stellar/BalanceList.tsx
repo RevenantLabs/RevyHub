@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/Badge";
 import { CopyableValue } from "@/components/stellar/CopyableValue";
+import { formatAssetAmount } from "@/lib/stellar/formatAmount";
 
 export interface DisplayBalance {
   assetCode: string;
@@ -80,8 +81,8 @@ export function BalanceList({ balances }: { balances: DisplayBalance[] }) {
               {balance.amount}
             </Badge>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
