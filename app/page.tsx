@@ -10,6 +10,7 @@ import {
   Wand2
 } from "lucide-react";
 import { ToolCard } from "@/components/ui/ToolCard";
+import { SorobanRpcPanel } from "@/components/stellar/SorobanRpcPanel";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { tools, toolCategories } from "@/lib/constants";
@@ -101,39 +102,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── Feature Highlights ─── */}
-      <section className="animate-fade-in-up opacity-0 [animation-delay:900ms] [animation-fill-mode:forwards] grid gap-4 lg:grid-cols-3">
-        <div className="flex gap-4 rounded-lg border border-white/80 bg-white/60 p-5 shadow-[4px_4px_0_rgba(255,139,122,0.14)] transition hover:shadow-[4px_4px_0_rgba(255,139,122,0.32)]">
-          <SmilePlus className="mt-0.5 h-5 w-5 shrink-0 text-[#ff765f]" aria-hidden />
-          <div>
-            <h3 className="text-sm font-extrabold uppercase tracking-wide text-[#9a6754]">Character-driven</h3>
-            <p className="mt-1 text-sm leading-6 text-[#4e5c73]">
-              Expressive faces, gestures, and small roles make each utility easier to remember.
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-4 rounded-lg border border-white/80 bg-white/60 p-5 shadow-[4px_4px_0_rgba(142,220,244,0.2)] transition hover:shadow-[4px_4px_0_rgba(142,220,244,0.4)]">
-          <Wand2 className="mt-0.5 h-5 w-5 shrink-0 text-[#178fb5]" aria-hidden />
-          <div>
-            <h3 className="text-sm font-extrabold uppercase tracking-wide text-[#146783]">Approachable</h3>
-            <p className="mt-1 text-sm leading-6 text-[#4e5c73]">
-              Complex Stellar actions stay approachable without faking blockchain data.
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-4 rounded-lg border border-white/80 bg-white/60 p-5 shadow-[4px_4px_0_rgba(199,185,243,0.22)] transition hover:shadow-[4px_4px_0_rgba(199,185,243,0.44)]">
-          <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-[#5b4b8a]" aria-hidden />
-          <div>
-            <h3 className="text-sm font-extrabold uppercase tracking-wide text-[#5b4b8a]">Open source</h3>
-            <p className="mt-1 text-sm leading-6 text-[#4e5c73]">
-              Roadmap and issues designed for contributors. Ready for GrantFox.
-            </p>
-          </div>
-        </div>
-      </section>
+      <SorobanRpcPanel />
 
-      {/* ─── Project Info ─── */}
-      <section className="animate-fade-in-up opacity-0 [animation-delay:1000ms] [animation-fill-mode:forwards] grid gap-4 lg:grid-cols-3">
+      <section className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
