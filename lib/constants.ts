@@ -50,7 +50,7 @@ export interface Tool {
 export const tools: Tool[] = [
   {
     title: "Address Validator",
-    description: "Validate Stellar public keys and explain address format issues.",
+    description: "Validate Stellar public keys and catch address format issues before testnet workflows begin.",
     character: "A careful star clerk checks every public key badge.",
     href: "/tools/address-validator",
     status: "Working" as ToolStatus,
@@ -58,8 +58,16 @@ export const tools: Tool[] = [
     icon: ShieldCheck
   },
   {
+    title: "Balance Viewer",
+    description: "Inspect native XLM and issued asset balances for Stellar testnet accounts through Horizon.",
+    character: "A moon wallet opens its pockets for testnet balances.",
+    href: "/tools/balance-viewer",
+    status: "Working" as ToolStatus,
+    icon: CircleDollarSign
+  },
+  {
     title: "Trustline Checker",
-    description: "Check whether an account trusts a specific issued asset.",
+    description: "Check whether a Stellar account has established a trustline for a specific issued asset.",
     character: "A tiny inspector looks for asset handshakes.",
     href: "/tools/trustline-checker",
     status: "MVP" as ToolStatus,
@@ -77,7 +85,7 @@ export const tools: Tool[] = [
   },
   {
     title: "Payment QR Generator",
-    description: "Create demo Stellar payment request QR codes.",
+    description: "Create demo Stellar payment request URIs and QR codes for destinations, amounts, assets, and memos.",
     character: "A rocket assistant frames payment details as a QR poster.",
     href: "/tools/payment-qr",
     status: "Working" as ToolStatus,
@@ -86,7 +94,7 @@ export const tools: Tool[] = [
   },
   {
     title: "Transaction Lookup",
-    description: "Look up transactions by hash on the selected network.",
+    description: "Look up Stellar testnet transaction hashes and review key Horizon details.",
     character: "A detective comet follows transaction trails through Horizon.",
     href: "/tools/transaction-lookup",
     status: "MVP" as ToolStatus,
@@ -104,7 +112,7 @@ export const tools: Tool[] = [
   },
   {
     title: "Freighter Connect",
-    description: "Try a browser wallet connection example.",
+    description: "Test a browser Freighter wallet connection and compare the wallet network with the active workspace.",
     character: "A friendly wallet mascot waves when Freighter is nearby.",
     href: "/tools/freighter-connect",
     status: "MVP" as ToolStatus,
@@ -113,7 +121,7 @@ export const tools: Tool[] = [
   },
   {
     title: "Testnet Faucet Helper",
-    description: "Fund a testnet account with Friendbot.",
+    description: "Fund a public Stellar testnet account with Friendbot without handling secret keys or seed phrases.",
     character: "A faucet character pours harmless testnet XLM.",
     href: "/tools/testnet-faucet",
     status: "Working" as ToolStatus,
