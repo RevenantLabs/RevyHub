@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Keypair, Networks } from "@stellar/stellar-sdk";
-import { createPaymentUri, validatePaymentForm } from "../../lib/stellar/paymentUri";
+import { createPaymentUri, validatePaymentForm, validateStellarAmount } from "../../lib/stellar/paymentUri";
 
 describe("createPaymentUri", () => {
   const destination = Keypair.random().publicKey();
