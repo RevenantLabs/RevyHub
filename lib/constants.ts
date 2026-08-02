@@ -2,6 +2,7 @@ import {
   AtSign,
   BadgeCheck,
   CircleDollarSign,
+  Container,
   Droplets,
   FileSearch,
   Gauge,
@@ -48,6 +49,14 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
+  {
+    title: "Soroban Contract Validator",
+    description: "Validate Soroban contract IDs, decode StrKey payload, and open explorer links.",
+    character: "A crystal orb reads the contract ID runes and deciphers their StrKey meaning.",
+    href: "/tools/soroban-contract",
+    status: "Working" as ToolStatus,
+    icon: Container
+  },
   {
     title: "Address Validator",
     description: "Validate Stellar public keys and explain address format issues.",
