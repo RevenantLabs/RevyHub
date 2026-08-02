@@ -43,6 +43,8 @@ export async function getAccountBalances(
         return {
           assetCode: "XLM",
           amount: formatBalance(balance.balance),
+          buyingLiabilities: balance.buying_liabilities,
+          sellingLiabilities: balance.selling_liabilities,
           isNative: true
         };
       }
@@ -58,7 +60,9 @@ export async function getAccountBalances(
       return {
         assetCode: balance.asset_code,
         issuer: balance.asset_issuer,
-        amount: formatBalance(balance.balance)
+        amount: formatBalance(balance.balance),
+        buyingLiabilities: balance.buying_liabilities,
+        sellingLiabilities: balance.selling_liabilities
       };
     });
   } catch (error) {

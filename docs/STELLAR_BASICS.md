@@ -34,6 +34,14 @@ The Trustline Checker asks for:
 
 Transactions are identified by 64-character hexadecimal hashes. The Transaction Lookup tool validates the hash shape before querying Horizon and links to Stellar Expert for deeper inspection.
 
+## Liabilities
+
+When an account places offers on the Stellar decentralized exchange (buying or selling an asset), Horizon reports those pending obligations as **buying liabilities** and **selling liabilities**. The displayed balance minus liabilities reflects the amount the account can currently spend or trade.
+
+The Balance Viewer exposes these values in an expandable section on each asset card so developers can see why the full balance may not be spendable. A value of zero is shown compactly as "No outstanding liabilities".
+
+Liabilities are informational; they do not modify account state or represent debt in the traditional financial sense.
+
 ## Wallets
 
 Freighter is a browser wallet for Stellar. This project only requests a public key and network information. It does not request signatures, secret keys, or transaction submission.
