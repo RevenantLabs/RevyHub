@@ -16,7 +16,7 @@ describe("fundTestnetAccount (MSW)", () => {
 
   it("throws on an invalid public key", async () => {
     await expect(fundTestnetAccount("not-a-key")).rejects.toThrow(
-      /start with G/
+      /Stellar public addresses start with the letter G/
     );
   });
 
@@ -29,7 +29,7 @@ describe("fundTestnetAccount (MSW)", () => {
   it("throws on a secret key prefix", async () => {
     await expect(
       fundTestnetAccount("SAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-    ).rejects.toThrow(/start with G/);
+    ).rejects.toThrow(/This looks like a secret key/);
   });
 
   it("handles server errors gracefully via per-test override", async () => {
