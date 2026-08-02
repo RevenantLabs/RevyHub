@@ -16,7 +16,9 @@ function NativeBalanceHeader() {
   return (
     <div className="min-w-0">
       <p className="flex items-center gap-1.5 text-sm font-semibold text-[#172033]">
-        <span aria-hidden className="text-[#f6c85f]">✦</span>
+        <span aria-hidden className="text-[#f6c85f]">
+          ✦
+        </span>
         <span>XLM — Native Asset</span>
       </p>
       <p className="mt-1 truncate text-xs text-[#68758a]">{NATIVE_DESCRIPTION}</p>
@@ -71,6 +73,16 @@ function formatTimestamp(date: Date) {
 }
 
 export function BalanceList({ balances, lastUpdated, onRefresh, isRefreshing }: BalanceListProps) {
+  if (balances.length === 0) {
+    return (
+      <div className="rounded-lg border border-white/80 bg-white/68 p-6 text-center shadow-[4px_4px_0_rgba(142,220,244,0.22)]">
+        <p className="text-sm text-[#68758a]">
+          This account has no balances. The moon wallet is empty.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {/* TODO(issue #4): Improve asset grouping, precision formatting, and empty/liquidity-pool display states. */}
@@ -95,19 +107,6 @@ export function BalanceList({ balances, lastUpdated, onRefresh, isRefreshing }: 
           </Button>
         </div>
       ) : null}
-export function BalanceList({ balances }: { balances: DisplayBalance[] }) {
-  if (balances.length === 0) {
-    return (
-      <div className="rounded-lg border border-white/80 bg-white/68 p-6 text-center shadow-[4px_4px_0_rgba(142,220,244,0.22)]">
-        <p className="text-sm text-[#68758a]">
-          This account has no balances. The moon wallet is empty.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
       {balances.map((balance) => (
         <div
           key={`${balance.assetCode}-${balance.issuer ?? "native"}`}

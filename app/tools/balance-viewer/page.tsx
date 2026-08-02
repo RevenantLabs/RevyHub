@@ -11,6 +11,7 @@ import { BalanceList, type DisplayBalance } from "@/components/stellar/BalanceLi
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { getAccountBalances } from "@/lib/stellar/account";
+import { isCancelledError } from "@/lib/stellar/horizon";
 import type { StellarNetwork } from "@/lib/stellar/horizon";
 
 interface FetchedSnapshot {
@@ -18,7 +19,6 @@ interface FetchedSnapshot {
   network: StellarNetwork;
   fetchedAt: Date;
 }
-import { isCancelledError } from "@/lib/stellar/horizon";
 
 export default function BalanceViewerPage() {
   const { network } = useNetwork();
@@ -30,15 +30,6 @@ export default function BalanceViewerPage() {
   });
   const [loading, setLoading] = useState(false);
   const [lastFetched, setLastFetched] = useState<FetchedSnapshot | null>(null);
-
-  const isStale =
-    !lastFetched ||
-    lastFetched.address !== address ||
-    lastFetched.network !== network;
-
-  const isRefreshing = loading && !isStale;
-
-  async function fetchBalances() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -49,8 +40,14 @@ export default function BalanceViewerPage() {
     };
   }, []);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const isStale =
+    !lastFetched ||
+    lastFetched.address !== address ||
+    lastFetched.network !== network;
+
+  const isRefreshing = loading && !isStale;
+
+  async function fetchBalances() {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -121,7 +118,7 @@ export default function BalanceViewerPage() {
           isRefreshing={isRefreshing}
         />
       ) : null}
-      {loading ? (
+      {loading && balances.length === 0 ? (
         <div className="space-y-3" aria-label="Loading balances" role="status">
           {[1, 2, 3].map((i) => (
             <div
@@ -140,7 +137,6 @@ export default function BalanceViewerPage() {
           <span className="sr-only">Loading balance data from Horizon...</span>
         </div>
       ) : null}
-      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
     </div>
   );
 }
