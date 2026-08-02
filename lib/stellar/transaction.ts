@@ -1,4 +1,11 @@
-import { getHorizonServer, STELLAR_NETWORK, type StellarNetwork } from "@/lib/stellar/horizon";
+import {
+  getHorizonServer,
+  isCancelledError,
+  isTimeoutError,
+  runHorizonRequest,
+  STELLAR_NETWORK,
+  type StellarNetwork
+} from "@/lib/stellar/horizon";
 import { getResponseStatus } from "@/lib/stellar/account";
 import type { TransactionSummary } from "@/components/stellar/TransactionDetails";
 
@@ -134,8 +141,10 @@ export function isLikelyTransactionHash(value: string) {
 
 export async function lookupTransaction(
   hash: string,
-  network: StellarNetwork = STELLAR_NETWORK
-): Promise<TransactionSummary & { operations: NormalizedOperation[] }> {
+  network: StellarNetwork = STELLAR_NETWORK,
+  signal?: AbortSignal
+): Promise<TransactionSummary> {
+  // TODO(issue #10): Fetch and normalize transaction operations for display below the transaction summary.
   if (!hash.trim()) {
     throw new Error("Enter a transaction hash.");
   }
@@ -146,29 +155,31 @@ export async function lookupTransaction(
 
   try {
     const server = getHorizonServer(network);
-    const horizonTx = await server.transactions().transaction(hash.trim()).call();
-
-    // Fetch operations separately so a transient failure on the operations
-    // endpoint doesn't prevent the user from seeing the transaction details.
-    let operations: NormalizedOperation[] = [];
-    try {
-      operations = await fetchTransactionOperations(hash.trim(), network);
-    } catch {
-      // operations remain empty — transaction details are still displayed
-    }
+    const transaction = await runHorizonRequest(
+      server.transactions().transaction(hash.trim()).call(),
+      { signal }
+    );
 
     return {
-      hash: horizonTx.hash,
-      ledger: horizonTx.ledger_attr,
-      sourceAccount: horizonTx.source_account,
-      feeCharged: String(horizonTx.fee_charged),
-      createdAt: horizonTx.created_at,
-      successful: horizonTx.successful,
+      hash: tx.hash,
+      ledger: tx.ledger_attr,
+      sourceAccount: tx.source_account,
+      feeCharged: String(tx.fee_charged),
+      createdAt: tx.created_at,
+      successful: tx.successful,
       network,
-      operationCount: horizonTx.operation_count,
-      operations
+      operationCount: tx.operation_count,
+      memo
     };
   } catch (error) {
+    if (isCancelledError(error)) {
+      throw error;
+    }
+
+    if (isTimeoutError(error)) {
+      throw new Error("The Horizon transaction request timed out. Try again.");
+    }
+
     if (getResponseStatus(error) === 404) {
       throw new Error(`Transaction not found on Stellar ${network}.`);
     }
