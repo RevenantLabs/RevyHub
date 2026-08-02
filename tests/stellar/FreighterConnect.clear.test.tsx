@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NetworkProvider } from "@/components/stellar/NetworkProvider";
+import { RedactionProvider } from "@/components/stellar/RedactionProvider";
 import FreighterConnectPage, {
   CLEAR_CONNECTION_MESSAGE
 } from "@/app/tools/freighter-connect/page";
@@ -11,7 +12,9 @@ const PUBLIC_KEY = "GABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUVWXYZ2
 function renderPage() {
   return render(
     <NetworkProvider>
-      <FreighterConnectPage />
+      <RedactionProvider>
+        <FreighterConnectPage />
+      </RedactionProvider>
     </NetworkProvider>
   );
 }
@@ -47,13 +50,13 @@ describe("FreighterConnectPage clear connection", () => {
     await user.click(screen.getByRole("button", { name: "Ask wallet mascot to connect" }));
 
     await waitFor(() => {
-      expect(screen.getByText(PUBLIC_KEY)).toBeInTheDocument();
+      expect(screen.getByTitle(PUBLIC_KEY)).toBeInTheDocument();
     });
     expect(screen.getByText("Testnet")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Clear connection" }));
 
-    expect(screen.queryByText(PUBLIC_KEY)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(PUBLIC_KEY)).not.toBeInTheDocument();
     expect(screen.getByText("Unknown")).toBeInTheDocument();
     expect(screen.getByText(CLEAR_CONNECTION_MESSAGE)).toBeInTheDocument();
     expect(
@@ -72,15 +75,15 @@ describe("FreighterConnectPage clear connection", () => {
 
     await user.click(screen.getByRole("button", { name: "Ask wallet mascot to connect" }));
     await waitFor(() => {
-      expect(screen.getByText(PUBLIC_KEY)).toBeInTheDocument();
+      expect(screen.getByTitle(PUBLIC_KEY)).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole("button", { name: "Clear connection" }));
-    expect(screen.queryByText(PUBLIC_KEY)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(PUBLIC_KEY)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Ask wallet mascot to connect" }));
     await waitFor(() => {
-      expect(screen.getByText(PUBLIC_KEY)).toBeInTheDocument();
+      expect(screen.getByTitle(PUBLIC_KEY)).toBeInTheDocument();
     });
   });
 });

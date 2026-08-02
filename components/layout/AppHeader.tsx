@@ -2,13 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Github, Network } from "lucide-react";
+import { Github, Network, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { useRedaction } from "@/components/stellar/RedactionProvider";
 import { getNetworkLabel, networkMeta, normalizeNetwork, stellarNetworks } from "@/lib/stellar/horizon";
 
 export function AppHeader() {
   const { network, setNetwork } = useNetwork();
+  const { redacted, setRedacted } = useRedaction();
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/70 bg-white/75 shadow-[0_14px_38px_rgba(86,103,140,0.16)] backdrop-blur-xl">
@@ -30,6 +32,24 @@ export function AppHeader() {
           </span>
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => setRedacted(!redacted)}
+            title="Privacy mode: masks identifiers in results and disables one-click copying"
+            className={
+              `inline-flex min-h-10 items-center gap-2 rounded-md border px-3 text-sm font-semibold transition ${
+                redacted
+                  ? "border-[#ff8b7a]/70 bg-[#fff7f1] text-[#8a5a4c] shadow-[inset_0_0_0_1px_rgba(255,139,122,0.23)]"
+                  : "border-[#7dbcd2]/45 bg-white/75 text-[#29364d] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]"
+              }`
+            }
+            aria-label={redacted ? "Disable redaction mode" : "Enable redaction mode"}
+            aria-pressed={redacted}
+          >
+            <EyeOff className="h-4 w-4" aria-hidden />
+            <span className="hidden sm:inline">Redact</span>
+            <Badge tone={redacted ? "warning" : "info"}>{redacted ? "On" : "Off"}</Badge>
+          </button>
           <label className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#7dbcd2]/45 bg-white/75 px-3 text-sm font-semibold text-[#29364d] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
             <Network className="h-4 w-4 text-[#178fb5]" aria-hidden />
             <span className="sr-only sm:not-sr-only">Network</span>

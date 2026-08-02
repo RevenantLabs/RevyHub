@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { CopyableValue } from "@/components/stellar/CopyableValue";
 
 declare global {
   interface Window {
@@ -148,7 +149,9 @@ export default function FreighterConnectPage() {
         {publicKey ? (
           <div className="rounded-lg border border-white/80 bg-white/68 p-4">
             <p className="text-xs font-extrabold uppercase tracking-wide text-[#9a6754]">Connected public key</p>
-            <p className="mt-2 break-all text-sm text-[#29364d]">{publicKey}</p>
+            <p className="mt-2 break-all text-sm text-[#29364d]">
+              <CopyableValue label="public key" value={publicKey} visible={8} />
+            </p>
           </div>
         ) : null}
         <div className="grid gap-3 sm:grid-cols-3">

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { CopyableValue } from "@/components/stellar/CopyableValue";
+import { useRedaction } from "@/components/stellar/RedactionProvider";
 import type { StellarNetwork } from "@/lib/stellar/horizon";
 
 const explorerBaseUrls: Record<StellarNetwork, string> = {
@@ -35,6 +36,8 @@ function formatMemo(memo: { type: string; value: string }) {
 }
 
 export function TransactionDetails({ transaction }: { transaction: TransactionSummary }) {
+  const { redacted } = useRedaction();
+
   const baseRows: [string, ReactNode][] = [
     ["Status", <Badge key="status" tone={transaction.successful ? "success" : "warning"}>{transaction.successful ? "Successful" : "Failed"}</Badge>],
     ["Network", transaction.network],
@@ -63,14 +66,16 @@ export function TransactionDetails({ transaction }: { transaction: TransactionSu
           </div>
         ))}
       </dl>
-      <a
-        href={explorerUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex rounded-md border border-[#82cbe3]/80 bg-white/60 px-3 py-2 text-sm font-extrabold text-[#178fb5] hover:bg-[#e0f6ff]"
-      >
-        Open in Stellar Expert ↗
-      </a>
+      {!redacted ? (
+        <a
+          href={explorerUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex rounded-md border border-[#82cbe3]/80 bg-white/60 px-3 py-2 text-sm font-extrabold text-[#178fb5] hover:bg-[#e0f6ff]"
+        >
+          Open in Stellar Expert ↗
+        </a>
+      ) : null}
     </div>
   );
 }

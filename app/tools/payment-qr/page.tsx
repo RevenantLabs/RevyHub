@@ -3,19 +3,21 @@
 import QRCode from "qrcode";
 import { useMemo, useState } from "react";
 import { AddressInput } from "@/components/stellar/AddressInput";
+import { CopyableValue } from "@/components/stellar/CopyableValue";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { useRedaction } from "@/components/stellar/RedactionProvider";
 import { QRPreview } from "@/components/stellar/QRPreview";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
 import { StatusMessage } from "@/components/ui/StatusMessage";
-import { copyText } from "@/lib/copy";
 import { buildPaymentQrFilename } from "@/lib/qrDownload";
 import { createPaymentUri, validatePaymentForm } from "@/lib/stellar/paymentUri";
 
 export default function PaymentQrPage() {
   const { network } = useNetwork();
+  const { redacted } = useRedaction();
   const [destination, setDestination] = useState("");
   const [amount, setAmount] = useState("");
   const [asset, setAsset] = useState<"XLM" | "ISSUED">("XLM");
@@ -49,16 +51,6 @@ export default function PaymentQrPage() {
       setQr("");
       setDownloadFilename("");
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
-    }
-  }
-
-  async function copyUri() {
-    if (!uri) return;
-    try {
-      await copyText(uri);
-      setMessage({ type: "success", text: "Payment URI copied from the rocket assistant." });
-    } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Clipboard permission failed." });
     }
   }
 
@@ -131,14 +123,22 @@ export default function PaymentQrPage() {
         </Card>
         <div className="space-y-4">
           <StatusMessage type={message.type} title="Rocket desk status" description={message.text} />
-          {qr && downloadFilename ? <QRPreview dataUrl={qr} filename={downloadFilename} /> : null}
+          {qr && downloadFilename ? (
+            redacted ? (
+              <Card className="space-y-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-[#7a8ba6]">QR code</span>
+                <p className="text-sm text-[#4e5c73]">
+                  Hidden while redaction is active. Disable redaction to view the QR poster.
+                </p>
+              </Card>
+            ) : (
+              <QRPreview dataUrl={qr} filename={downloadFilename} />
+            )
+          ) : null}
           {uri ? (
             <Card className="space-y-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-[#7a8ba6]">SEP-0007 payment URI</span>
-              <p className="break-all text-xs text-[#4e5c73]">{uri}</p>
-              <Button type="button" variant="secondary" onClick={copyUri}>
-                Copy URI
-              </Button>
+              <CopyableValue label="payment URI" value={uri} visible={18} />
             </Card>
           ) : null}
           <StatusMessage type="warning" title="Rocket safety note" description="This tool does not submit payments. Users must verify destination, amount, asset, and memo in their wallet." />
