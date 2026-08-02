@@ -12,6 +12,13 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { getAccountBalances } from "@/lib/stellar/account";
 import { isCancelledError } from "@/lib/stellar/horizon";
+import type { StellarNetwork } from "@/lib/stellar/horizon";
+
+interface FetchedSnapshot {
+  address: string;
+  network: StellarNetwork;
+  fetchedAt: Date;
+}
 
 export default function BalanceViewerPage() {
   const { network } = useNetwork();
@@ -22,6 +29,7 @@ export default function BalanceViewerPage() {
     text: "The moon wallet is waiting for a funded account address on the selected network."
   });
   const [loading, setLoading] = useState(false);
+  const [lastFetched, setLastFetched] = useState<FetchedSnapshot | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -32,18 +40,27 @@ export default function BalanceViewerPage() {
     };
   }, []);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const isStale =
+    !lastFetched ||
+    lastFetched.address !== address ||
+    lastFetched.network !== network;
+
+  const isRefreshing = loading && !isStale;
+
+  async function fetchBalances() {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true);
-    setBalances([]);
+    if (isStale) {
+      setBalances([]);
+    }
 
     try {
       const nextBalances = await getAccountBalances(address, network, controller.signal);
       if (abortRef.current !== controller) return;
       setBalances(nextBalances);
+      setLastFetched({ address, network, fetchedAt: new Date() });
       setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
     } catch (error) {
       if (isCancelledError(error) || abortRef.current !== controller) return;
@@ -54,6 +71,11 @@ export default function BalanceViewerPage() {
         setLoading(false);
       }
     }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await fetchBalances();
   }
 
   return (
@@ -88,7 +110,15 @@ export default function BalanceViewerPage() {
           }
         />
       ) : null}
-      {loading ? (
+      {balances.length > 0 ? (
+        <BalanceList
+          balances={balances}
+          lastUpdated={isStale ? undefined : lastFetched?.fetchedAt}
+          onRefresh={isStale ? undefined : fetchBalances}
+          isRefreshing={isRefreshing}
+        />
+      ) : null}
+      {loading && balances.length === 0 ? (
         <div className="space-y-3" aria-label="Loading balances" role="status">
           {[1, 2, 3].map((i) => (
             <div
@@ -107,7 +137,6 @@ export default function BalanceViewerPage() {
           <span className="sr-only">Loading balance data from Horizon...</span>
         </div>
       ) : null}
-      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
     </div>
   );
 }
