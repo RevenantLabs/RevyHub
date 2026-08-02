@@ -18,6 +18,10 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+## Extending the Toolkit
+
+To add a new tool end-to-end (utility, page, navigation metadata, tests, and error states), follow [docs/EXTENDING.md](./docs/EXTENDING.md).
+
 ## Branch Naming
 
 Use short, descriptive branch names:
