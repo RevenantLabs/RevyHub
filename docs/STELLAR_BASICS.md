@@ -41,3 +41,7 @@ When an account places offers on the Stellar decentralized exchange (buying or s
 The Balance Viewer exposes these values in an expandable section on each asset card so developers can see why the full balance may not be spendable. A value of zero is shown compactly as "No outstanding liabilities".
 
 Liabilities are informational; they do not modify account state or represent debt in the traditional financial sense.
+
+## Wallets
+
+Freighter is a browser wallet for Stellar. This project only requests a public key and network information. It does not request signatures, secret keys, or transaction submission.
