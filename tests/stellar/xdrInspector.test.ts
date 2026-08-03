@@ -64,7 +64,7 @@ function buildV0Xdr() {
     timeBounds: v1.cond().timeBounds(),
     memo: v1.memo(),
     operations: v1.operations(),
-    ext: new xdr.TransactionV0Ext(0)
+    ext: new (xdr.TransactionV0Ext as unknown as new (switchValue: number) => InstanceType<typeof xdr.TransactionV0Ext>)(0)
   });
   const envelope = xdr.TransactionEnvelope.envelopeTypeTxV0(
     new xdr.TransactionV0Envelope({ tx: v0, signatures: [] })

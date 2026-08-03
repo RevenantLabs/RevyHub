@@ -1,10 +1,14 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Pin, PinOff } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
+import { useCallback, useSyncExternalStore } from "react";
 import type { ToolStatus, ToolCategory } from "@/lib/constants";
 import { toolCategories } from "@/lib/constants";
+import { toggleFavorite, isFavorite as checkIsFavorite } from "@/lib/favorites";
 
 interface ToolCardProps {
   title: string;
@@ -14,6 +18,16 @@ interface ToolCardProps {
   status: ToolStatus;
   category: ToolCategory;
   icon: React.ComponentType<{ className?: string }>;
+}
+
+// Custom hook to subscribe to favorite changes
+function subscribeToFavorites(callback: () => void) {
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
+
+function getFavoriteSnapshot(href: string) {
+  return checkIsFavorite(href);
 }
 
 const statusTone: Record<ToolStatus, "success" | "info" | "warning"> = {
@@ -29,6 +43,23 @@ const categoryTone: Record<ToolCategory, string> = {
 };
 
 export function ToolCard({ title, description, character, href, status, category, icon: Icon }: ToolCardProps) {
+  const isPinned = useSyncExternalStore(
+    subscribeToFavorites,
+    () => getFavoriteSnapshot(href),
+    () => false // Server snapshot
+  );
+
+  const handlePinToggle = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleFavorite(href);
+      // Dispatch a custom event to notify other components
+      window.dispatchEvent(new Event("favorites-updated"));
+    },
+    [href]
+  );
+
   return (
     <Link
       href={href}
@@ -49,7 +80,25 @@ export function ToolCard({ title, description, character, href, status, category
               {toolCategories[category].label}
             </span>
           </div>
-          <Badge tone={statusTone[status]}>{status}</Badge>
+          <div className="flex items-center gap-2">
+            <Badge tone={statusTone[status]}>{status}</Badge>
+            <button
+              onClick={handlePinToggle}
+              className={`rounded-md p-1.5 transition-colors ${
+                isPinned
+                  ? "text-[#ff765f] hover:bg-[#ffd1c6]/30"
+                  : "text-[#9a6754] opacity-0 group-hover:opacity-100 hover:bg-[#ffd1c6]/30"
+              }`}
+              aria-label={isPinned ? `Unpin ${title}` : `Pin ${title}`}
+              title={isPinned ? "Unpin from favorites" : "Pin to favorites"}
+            >
+              {isPinned ? (
+                <PinOff className="h-4 w-4" aria-hidden />
+              ) : (
+                <Pin className="h-4 w-4" aria-hidden />
+              )}
+            </button>
+          </div>
         </div>
         <h3 className="mt-5 text-lg font-semibold text-[#172033] group-hover:text-[#178fb5] transition-colors duration-200">{title}</h3>
         <p className="mt-2 text-sm leading-6 text-[#5d6b82]">{description}</p>
