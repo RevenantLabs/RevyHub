@@ -259,6 +259,9 @@ export function HomePage() {
             ))}
           </div>
         )}
+      </section>
+    </div>
+  );
 }
 
 export default HomePage;
