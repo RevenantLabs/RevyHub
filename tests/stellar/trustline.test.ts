@@ -50,6 +50,7 @@ describe("checkTrustline", () => {
       checkTrustline(` ${accountAddress} `, " usdc ", ` ${issuerAddress} `, "mainnet")
     ).resolves.toEqual({
       exists: true,
+      notFound: false,
       message: "Trustline found for USDC."
     });
     expect(getHorizonServer).toHaveBeenCalledWith("mainnet");
@@ -78,6 +79,7 @@ describe("checkTrustline", () => {
       checkTrustline(accountAddress, "USDC", issuerAddress)
     ).resolves.toEqual({
       exists: false,
+      notFound: false,
       message: "No USDC trustline found for this account."
     });
   });
@@ -118,7 +120,7 @@ describe("checkTrustline", () => {
     expect(mockLoadAccount).not.toHaveBeenCalled();
   });
 
-  it("returns the account-not-found error for a Horizon 404", async () => {
+  it("returns a not-found result for a Horizon 404", async () => {
     mockLoadAccount.mockRejectedValue({
       response: {
         status: 404
@@ -127,9 +129,11 @@ describe("checkTrustline", () => {
 
     await expect(
       checkTrustline(accountAddress, "USDC", issuerAddress, "testnet")
-    ).rejects.toThrow(
-      "Account not found on Stellar testnet. Fund it before checking trustlines."
-    );
+    ).resolves.toEqual({
+      exists: false,
+      notFound: true,
+      message: "The account was not found on Stellar testnet."
+    });
   });
 
   it("returns a stable error for other Horizon failures", async () => {

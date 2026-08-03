@@ -9,6 +9,10 @@ import {
 import { validatePublicKey } from "@/lib/stellar/validateAddress";
 import type { DisplayBalance } from "@/components/stellar/BalanceList";
 
+export type AccountLookup =
+  | { found: true; balances: DisplayBalance[] }
+  | { found: false; reason: "not-found"; network: StellarNetwork };
+
 function formatBalance(balance: string): string {
   const num = Number(balance);
   if (Number.isNaN(num)) return balance;
@@ -24,7 +28,7 @@ export async function getAccountBalances(
   publicKey: string,
   network: StellarNetwork = STELLAR_NETWORK,
   signal?: AbortSignal
-): Promise<DisplayBalance[]> {
+): Promise<AccountLookup> {
   const validation = validatePublicKey(publicKey);
 
   if (!validation.valid) {
@@ -37,30 +41,32 @@ export async function getAccountBalances(
       { signal }
     );
 
-    // TODO(issue #21): Return a typed account-not-found state so UI can link directly to the Testnet Faucet Helper.
-    return account.balances.map((balance) => {
-      if (balance.asset_type === "native") {
-        return {
-          assetCode: "XLM",
-          amount: formatBalance(balance.balance),
-          isNative: true
-        };
-      }
+    return {
+      found: true,
+      balances: account.balances.map((balance) => {
+        if (balance.asset_type === "native") {
+          return {
+            assetCode: "XLM",
+            amount: formatBalance(balance.balance),
+            isNative: true
+          };
+        }
 
-      if (balance.asset_type === "liquidity_pool_shares") {
+        if (balance.asset_type === "liquidity_pool_shares") {
+          return {
+            assetCode: "Liquidity pool shares",
+            issuer: balance.liquidity_pool_id,
+            amount: formatBalance(balance.balance)
+          };
+        }
+
         return {
-          assetCode: "Liquidity pool shares",
-          issuer: balance.liquidity_pool_id,
+          assetCode: balance.asset_code,
+          issuer: balance.asset_issuer,
           amount: formatBalance(balance.balance)
         };
-      }
-
-      return {
-        assetCode: balance.asset_code,
-        issuer: balance.asset_issuer,
-        amount: formatBalance(balance.balance)
-      };
-    });
+      })
+    };
   } catch (error) {
     if (isCancelledError(error)) {
       throw error;
@@ -73,11 +79,7 @@ export async function getAccountBalances(
     const responseStatus = getResponseStatus(error);
 
     if (responseStatus === 404) {
-      throw new Error(
-        network === "testnet"
-          ? "Account not found on Stellar testnet. Fund it with Friendbot first."
-          : "Account not found on Stellar mainnet."
-      );
+      return { found: false, reason: "not-found", network };
     }
 
     throw new Error("Could not load account balances from Horizon. Try again in a moment.");

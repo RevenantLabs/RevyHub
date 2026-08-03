@@ -56,19 +56,22 @@ describe("getAccountBalances", () => {
 
     const balances = await getAccountBalances(publicKey, "testnet");
 
-    expect(balances).toEqual([
-      { assetCode: "XLM", amount: "100", isNative: true },
-      {
-        assetCode: "USDC",
-        issuer,
-        amount: "50"
-      },
-      {
-        assetCode: "Liquidity pool shares",
-        issuer: "0000000000000000000000000000000000000000000000000000000000000000",
-        amount: "10"
-      }
-    ]);
+    expect(balances).toEqual({
+      found: true,
+      balances: [
+        { assetCode: "XLM", amount: "100", isNative: true },
+        {
+          assetCode: "USDC",
+          issuer,
+          amount: "50"
+        },
+        {
+          assetCode: "Liquidity pool shares",
+          issuer: "0000000000000000000000000000000000000000000000000000000000000000",
+          amount: "10"
+        }
+      ]
+    });
     expect(getHorizonServerMock).toHaveBeenCalledWith("testnet");
     expect(loadAccountMock).toHaveBeenCalledWith(publicKey);
   });
@@ -82,20 +85,20 @@ describe("getAccountBalances", () => {
     expect(getHorizonServerMock).not.toHaveBeenCalledWith("testnet");
   });
 
-  it("throws a testnet-specific message when the account is not found", async () => {
+  it("returns a not-found result when the account is not found on testnet", async () => {
     loadAccountMock.mockRejectedValue({ response: { status: 404 } });
 
-    await expect(getAccountBalances(publicKey, "testnet")).rejects.toThrow(
-      "Account not found on Stellar testnet. Fund it with Friendbot first."
-    );
+    const result = await getAccountBalances(publicKey, "testnet");
+
+    expect(result).toEqual({ found: false, reason: "not-found", network: "testnet" });
   });
 
-  it("throws a mainnet-specific message when the account is not found", async () => {
+  it("returns a not-found result when the account is not found on mainnet", async () => {
     loadAccountMock.mockRejectedValue({ response: { status: 404 } });
 
-    await expect(getAccountBalances(publicKey, "mainnet")).rejects.toThrow(
-      "Account not found on Stellar mainnet."
-    );
+    const result = await getAccountBalances(publicKey, "mainnet");
+
+    expect(result).toEqual({ found: false, reason: "not-found", network: "mainnet" });
   });
 
   it("throws a generic message for other Horizon failures", async () => {

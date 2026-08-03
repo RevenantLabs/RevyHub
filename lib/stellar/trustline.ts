@@ -12,6 +12,7 @@ import { getResponseStatus } from "@/lib/stellar/account";
 export interface TrustlineCheck {
   exists: boolean;
   message: string;
+  notFound?: boolean;
 }
 
 export async function checkTrustline(
@@ -54,6 +55,7 @@ export async function checkTrustline(
 
     return {
       exists,
+      notFound: false,
       message: exists
         ? `Trustline found for ${normalizedCode}.`
         : `No ${normalizedCode} trustline found for this account.`
@@ -68,11 +70,11 @@ export async function checkTrustline(
     }
 
     if (getResponseStatus(error) === 404) {
-      throw new Error(
-        network === "testnet"
-          ? "Account not found on Stellar testnet. Fund it before checking trustlines."
-          : "Account not found on Stellar mainnet."
-      );
+      return {
+        exists: false,
+        notFound: true,
+        message: "The account was not found on Stellar testnet."
+      };
     }
 
     throw new Error("Could not check trustline through Horizon. Try again shortly.");
