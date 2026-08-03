@@ -17,7 +17,38 @@ vi.mock("@/lib/stellar/horizon", async (importOriginal) => {
 });
 
 import { getHorizonServer } from "@/lib/stellar/horizon";
-import { checkTrustline } from "@/lib/stellar/trustline";
+import { checkTrustline, getUSDCPreset, USDC_PRESETS } from "@/lib/stellar/trustline";
+
+describe("USDC presets", () => {
+  it("returns a USDC preset for testnet", () => {
+    const preset = getUSDCPreset("testnet");
+    expect(preset.code).toBe("USDC");
+    expect(preset.issuer).toBe("GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5");
+  });
+
+  it("returns a USDC preset for mainnet", () => {
+    const preset = getUSDCPreset("mainnet");
+    expect(preset.code).toBe("USDC");
+    expect(preset.issuer).toBe("GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN");
+  });
+
+  it("testnet and mainnet have different USDC issuers", () => {
+    const testnet = getUSDCPreset("testnet");
+    const mainnet = getUSDCPreset("mainnet");
+    expect(testnet.issuer).not.toBe(mainnet.issuer);
+  });
+
+  it("both presets have the same asset code", () => {
+    const testnet = getUSDCPreset("testnet");
+    const mainnet = getUSDCPreset("mainnet");
+    expect(testnet.code).toBe(mainnet.code);
+  });
+
+  it("USDC_PRESETS object contains both networks", () => {
+    expect(USDC_PRESETS).toHaveProperty("testnet");
+    expect(USDC_PRESETS).toHaveProperty("mainnet");
+  });
+});
 
 describe("checkTrustline", () => {
   const accountAddress = Keypair.random().publicKey();
@@ -41,7 +72,13 @@ describe("checkTrustline", () => {
           asset_code: "USDC",
           asset_issuer: issuerAddress,
           balance: "25.0000000",
-          limit: "1000.0000000"
+          limit: "1000.0000000",
+          is_authorized: true,
+          is_authorized_to_maintain_liabilities: false,
+          is_clawback_enabled: false,
+          buying_liabilities: "0.0000000",
+          selling_liabilities: "0.0000000",
+          last_modified_ledger: 1234
         }
       ]
     });
@@ -50,7 +87,19 @@ describe("checkTrustline", () => {
       checkTrustline(` ${accountAddress} `, " usdc ", ` ${issuerAddress} `, "mainnet")
     ).resolves.toEqual({
       exists: true,
-      message: "Trustline found for USDC."
+      message: "Trustline found for USDC.",
+      balance: "25.0000000",
+      limit: "1000.0000000",
+      authorization: {
+        authorized: true,
+        authorizedToMaintainLiabilities: false,
+        clawbackEnabled: false
+      },
+      liabilities: {
+        buying: "0.0000000",
+        selling: "0.0000000"
+      },
+      lastModifiedLedger: 1234
     });
     expect(getHorizonServer).toHaveBeenCalledWith("mainnet");
     expect(mockLoadAccount).toHaveBeenCalledWith(accountAddress);
