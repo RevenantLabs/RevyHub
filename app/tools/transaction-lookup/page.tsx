@@ -40,6 +40,7 @@ export default function TransactionLookupPage() {
       const result = await lookupTransaction(hash, network, controller.signal);
       if (abortRef.current !== controller) return;
       setTransaction(result);
+      setResultNetwork(network);
       setMessage({ type: "success", text: `The detective comet found the transaction in ${network} Horizon.` });
     } catch (error) {
       if (isCancelledError(error) || abortRef.current !== controller) return;

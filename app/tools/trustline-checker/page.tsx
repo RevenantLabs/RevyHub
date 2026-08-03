@@ -41,6 +41,7 @@ export default function TrustlineCheckerPage() {
       const result = await checkTrustline(account, assetCode, issuer, network, controller.signal);
       if (abortRef.current !== controller) return;
       setMessage({ type: result.exists ? "success" : "warning", text: result.message });
+      setResultNetwork(network);
     } catch (error) {
       if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });

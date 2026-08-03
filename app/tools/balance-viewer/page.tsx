@@ -44,6 +44,7 @@ export default function BalanceViewerPage() {
       const nextBalances = await getAccountBalances(address, network, controller.signal);
       if (abortRef.current !== controller) return;
       setBalances(nextBalances);
+      setResultNetwork(network);
       setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
     } catch (error) {
       if (isCancelledError(error) || abortRef.current !== controller) return;
