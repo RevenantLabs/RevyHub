@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Github, Network } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { getNetworkLabel, networkMeta, normalizeNetwork, stellarNetworks } from "@/lib/stellar/horizon";
 
 export function AppHeader() {
   const { network, setNetwork } = useNetwork();
@@ -34,19 +35,21 @@ export function AppHeader() {
             <span className="sr-only sm:not-sr-only">Network</span>
             <select
               value={network}
-              onChange={(event) => setNetwork(event.target.value === "mainnet" ? "mainnet" : "testnet")}
+              onChange={(event) => setNetwork(normalizeNetwork(event.target.value))}
               className="bg-transparent text-sm font-extrabold uppercase text-[#172033] outline-none"
               aria-label="Select Stellar network"
             >
-              <option className="bg-white" value="testnet">
-                Testnet
-              </option>
-              <option className="bg-white" value="mainnet">
-                Mainnet
-              </option>
+              {stellarNetworks.map((option) => (
+                <option key={option} className="bg-white" value={option}>
+                  {getNetworkLabel(option)}
+                </option>
+              ))}
             </select>
           </label>
-          <Badge tone={network === "testnet" ? "info" : "warning"}>{network}</Badge>
+          <Badge tone={networkMeta[network].tone} aria-live="polite">
+            <span className="sr-only">Active network: </span>
+            {getNetworkLabel(network)}
+          </Badge>
           <a
             href="https://github.com/RevenantLabs/RevyHubX"
             className="hidden items-center gap-2 rounded-md border border-[#c7b9f3]/65 bg-white/60 px-3 py-2 text-sm font-semibold text-[#29364d] transition hover:border-[#ff8b7a]/70 hover:bg-[#fff7f1] sm:inline-flex"
