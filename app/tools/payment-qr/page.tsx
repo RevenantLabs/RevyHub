@@ -95,7 +95,7 @@ export default function PaymentQrPage() {
               >
                 <option value="XLM">XLM</option>
                 <option value="ISSUED">Issued asset</option>
-              </select>
+              </Select>
               {fieldErrors.asset ? (
                 <p className="text-xs text-[#9f342d]">{fieldErrors.asset}</p>
               ) : null}
