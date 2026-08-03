@@ -22,7 +22,7 @@ export function Sidebar() {
               key={tool.href}
               href={tool.href}
               className={cn(
-                "flex items-center gap-3 rounded-[1rem] px-3 py-2.5 text-sm font-semibold transition",
+                "flex items-center gap-3 rounded-[1rem] px-3 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#178fb5] focus-visible:ring-offset-2 focus-visible:ring-offset-white",
                 active
                   ? "bg-[#fff7f1] text-[#172033] shadow-[4px_4px_0_#ff8b7a,0_0_26px_rgba(111,212,255,0.18)]"
                   : "border border-transparent text-[#4e5c73] hover:border-white/80 hover:bg-white/64 hover:text-[#172033]"

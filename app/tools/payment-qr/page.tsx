@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { copyText } from "@/lib/copy";
 import { buildPaymentQrFilename } from "@/lib/qrDownload";
@@ -88,14 +89,13 @@ export default function PaymentQrPage() {
             </label>
             <label className="block space-y-2">
               <span className="text-sm font-medium text-[#29364d]">Asset</span>
-              <select
+              <Select
                 value={asset}
                 onChange={(event) => setAsset(event.target.value as "XLM" | "ISSUED")}
-                className="min-h-12 w-full rounded-md border border-[#c7d6e8] bg-white/78 px-4 text-sm text-[#172033] outline-none focus:border-[#47a8c7] focus:ring-2 focus:ring-[#8edcf4]/35"
               >
                 <option value="XLM">XLM</option>
                 <option value="ISSUED">Issued asset</option>
-              </select>
+              </Select>
               {fieldErrors.asset ? (
                 <p className="text-xs text-[#9f342d]">{fieldErrors.asset}</p>
               ) : null}
