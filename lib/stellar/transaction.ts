@@ -34,15 +34,20 @@ export async function lookupTransaction(
       { signal }
     );
 
+    let memo: TransactionSummary["memo"];
+    if (transaction.memo_type !== "none" && transaction.memo) {
+      memo = { type: transaction.memo_type, value: transaction.memo };
+    }
+
     return {
-      hash: tx.hash,
-      ledger: tx.ledger_attr,
-      sourceAccount: tx.source_account,
-      feeCharged: String(tx.fee_charged),
-      createdAt: tx.created_at,
-      successful: tx.successful,
+      hash: transaction.id,
+      ledger: transaction.ledger_attr,
+      sourceAccount: transaction.source_account,
+      feeCharged: String(transaction.fee_charged),
+      createdAt: transaction.created_at,
+      successful: transaction.successful,
       network,
-      operationCount: tx.operation_count,
+      operationCount: transaction.operation_count,
       memo
     };
   } catch (error) {
