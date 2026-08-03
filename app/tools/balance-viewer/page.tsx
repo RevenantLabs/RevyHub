@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { AddressInput } from "@/components/stellar/AddressInput";
 import { BalanceList, type DisplayBalance } from "@/components/stellar/BalanceList";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { getAccountBalances } from "@/lib/stellar/account";
+import { isCancelledError } from "@/lib/stellar/horizon";
 
 export default function BalanceViewerPage() {
   const { network } = useNetwork();
@@ -17,19 +19,33 @@ export default function BalanceViewerPage() {
   const [balances, setBalances] = useState<DisplayBalance[]>([]);
   const [message, setMessage] = useState<{ type: "info" | "success" | "error"; text: string }>({
     type: "info",
-    text: "The moon wallet is waiting for a funded testnet account address."
+    text: "The moon wallet is waiting for a funded account address on the selected network."
   });
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setBalances([]);
     setNotFound(false);
 
     try {
-      const result = await getAccountBalances(address, network);
+      const result = await getAccountBalances(address, network, controller.signal);
+
+      if (abortRef.current !== controller) return;
 
       if (!result.found) {
         setNotFound(true);
@@ -39,9 +55,13 @@ export default function BalanceViewerPage() {
         setMessage({ type: "success", text: `The moon wallet opened and counted balances from ${network} Horizon.` });
       }
     } catch (error) {
+      if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
     } finally {
-      setLoading(false);
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setLoading(false);
+      }
     }
   }
 
@@ -84,7 +104,26 @@ export default function BalanceViewerPage() {
           description="Every account on Stellar mainnet must be created and funded before it can appear on Horizon."
         />
       ) : null}
-      {message.type === "success" ? <BalanceList balances={balances} /> : null}
+      {loading ? (
+        <div className="space-y-3" aria-label="Loading balances" role="status">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-white/80 bg-white/68 p-4 shadow-[4px_4px_0_rgba(142,220,244,0.22)]"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-3 w-44" />
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+            </div>
+          ))}
+          <span className="sr-only">Loading balance data from Horizon...</span>
+        </div>
+      ) : null}
+      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
     </div>
   );
 }
