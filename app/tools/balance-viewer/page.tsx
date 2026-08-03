@@ -10,6 +10,7 @@ import { AddressInput } from "@/components/stellar/AddressInput";
 import { BalanceList, type DisplayBalance } from "@/components/stellar/BalanceList";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { createBalanceSnapshot, downloadBlob, getExportFilename } from "@/lib/export";
 import { getAccountBalances } from "@/lib/stellar/account";
 import { isCancelledError } from "@/lib/stellar/horizon";
 
@@ -40,6 +41,7 @@ export default function BalanceViewerPage() {
     abortRef.current = controller;
     setLoading(true);
     setBalances([]);
+    setLookedUpAddress("");
 
     try {
       const nextBalances = await getAccountBalances(address, network, controller.signal);
@@ -115,7 +117,20 @@ export default function BalanceViewerPage() {
           <span className="sr-only">Loading balance data from Horizon...</span>
         </div>
       ) : null}
-      {balances.length > 0 ? <BalanceList balances={balances} /> : null}
+      {lookedUpAddress ? (
+        <section aria-labelledby="account-balances-heading" className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/80 bg-white/68 p-4 shadow-[4px_4px_0_rgba(142,220,244,0.22)]">
+            <div>
+              <h2 id="account-balances-heading" className="text-sm font-extrabold text-[#172033]">Account balances</h2>
+              <p className="mt-1 text-xs text-[#68758a]">Export a JSON snapshot of the moon wallet.</p>
+            </div>
+            <Button type="button" variant="secondary" onClick={handleExport}>
+              Export as JSON
+            </Button>
+          </div>
+          <BalanceList balances={balances} />
+        </section>
+      ) : null}
     </div>
   );
 }
