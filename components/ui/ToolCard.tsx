@@ -3,8 +3,8 @@ import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
-import type { ToolStatus, ToolCategory } from "@/lib/constants";
-import { toolCategories } from "@/lib/constants";
+import type { ToolStatus, ToolCategory } from "@/lib/registry";
+import { toolCategories, statusTone } from "@/lib/registry";
 
 interface ToolCardProps {
   title: string;
@@ -15,12 +15,6 @@ interface ToolCardProps {
   category: ToolCategory;
   icon: React.ComponentType<{ className?: string }>;
 }
-
-const statusTone: Record<ToolStatus, "success" | "info" | "warning"> = {
-  Working: "success",
-  MVP: "info",
-  "Coming Soon": "warning"
-};
 
 const categoryTone: Record<ToolCategory, string> = {
   validation: "border-[#c7b9f3]/70 bg-[#f1edff] text-[#5b4b8a]",

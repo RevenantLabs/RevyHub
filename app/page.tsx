@@ -12,8 +12,8 @@ import {
 import { ToolCard } from "@/components/ui/ToolCard";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { tools, toolCategories } from "@/lib/constants";
-import type { ToolCategory } from "@/lib/constants";
+import { tools, toolCategories } from "@/lib/registry";
+import type { ToolCategory } from "@/lib/registry";
 
 export default function HomePage() {
   const groupedTools = tools.reduce<

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { tools } from "@/lib/constants";
+import { tools } from "@/lib/registry";
 import { cn } from "@/lib/utils";
 
 export function Sidebar() {
