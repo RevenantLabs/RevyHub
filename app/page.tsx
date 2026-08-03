@@ -1,9 +1,13 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useSyncExternalStore } from "react";
 import {
   Activity,
   ArrowRight,
   GitPullRequest,
+  Pin,
   Rocket,
   SmilePlus,
   Sparkles,
@@ -14,8 +18,29 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { tools, toolCategories } from "@/lib/constants";
 import type { ToolCategory } from "@/lib/constants";
+import { getFavorites } from "@/lib/favorites";
+
+// Subscribe to favorite changes in this tab (custom event) and other tabs (storage).
+function subscribeToFavorites(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("favorites-updated", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("favorites-updated", callback);
+  };
+}
+
+function getFavoriteSnapshot() {
+  return getFavorites();
+}
 
 export default function HomePage() {
+  const favorites = useSyncExternalStore(
+    subscribeToFavorites,
+    getFavoriteSnapshot,
+    () => [] // Server snapshot
+  );
+
   const groupedTools = tools.reduce<
     Record<ToolCategory, (typeof tools)[number][]>
   >(
@@ -175,6 +200,25 @@ export default function HomePage() {
           </p>
         </div>
 
+        {/* Favorites Section - shown when there are pinned tools */}
+        {(() => {
+          const favoriteTools = tools.filter((tool) => favorites.includes(tool.href));
+          if (favoriteTools.length === 0) return null;
+          return (
+            <div className="mb-10">
+              <div className="mb-4 flex items-center gap-2">
+                <Pin className="h-4 w-4 text-[#ff765f]" aria-hidden />
+                <h3 className="text-lg font-extrabold text-[#172033]">Pinned helpers</h3>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {favoriteTools.map((tool) => (
+                  <ToolCard key={tool.href} {...tool} />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {categoryOrder.map((category, catIndex) => (
           <div key={category} className="mb-10 last:mb-0">
             <div
@@ -189,17 +233,19 @@ export default function HomePage() {
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {groupedTools[category].map((tool, toolIndex) => (
-                <div
-                  key={tool.href}
-                  className="animate-fade-in-up opacity-0 [animation-fill-mode:forwards]"
-                  style={{
-                    animationDelay: `${200 + catIndex * 100 + toolIndex * 80}ms`
-                  }}
-                >
-                  <ToolCard {...tool} />
-                </div>
-              ))}
+              {groupedTools[category]
+                .filter((tool) => !favorites.includes(tool.href))
+                .map((tool, toolIndex) => (
+                  <div
+                    key={tool.href}
+                    className="animate-fade-in-up opacity-0 [animation-fill-mode:forwards]"
+                    style={{
+                      animationDelay: `${200 + catIndex * 100 + toolIndex * 80}ms`
+                    }}
+                  >
+                    <ToolCard {...tool} />
+                  </div>
+                ))}
             </div>
           </div>
         ))}
