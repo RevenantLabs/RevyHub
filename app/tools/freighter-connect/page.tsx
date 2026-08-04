@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { StatusMessage } from "@/components/ui/StatusMessage";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 
 declare global {
@@ -134,6 +135,7 @@ export default function FreighterConnectPage() {
         title="Freighter Connect"
         description="The wallet mascot watches for Freighter, asks for a public key, and explains what happened without asking for secrets."
       />
+      <OfflineBanner />
       <Card className="space-y-5">
         <div className="flex flex-wrap gap-3">
           <Button type="button" onClick={connect} disabled={!available}>
