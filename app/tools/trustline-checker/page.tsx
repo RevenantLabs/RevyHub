@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -21,26 +21,39 @@ export default function TrustlineCheckerPage() {
   const [issuer, setIssuer] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The trust inspector needs an account, asset code, and issuer to look for the handshake." });
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(false);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setLoading(true);
 
     const result = await executeIfOnline(
       async () => {
-        setLoading(true);
-        return await checkTrustline(account, assetCode, issuer, network);
+        return await checkTrustline(account, assetCode, issuer, network, controller.signal);
       },
       { offlineError: "You're offline. Connect to the internet to check trustlines from Horizon." }
     );
 
-    setLoading(false);
+    if (abortRef.current !== controller) return;
 
     if (result.error) {
       setMessage({ type: "error", text: result.error });
     } else if (result.data) {
       setMessage({ type: result.data.exists ? "success" : "warning", text: result.data.message });
     }
+    setLoading(false);
   }
 
   return (
@@ -66,7 +79,7 @@ export default function TrustlineCheckerPage() {
         </form>
       </Card>
       <StatusMessage type={message.type} title="Inspector report" description={message.text} />
-      {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
+      {network === "testnet" && message.type === "error" && message.text.includes("Account not found") ? (
         <StatusMessage
           type="info"
           title="Fund the testnet account first"

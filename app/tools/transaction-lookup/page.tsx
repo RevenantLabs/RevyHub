@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TransactionDetails, type TransactionSummary } from "@/components/stellar/TransactionDetails";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -19,19 +19,33 @@ export default function TransactionLookupPage() {
   const [hash, setHash] = useState("");
   const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a testnet transaction hash to follow the trail." });
+  const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a transaction hash to follow the trail on the selected network." });
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setTransaction(null);
 
     const result = await executeIfOnline(
       async () => {
-        return await lookupTransaction(hash, network);
+        return await lookupTransaction(hash, network, controller.signal);
       },
       { offlineError: "You're offline. Connect to the internet to look up transactions from Horizon." }
     );
+
+    if (abortRef.current !== controller) return;
 
     if (result.error) {
       setMessage({ type: "error", text: result.error });

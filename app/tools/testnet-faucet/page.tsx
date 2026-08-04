@@ -7,18 +7,33 @@ import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusMessage } from "@/components/ui/StatusMessage";
+import { TestnetOnlyNotice } from "@/components/stellar/TestnetOnlyNotice";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { useNetworkTool } from "@/lib/useNetworkTool";
+import { getNetworkLabel } from "@/lib/stellar/horizon";
 import { fundTestnetAccount } from "@/lib/stellar/friendbot";
 
 export default function TestnetFaucetPage() {
+  const { network } = useNetwork();
   const { executeIfOnline } = useNetworkTool();
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The faucet helper pours testnet XLM only. No real funds are involved." });
+  const testnetOnlyBlocked = network !== "testnet";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (testnetOnlyBlocked) {
+      setMessage({
+        type: "warning",
+        text: `The faucet helper cannot pour while the app is set to ${getNetworkLabel(network)}. Switch to testnet to continue.`
+      });
+      return;
+    }
+
+    // TODO(issue #24): Add a shared async loading pattern for faucet, balance, and transaction tools.
     setLoading(true);
 
     const result = await executeIfOnline(
@@ -46,10 +61,14 @@ export default function TestnetFaucetPage() {
         description="The faucet helper pours harmless testnet XLM into a public account through Friendbot."
       />
       <OfflineBanner />
+      <TestnetOnlyNotice
+        character="The faucet helper"
+        reason="Friendbot resets often and testnet XLM has no market value."
+      />
       <Card>
         <form onSubmit={handleSubmit} className="space-y-5">
           <AddressInput value={address} onChange={setAddress} />
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading || testnetOnlyBlocked}>
             {loading ? "Pouring..." : "Ask faucet helper to fund"}
           </Button>
         </form>
@@ -68,7 +87,6 @@ export default function TestnetFaucetPage() {
       ) : (
         <StatusMessage type={message.type} title="Faucet helper status" description={message.text} />
       )}
-      <StatusMessage type="warning" title="Testnet only" description="Friendbot resets and testnet XLM have no market value." />
     </div>
   );
 }

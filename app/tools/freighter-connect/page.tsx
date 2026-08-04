@@ -20,7 +20,7 @@ declare global {
   }
 }
 
-function normalizeFreighterNetwork(value: string) {
+export function normalizeFreighterNetwork(value: string) {
   const normalized = value.toLowerCase();
 
   if (normalized.includes("test")) return "testnet";
@@ -28,6 +28,9 @@ function normalizeFreighterNetwork(value: string) {
 
   return "unknown";
 }
+
+export const CLEAR_CONNECTION_MESSAGE =
+  "Local Freighter display cleared. Extension permission is still managed in Freighter; reconnect anytime to request the public key again.";
 
 function displayNetwork(value: string) {
   const normalized = value.toLowerCase();
@@ -115,6 +118,15 @@ export default function FreighterConnectPage() {
     }
   }
 
+  function clearLocalConnection() {
+    setPublicKey("");
+    setWalletNetwork("");
+    setMessage({
+      type: "info",
+      text: CLEAR_CONNECTION_MESSAGE
+    });
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <CharacterPanel
@@ -125,9 +137,16 @@ export default function FreighterConnectPage() {
       />
       <OfflineBanner />
       <Card className="space-y-5">
-        <Button type="button" onClick={connect} disabled={!available}>
-          Ask wallet mascot to connect
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button type="button" onClick={connect} disabled={!available}>
+            Ask wallet mascot to connect
+          </Button>
+          {publicKey ? (
+            <Button type="button" variant="secondary" onClick={clearLocalConnection}>
+              Clear connection
+            </Button>
+          ) : null}
+        </div>
         {publicKey ? (
           <div className="rounded-lg border border-white/80 bg-white/68 p-4">
             <p className="text-xs font-extrabold uppercase tracking-wide text-[#9a6754]">Connected public key</p>
@@ -155,6 +174,10 @@ export default function FreighterConnectPage() {
             </div>
           </div>
         </div>
+        <p className="text-xs text-[#4e5c73]">
+          Clear connection only forgets the public key and network shown in this page. Freighter still manages
+          extension permissions; revoke access from the Freighter extension if you want to remove site approval.
+        </p>
         <a
           href="https://www.freighter.app/"
           className="inline-flex text-sm font-semibold text-[#178fb5] hover:text-[#0f6d8c]"

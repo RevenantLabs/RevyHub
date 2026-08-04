@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -21,21 +21,35 @@ export default function BalanceViewerPage() {
   const [balances, setBalances] = useState<DisplayBalance[]>([]);
   const [message, setMessage] = useState<{ type: "info" | "success" | "error"; text: string }>({
     type: "info",
-    text: "The moon wallet is waiting for a funded testnet account address."
+    text: "The moon wallet is waiting for a funded account address on the selected network."
   });
   const [loading, setLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setBalances([]);
 
     const result = await executeIfOnline(
       async () => {
-        return await getAccountBalances(address, network);
+        return await getAccountBalances(address, network, controller.signal);
       },
       { offlineError: "You're offline. Connect to the internet to check balances from Horizon." }
     );
+
+    if (abortRef.current !== controller) return;
 
     if (result.error) {
       setMessage({ type: "error", text: result.error });
@@ -64,7 +78,7 @@ export default function BalanceViewerPage() {
         </form>
       </Card>
       <StatusMessage type={message.type} title={message.type === "success" ? "Wallet opened" : "Moon wallet status"} description={message.text} />
-      {message.type === "error" && message.text.includes("Account not found on Stellar testnet") ? (
+      {network === "testnet" && message.type === "error" && message.text.includes("Account not found") ? (
         <StatusMessage
           type="info"
           title="Create the testnet account"
