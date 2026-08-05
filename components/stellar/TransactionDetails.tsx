@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { CopyableValue } from "@/components/stellar/CopyableValue";
 import type { StellarNetwork } from "@/lib/stellar/horizon";
+import type { NormalizedOperation } from "@/lib/stellar/transaction";
 
 const explorerBaseUrls: Record<StellarNetwork, string> = {
   testnet: "https://stellar.expert/explorer/testnet/tx",

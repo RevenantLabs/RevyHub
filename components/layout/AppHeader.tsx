@@ -2,13 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Github, Network } from "lucide-react";
+import { Eye, EyeOff, Github, Network } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { useRedaction } from "@/components/stellar/RedactionProvider";
 import { getNetworkLabel, networkMeta, normalizeNetwork, stellarNetworks } from "@/lib/stellar/horizon";
 
 export function AppHeader() {
   const { network, setNetwork } = useNetwork();
+  const { redacted, setRedacted } = useRedaction();
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/70 bg-white/75 shadow-[0_14px_38px_rgba(86,103,140,0.16)] backdrop-blur-xl">
@@ -30,6 +33,22 @@ export function AppHeader() {
           </span>
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
+          <Button
+            type="button"
+            variant={redacted ? "secondary" : "ghost"}
+            onClick={() => setRedacted(!redacted)}
+            className="min-h-10 gap-2 px-3 text-sm"
+            aria-label={redacted ? "Disable privacy mode" : "Enable privacy mode"}
+            title={redacted ? "Identifiers are masked" : "Mask identifiers for screenshots"}
+          >
+            {redacted ? (
+              <EyeOff className="h-4 w-4 text-[#9a513f]" aria-hidden />
+            ) : (
+              <Eye className="h-4 w-4 text-[#68758a]" aria-hidden />
+            )}
+            <span className="sr-only sm:not-sr-only">Privacy</span>
+          </Button>
+          {redacted ? <Badge tone="warning">Masked</Badge> : null}
           <label className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#7dbcd2]/45 bg-white/75 px-3 text-sm font-semibold text-[#29364d] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
             <Network className="h-4 w-4 text-[#178fb5]" aria-hidden />
             <span className="sr-only sm:not-sr-only">Network</span>
