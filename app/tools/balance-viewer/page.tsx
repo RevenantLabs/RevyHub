@@ -15,6 +15,7 @@ import { isCancelledError } from "@/lib/stellar/horizon";
 
 export default function BalanceViewerPage() {
   const { network } = useNetwork();
+  const formRef = useRef<HTMLFormElement>(null);
   const [address, setAddress] = useState("");
   const [balances, setBalances] = useState<DisplayBalance[]>([]);
   const [message, setMessage] = useState<{ type: "info" | "success" | "error"; text: string }>({
@@ -31,6 +32,14 @@ export default function BalanceViewerPage() {
       controller?.abort();
     };
   }, []);
+
+  function handleReset() {
+    setAddress("");
+    setBalances([]);
+    setMessage({ type: "info", text: "The moon wallet is waiting for a funded testnet account address." });
+    setLoading(false);
+    formRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -65,11 +74,14 @@ export default function BalanceViewerPage() {
         description={`The moon wallet opens its pockets and shows native XLM plus issued assets from Stellar ${network} Horizon.`}
       />
       <Card>
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
           <AddressInput value={address} onChange={setAddress} />
-          <Button type="submit" disabled={loading}>
-            {loading ? "Counting..." : "Open moon wallet"}
-          </Button>
+          <div className="flex gap-3">
+            <Button type="submit" disabled={loading}>
+              {loading ? "Counting..." : "Open moon wallet"}
+            </Button>
+            <Button type="button" variant="secondary" onClick={handleReset}>Reset</Button>
+          </div>
         </form>
       </Card>
       <StatusMessage type={message.type} title={message.type === "success" ? "Wallet opened" : "Moon wallet status"} description={message.text} />
