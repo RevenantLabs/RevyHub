@@ -35,10 +35,15 @@ export function CopyableValue({ label, value, visible = 6 }: CopyableValueProps)
   return (
     <span className="inline-flex max-w-full items-center gap-2">
       <span id={fullValueId} className="sr-only">
-        {label}: {value}
+        {screenReaderLabel}
       </span>
-      <span title={value} aria-describedby={fullValueId} className="min-w-0 truncate">
-        {truncateMiddle(value, visible)}
+      <span
+        title={redacted ? `Redacted ${label}` : value}
+        aria-label={screenReaderLabel}
+        aria-describedby={fullValueId}
+        className="min-w-0 truncate"
+      >
+        {displayValue}
       </span>
       <Button
         type="button"
@@ -46,7 +51,7 @@ export function CopyableValue({ label, value, visible = 6 }: CopyableValueProps)
         onClick={handleCopy}
         disabled={copyDisabled}
         className="min-h-8 shrink-0 rounded-md px-2 py-1 text-xs"
-        aria-label={`Copy ${label}`}
+        aria-label={copyDisabled ? "Copy disabled while privacy mode is active" : `Copy ${label}`}
         aria-describedby={fullValueId}
       >
         <Copy className="h-3.5 w-3.5" aria-hidden />

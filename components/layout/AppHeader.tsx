@@ -6,6 +6,7 @@ import { Eye, EyeOff, Github, Network } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { useRedaction } from "@/components/stellar/RedactionProvider";
 import { getNetworkLabel, networkMeta, normalizeNetwork, stellarNetworks } from "@/lib/stellar/horizon";
 
 export function AppHeader() {
