@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -62,6 +64,6 @@ export function ToolCard({ title, description, character, href, status, category
           <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden />
         </span>
       </Card>
-    </Link>
+    </a>
   );
 }
