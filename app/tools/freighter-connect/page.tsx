@@ -6,26 +6,13 @@ import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
-
-declare global {
-  interface Window {
-    freighterApi?: {
-      isConnected?: () => Promise<boolean>;
-      isAllowed?: () => Promise<boolean>;
-      getPublicKey?: () => Promise<string>;
-      getNetwork?: () => Promise<string>;
-    };
-  }
-}
-
-function normalizeFreighterNetwork(value: string) {
-  const normalized = value.toLowerCase();
-
-  if (normalized.includes("test")) return "testnet";
-  if (normalized.includes("public") || normalized.includes("main")) return "mainnet";
-
-  return "unknown";
-}
+import {
+  getFreighterApi,
+  normalizeFreighterNetwork,
+  readFreighterNetwork,
+  walletNetworkStatus,
+  watchFreighterNetwork
+} from "@/lib/stellar/freighter";
 
 export default function FreighterConnectPage() {
   const { network } = useNetwork();
@@ -34,15 +21,13 @@ export default function FreighterConnectPage() {
   const [publicKey, setPublicKey] = useState("");
   const [walletNetwork, setWalletNetwork] = useState("");
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "warning" | "error", text: "The wallet mascot is listening for Freighter in this browser." });
-  const walletNetworkKind = walletNetwork ? normalizeFreighterNetwork(walletNetwork) : "";
-  const networkMismatch =
-    walletNetworkKind !== "" && walletNetworkKind !== "unknown" && walletNetworkKind !== network;
+  const walletStatus = walletNetworkStatus(normalizeFreighterNetwork(walletNetwork), network);
 
   useEffect(() => {
     let active = true;
 
     async function inspectFreighter() {
-      const detected = Boolean(window.freighterApi);
+      const detected = Boolean(getFreighterApi());
       if (!active) return;
 
       setAvailable(detected);
@@ -57,15 +42,13 @@ export default function FreighterConnectPage() {
         return;
       }
 
-      const api = window.freighterApi;
+      const api = getFreighterApi();
       const isConnected = api?.isConnected ? await api.isConnected().catch(() => false) : false;
       const isAllowed = api?.isAllowed ? await api.isAllowed().catch(() => false) : false;
-      const nextWalletNetwork = api?.getNetwork ? await api.getNetwork().catch(() => "") : "";
 
       if (!active) return;
 
       setConnected(isConnected || isAllowed);
-      setWalletNetwork(nextWalletNetwork);
       setMessage({
         type: isConnected || isAllowed ? "success" : "info",
         text:
@@ -77,25 +60,50 @@ export default function FreighterConnectPage() {
 
     void inspectFreighter();
 
+    const stopWatching = watchFreighterNetwork(getFreighterApi, (result) => {
+      if (active) {
+        setWalletNetwork(result.label);
+      }
+    });
+
     return () => {
       active = false;
+      stopWatching();
     };
   }, []);
 
+  useEffect(() => {
+    if (!available) {
+      return;
+    }
+
+    let active = true;
+
+    void readFreighterNetwork(getFreighterApi()).then((result) => {
+      if (active) {
+        setWalletNetwork(result.label);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [network, available]);
+
   async function connect() {
-    if (!window.freighterApi?.getPublicKey) {
+    const api = getFreighterApi();
+
+    if (!api?.getPublicKey) {
       setMessage({ type: "warning", text: "The wallet mascot cannot reach the Freighter API in this browser." });
       return;
     }
 
     try {
-      const key = await window.freighterApi.getPublicKey();
-      const nextWalletNetwork = window.freighterApi.getNetwork
-        ? await window.freighterApi.getNetwork().catch(() => "")
-        : walletNetwork;
+      const key = await api.getPublicKey();
+      const result = await readFreighterNetwork(api);
       setPublicKey(key);
       setConnected(true);
-      setWalletNetwork(nextWalletNetwork);
+      setWalletNetwork(result.label);
       setMessage({ type: "success", text: "The wallet mascot received the Freighter public key." });
     } catch {
       setMessage({ type: "error", text: "Connection request was rejected or could not be completed." });
@@ -142,7 +150,13 @@ export default function FreighterConnectPage() {
         </a>
       </Card>
       <StatusMessage type={message.type} title="Wallet mascot status" description={message.text} />
-      {networkMismatch ? (
+      {walletStatus === "unsupported" ? (
+        <StatusMessage
+          type="warning"
+          title="Unsupported wallet network"
+          description={`Freighter reports "${walletNetwork}", which the wallet mascot does not recognize. Open Freighter and choose testnet or mainnet.`}
+        />
+      ) : walletStatus === "mismatch" ? (
         <StatusMessage
           type="warning"
           title="Network mismatch"

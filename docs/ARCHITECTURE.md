@@ -19,7 +19,7 @@ RevyHubX is a Next.js App Router application that keeps user-facing tool pages, 
 - Payment QR generator validates destination, amount, memo length, and issued asset metadata before generating a URI.
 - Transaction lookup validates hash shape before querying Horizon on the selected network.
 - Testnet faucet calls Friendbot and remains explicitly testnet-only.
-- Freighter Connect is a public-key connection example that displays extension availability, permission state, wallet network, and network mismatch warnings. It does not request signatures or secrets.
+- Freighter Connect is a public-key connection example that displays extension availability, permission state, wallet network, and network mismatch warnings. It does not request signatures or secrets. `lib/stellar/freighter.ts` normalizes the reported network, classifies match/mismatch/unsupported states, and polls the extension so wallet network changes appear without a page reload; the watcher is cleaned up on unmount and the mismatch warning also refreshes when the app network changes.
 
 ## Network Model
 
