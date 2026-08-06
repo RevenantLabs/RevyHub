@@ -12,7 +12,7 @@
     "issues:dry-run": "node scripts/create-github-issues.mjs --dry-run"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^13.3.0",
+    "@stellar/stellar-sdk": "16.2.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "next": "^16.2.10",
