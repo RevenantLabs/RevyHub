@@ -121,16 +121,31 @@ export function normalizeOperation(raw: any): NormalizedOperation {
   return op;
 }
 
+/** Result of a full transaction lookup: the summary plus its operations. */
+export interface TransactionLookupResult {
+  summary: TransactionSummary;
+  /** Null when Horizon could not be reached for the operation list. */
+  operations: NormalizedOperation[] | null;
+}
+
 /** Fetch the list of operations belonging to a transaction. */
 export async function fetchTransactionOperations(
   hash: string,
-  network: StellarNetwork = STELLAR_NETWORK
+  network: StellarNetwork = STELLAR_NETWORK,
+  signal?: AbortSignal
 ): Promise<NormalizedOperation[]> {
   try {
     const server = getHorizonServer(network);
-    const operationsPage = await server.operations().forTransaction(hash.trim()).call();
+    const operationsPage = await runHorizonRequest(
+      server.operations().forTransaction(hash.trim()).call(),
+      { signal }
+    );
     return operationsPage.records.map((record) => normalizeOperation(record));
-  } catch {
+  } catch (error) {
+    if (isCancelledError(error)) {
+      throw error;
+    }
+
     throw new Error("Could not load operations from Horizon. Try again in a moment.");
   }
 }
@@ -143,8 +158,7 @@ export async function lookupTransaction(
   hash: string,
   network: StellarNetwork = STELLAR_NETWORK,
   signal?: AbortSignal
-): Promise<TransactionSummary> {
-  // TODO(issue #10): Fetch and normalize transaction operations for display below the transaction summary.
+): Promise<TransactionLookupResult> {
   if (!hash.trim()) {
     throw new Error("Enter a transaction hash.");
   }
@@ -160,17 +174,33 @@ export async function lookupTransaction(
       { signal }
     );
 
-    return {
-      hash: tx.hash,
-      ledger: tx.ledger_attr,
-      sourceAccount: tx.source_account,
-      feeCharged: String(tx.fee_charged),
-      createdAt: tx.created_at,
-      successful: tx.successful,
+    const summary: TransactionSummary = {
+      hash: transaction.hash,
+      ledger: transaction.ledger_attr,
+      sourceAccount: transaction.source_account,
+      feeCharged: String(transaction.fee_charged),
+      createdAt: transaction.created_at,
+      successful: transaction.successful,
       network,
-      operationCount: tx.operation_count,
-      memo
+      operationCount: transaction.operation_count,
+      memo:
+        transaction.memo_type !== "none"
+          ? { type: transaction.memo_type, value: transaction.memo ?? "" }
+          : undefined
     };
+
+    // The summary is the primary result; a failed operation fetch must not hide
+    // it. Cancellation still propagates so the caller can abort cleanly.
+    let operations: NormalizedOperation[] | null = null;
+    try {
+      operations = await fetchTransactionOperations(hash, network, signal);
+    } catch (error) {
+      if (isCancelledError(error)) {
+        throw error;
+      }
+    }
+
+    return { summary, operations };
   } catch (error) {
     if (isCancelledError(error)) {
       throw error;

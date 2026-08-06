@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { TransactionDetails, type TransactionSummary } from "@/components/stellar/TransactionDetails";
+import { TransactionDetails } from "@/components/stellar/TransactionDetails";
+import { TransactionOperations } from "@/components/stellar/TransactionOperations";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
@@ -9,13 +10,13 @@ import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/components/stellar/NetworkProvider";
 import { StatusMessage } from "@/components/ui/StatusMessage";
-import { lookupTransaction } from "@/lib/stellar/transaction";
+import { lookupTransaction, type TransactionLookupResult } from "@/lib/stellar/transaction";
 import { isCancelledError } from "@/lib/stellar/horizon";
 
 export default function TransactionLookupPage() {
   const { network } = useNetwork();
   const [hash, setHash] = useState("");
-  const [transaction, setTransaction] = useState<TransactionSummary | null>(null);
+  const [lookup, setLookup] = useState<TransactionLookupResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "info" as "info" | "success" | "error", text: "The detective comet needs a transaction hash to follow the trail on the selected network." });
   const abortRef = useRef<AbortController | null>(null);
@@ -34,13 +35,19 @@ export default function TransactionLookupPage() {
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true);
-    setTransaction(null);
+    setLookup(null);
 
     try {
       const result = await lookupTransaction(hash, network, controller.signal);
       if (abortRef.current !== controller) return;
-      setTransaction(result);
-      setMessage({ type: "success", text: `The detective comet found the transaction in ${network} Horizon.` });
+      setLookup(result);
+      const operationsNote = result.operations
+        ? ` with ${result.operations.length} ${result.operations.length === 1 ? "operation" : "operations"}`
+        : "";
+      setMessage({
+        type: "success",
+        text: `The detective comet found the transaction in ${network} Horizon${operationsNote}.`
+      });
     } catch (error) {
       if (isCancelledError(error) || abortRef.current !== controller) return;
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Unexpected error." });
@@ -86,10 +93,26 @@ export default function TransactionLookupPage() {
               </div>
             ))}
           </dl>
+          <div className="space-y-3">
+            {[1, 2].map((index) => (
+              <div key={index} className="rounded-lg border border-white/80 bg-white/68 p-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-6 w-28 rounded-full" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+                <Skeleton className="mt-3 h-12 w-full" />
+              </div>
+            ))}
+          </div>
           <span className="sr-only">Loading transaction data from Horizon...</span>
         </div>
       ) : null}
-      {transaction ? <TransactionDetails transaction={transaction} /> : null}
+      {lookup ? (
+        <>
+          <TransactionDetails transaction={lookup.summary} />
+          <TransactionOperations operations={lookup.operations} />
+        </>
+      ) : null}
     </div>
   );
 }

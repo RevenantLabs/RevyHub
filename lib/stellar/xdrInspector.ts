@@ -149,7 +149,7 @@ function summarizeV1(envelope: xdr.TransactionV1Envelope): TransactionEnvelopeSu
 
   return {
     variant: "classic-v1",
-    sourceAccount: encodeMuxedAccountToAddress(tx.sourceAccount(), true),
+    sourceAccount: encodeMuxedAccountToAddress(tx.sourceAccount()),
     sequence: tx.seqNum().toString(),
     fee: tx.fee().toString(),
     memo: summarizeMemo(tx.memo()),
@@ -180,7 +180,7 @@ function summarizeFeeBump(envelope: xdr.FeeBumpTransactionEnvelope): XdrInspecti
       ...inner,
       variant: "fee-bump",
       feeBump: {
-        feeSource: encodeMuxedAccountToAddress(tx.feeSource(), true),
+        feeSource: encodeMuxedAccountToAddress(tx.feeSource()),
         totalFee: tx.fee().toString(),
         outerSignatureCount: envelope.signatures().length
       }
