@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { Keypair, Networks } from "@stellar/stellar-sdk";
-import { createPaymentUri, validatePaymentForm } from "../../lib/stellar/paymentUri";
+import {
+  createPaymentUri,
+  validatePaymentForm,
+  validatePaymentMemo
+} from "../../lib/stellar/paymentUri";
 
 describe("createPaymentUri", () => {
   const destination = Keypair.random().publicKey();
+  const validHash = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
   it("creates a SEP-0007 payment URI for a valid native XLM request", () => {
     const uri = createPaymentUri({
@@ -38,6 +43,45 @@ describe("createPaymentUri", () => {
 
     expect(uri).toContain("asset_code=USDC");
     expect(uri).toContain(`asset_issuer=${encodeURIComponent(issuer)}`);
+  });
+
+  it("creates a payment URI for an ID memo with memo_type", () => {
+    const uri = createPaymentUri({
+      destination,
+      amount: "10",
+      asset: "XLM",
+      memo: "9223372036854775807",
+      memoType: "id"
+    });
+
+    expect(uri).toContain("memo=9223372036854775807");
+    expect(uri).toContain("memo_type=MEMO_ID");
+  });
+
+  it("creates a payment URI for a hash memo with memo_type", () => {
+    const uri = createPaymentUri({
+      destination,
+      amount: "10",
+      asset: "XLM",
+      memo: validHash.toUpperCase(),
+      memoType: "hash"
+    });
+
+    expect(uri).toContain(`memo=${validHash}`);
+    expect(uri).toContain("memo_type=MEMO_HASH");
+  });
+
+  it("creates a payment URI for a return memo with memo_type", () => {
+    const uri = createPaymentUri({
+      destination,
+      amount: "10",
+      asset: "XLM",
+      memo: validHash,
+      memoType: "return"
+    });
+
+    expect(uri).toContain(`memo=${validHash}`);
+    expect(uri).toContain("memo_type=MEMO_RETURN");
   });
 
   it("includes network_passphrase for testnet requests", () => {
@@ -156,6 +200,60 @@ describe("createPaymentUri", () => {
     ).toMatch(/28 UTF-8 bytes or less/);
   });
 
+  it("rejects invalid ID memo boundary values", () => {
+    expect(() =>
+      createPaymentUri({
+        destination,
+        amount: "10",
+        asset: "XLM",
+        memo: "-1",
+        memoType: "id"
+      })
+    ).toThrow(/whole number/);
+
+    expect(() =>
+      createPaymentUri({
+        destination,
+        amount: "10",
+        asset: "XLM",
+        memo: "18446744073709551616",
+        memoType: "id"
+      })
+    ).toThrow(/whole number/);
+
+    expect(() =>
+      createPaymentUri({
+        destination,
+        amount: "10",
+        asset: "XLM",
+        memo: "12.5",
+        memoType: "id"
+      })
+    ).toThrow(/whole number/);
+  });
+
+  it("rejects invalid hash and return memo boundary values", () => {
+    expect(() =>
+      createPaymentUri({
+        destination,
+        amount: "10",
+        asset: "XLM",
+        memo: "abc123",
+        memoType: "hash"
+      })
+    ).toThrow(/64 hexadecimal characters/);
+
+    expect(() =>
+      createPaymentUri({
+        destination,
+        amount: "10",
+        asset: "XLM",
+        memo: `${validHash}ff`,
+        memoType: "return"
+      })
+    ).toThrow(/64 hexadecimal characters/);
+  });
+
   it("returns field-level validation errors and accepts a 28-byte memo", () => {
     const issuer = Keypair.random().publicKey();
 
@@ -212,5 +310,29 @@ describe("createPaymentUri", () => {
       assetCode: expect.any(String),
       assetIssuer: expect.any(String)
     });
+  });
+});
+
+describe("validatePaymentMemo", () => {
+  it("accepts valid memo values for each supported type", () => {
+    expect(validatePaymentMemo("text", "Invoice 1001")).toBe("Invoice 1001");
+    expect(validatePaymentMemo("id", "0")).toBe("0");
+    expect(validatePaymentMemo("id", "18446744073709551615")).toBe("18446744073709551615");
+    expect(
+      validatePaymentMemo(
+        "hash",
+        "ABCDEF0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+      )
+    ).toBe("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+    expect(
+      validatePaymentMemo(
+        "return",
+        "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+      )
+    ).toBe("fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210");
+  });
+
+  it("rejects empty memo values", () => {
+    expect(() => validatePaymentMemo("text", "   ")).toThrow(/Enter a memo value/);
   });
 });
