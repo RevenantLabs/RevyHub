@@ -8,7 +8,10 @@ import {
 
 vi.mock("../../lib/stellar/horizon", () => ({
   STELLAR_NETWORK: "testnet",
-  getHorizonServer: vi.fn()
+  getHorizonServer: vi.fn(),
+  runHorizonRequest: (request: Promise<unknown>) => request,
+  isCancelledError: () => false,
+  isTimeoutError: () => false
 }));
 
 const hash = "a".repeat(64);
@@ -41,10 +44,17 @@ describe("normalizeTransactionMemo", () => {
     expect(normalizeTransactionMemo("none", undefined)).toEqual({ type: "none", value: null });
   });
 
-  it("maps text memos to trimmed text values", () => {
+  it("preserves the exact text memo value including surrounding whitespace", () => {
     expect(normalizeTransactionMemo("text", " Invoice 1001 ")).toEqual({
       type: "text",
-      value: "Invoice 1001"
+      value: " Invoice 1001 "
+    });
+  });
+
+  it("maps a truly absent memo value to null", () => {
+    expect(normalizeTransactionMemo("text", undefined)).toEqual({
+      type: "text",
+      value: null
     });
   });
 
