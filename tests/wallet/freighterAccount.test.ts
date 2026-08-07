@@ -10,6 +10,14 @@ import {
 const KEY_A = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
 const KEY_B = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
 
+// readFreighterAccountState awaits several wallet calls, so a single microtask
+// turn is not enough to observe the initial poll emit. Drain the queue instead.
+const flushAsync = async () => {
+  for (let i = 0; i < 20; i += 1) {
+    await Promise.resolve();
+  }
+};
+
 describe("readFreighterAccountState", () => {
   it("returns the same connected account when wallet state is unchanged", async () => {
     const api: FreighterApi = {
@@ -143,7 +151,7 @@ describe("subscribeFreighterAccountChanges", () => {
 
     const unsubscribe = subscribeFreighterAccountChanges(api, onUpdate);
 
-    await Promise.resolve();
+    await flushAsync();
     expect(onUpdate).toHaveBeenCalledWith({
       connected: true,
       publicKey: KEY_A,
