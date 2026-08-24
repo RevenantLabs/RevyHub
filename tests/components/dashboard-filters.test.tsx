@@ -33,6 +33,13 @@ describe("HomePage workflow filters", () => {
     const select = container.querySelector('select[name="workflow-filter"]') as HTMLSelectElement;
     expect(select).toBeTruthy();
 
+    // Ensure the All option and all workflow categories are present
+    const optionValues = Array.from(select.options).map((o) => o.value);
+    expect(optionValues).toContain("All");
+    // Check at least one known workflow is present
+    expect(optionValues).toEqual(expect.arrayContaining(["Payments", "Accounts", "Assets", "Transactions", "Wallets"]));
+
+    // Select via change event and verify filtering updates the DOM without reload
     act(() => {
       select.value = "Payments";
       select.dispatchEvent(new Event("change", { bubbles: true }));
