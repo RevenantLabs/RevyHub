@@ -24,6 +24,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate feature registry
+        run: npm run registry
+
+      - name: Verify the feature contract
+        run: npm run verify:features
+
       - name: Lint
         run: npm run lint
 
