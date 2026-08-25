@@ -13,10 +13,11 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { catalog, categoryLabels } from "./issue-catalog.mjs";
+import { isImplemented } from "./issue-status.mjs";
+import { validateCatalog } from "./validate-issue-catalog.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repo = process.env.GH_REPO || "RevenantLabs/RevyHub";
@@ -204,12 +205,13 @@ function labelsFor(tool) {
 }
 
 function main() {
+  validateCatalog();
   const titles = existingTitles();
 
   const published = catalog.filter((tool) => titles.has(issueTitle(tool)));
-  const implemented = catalog.filter((tool) => existsSync(path.join(root, "features", tool.slug)));
+  const implemented = catalog.filter((tool) => isImplemented(root, tool));
   const remaining = catalog.filter(
-    (tool) => !titles.has(issueTitle(tool)) && !existsSync(path.join(root, "features", tool.slug))
+    (tool) => !titles.has(issueTitle(tool)) && !isImplemented(root, tool)
   );
 
   if (listOnly) {

@@ -30,6 +30,9 @@ jobs:
       - name: Verify the feature contract
         run: npm run verify:features
 
+      - name: Verify the independent issue backlog
+        run: npm run verify:issues
+
       - name: Lint
         run: npm run lint
 

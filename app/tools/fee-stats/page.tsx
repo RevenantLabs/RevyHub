@@ -5,7 +5,7 @@ import { FeeStatsPanel } from "@/components/stellar/FeeStatsPanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CharacterPanel } from "@/components/ui/CharacterPanel";
-import { useNetwork } from "@/components/stellar/NetworkProvider";
+import { useNetwork } from "@/core/network/NetworkProvider";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { getFeeStats, type FeeStatsSummary } from "@/lib/stellar/feeStats";
 
