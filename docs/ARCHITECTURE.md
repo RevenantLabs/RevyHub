@@ -103,4 +103,9 @@ npm run check    # registry → lint → test → verify:features → build
 ```
 
 CI runs the same steps on every pull request, including
-`npm run verify:features`, which fails a slice that does not meet the contract.
+`npm run verify:features`, which fails a slice that does not meet the contract,
+and `npm run verify:issues`, which preserves a backlog of at least 40
+independent specifications with a stable 20-issue advanced wave.
+
+See [ISSUE_PUBLISHING.md](./ISSUE_PUBLISHING.md) for the five-at-a-time
+GrantFox publication flow.

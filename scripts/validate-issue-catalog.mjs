@@ -4,10 +4,16 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { catalog, categoryLabels } from "./issue-catalog.mjs";
-import { isImplemented } from "./issue-status.mjs";
+import {
+  advancedWaveSlugs,
+  isImplemented,
+  issueTier,
+  orderForPublication
+} from "./issue-status.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MINIMUM_PUBLISHABLE_ISSUES = 40;
+const REQUIRED_ADVANCED_WAVE_SIZE = 20;
 const difficulties = new Set(["medium", "advanced"]);
 
 function fail(message) {
@@ -77,7 +83,31 @@ export function validateCatalog() {
     }
   }
 
-  const publishable = catalog.filter((tool) => !isImplemented(root, tool));
+  if (advancedWaveSlugs.length !== REQUIRED_ADVANCED_WAVE_SIZE) {
+    fail(
+      `advanced wave must contain exactly ${REQUIRED_ADVANCED_WAVE_SIZE} issues ` +
+        `(found ${advancedWaveSlugs.length})`
+    );
+  }
+  if (new Set(advancedWaveSlugs).size !== advancedWaveSlugs.length) {
+    fail("advanced wave contains duplicate slugs");
+  }
+
+  const bySlug = new Map(catalog.map((tool) => [tool.slug, tool]));
+  for (const slug of advancedWaveSlugs) {
+    const tool = bySlug.get(slug);
+    if (!tool) fail(`advanced wave references unknown slug "${slug}"`);
+    if (isImplemented(root, tool)) {
+      fail(`advanced wave issue "${slug}" is already implemented`);
+    }
+    if (issueTier(tool).difficulty !== "advanced") {
+      fail(`advanced wave issue "${slug}" is not labelled advanced`);
+    }
+  }
+
+  const publishable = orderForPublication(
+    catalog.filter((tool) => !isImplemented(root, tool))
+  );
   if (publishable.length < MINIMUM_PUBLISHABLE_ISSUES) {
     fail(
       `only ${publishable.length} independent issues remain; ` +
@@ -85,7 +115,22 @@ export function validateCatalog() {
     );
   }
 
-  return { total: catalog.length, publishable: publishable.length };
+  const firstWave = publishable.slice(0, REQUIRED_ADVANCED_WAVE_SIZE).map((tool) => tool.slug);
+  if (firstWave.some((slug, index) => slug !== advancedWaveSlugs[index])) {
+    fail("the first twenty publishable issues do not match the advanced wave order");
+  }
+
+  for (const tool of publishable.slice(REQUIRED_ADVANCED_WAVE_SIZE)) {
+    if (issueTier(tool).difficulty !== "medium") {
+      fail(`post-wave issue "${tool.slug}" must be labelled medium`);
+    }
+  }
+
+  return {
+    total: catalog.length,
+    publishable: publishable.length,
+    advanced: advancedWaveSlugs.length
+  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -93,7 +138,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const result = validateCatalog();
     console.log(
       `[issue-catalog] OK: ${result.total} detailed tools, ` +
-        `${result.publishable} currently publishable`
+        `${result.publishable} currently publishable, ` +
+        `${result.advanced} in the first advanced wave`
     );
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);

@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 /**
- * Publishes tool issues from the catalogue, a batch at a time.
+ * Prepares GrantFox-ready issue payloads from the catalogue, five at a time.
  *
  *   npm run issues                     # dry run, next 5
- *   npm run issues -- --apply          # create the next 5
- *   npm run issues -- --count 3 --apply
- *   npm run issues -- --slug ledger-lookup --apply
+ *   npm run issues -- --json            # exact next-5 payloads for GrantFox
+ *   npm run issues -- --slug ledger-lookup
  *   npm run issues -- --list           # show what is published and what is left
  *
  * A slug is skipped when an issue with the same title already exists, or when
@@ -16,14 +15,19 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { catalog, categoryLabels } from "./issue-catalog.mjs";
-import { isImplemented } from "./issue-status.mjs";
+import {
+  isImplemented,
+  issueTier,
+  orderForPublication
+} from "./issue-status.mjs";
 import { validateCatalog } from "./validate-issue-catalog.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repo = process.env.GH_REPO || "RevenantLabs/RevyHub";
 
 const argv = process.argv.slice(2);
-const apply = argv.includes("--apply");
+const directApply = argv.includes("--apply");
+const jsonOnly = argv.includes("--json");
 const listOnly = argv.includes("--list");
 const countArg = argv.indexOf("--count");
 const slugArg = argv.indexOf("--slug");
@@ -99,12 +103,18 @@ function body(tool) {
   const criteria = tool.criteria.map((item) => `- [ ] ${item}`).join("\n");
   const outOfScope = tool.outOfScope.map((item) => `- ${item}`).join("\n");
   const offline = tool.offline === true;
+  const tier = issueTier(tool);
+  const waveCopy = tier.wave === "advanced"
+    ? `**Delivery wave.** Advanced issue ${tier.position} of ${tier.total}. It is fully independent: completing any other issue is not a prerequisite.`
+    : `**Delivery wave.** ${tier.difficulty === "advanced" ? "Advanced" : "Medium"} backlog. It is fully independent: completing any other issue is not a prerequisite.`;
 
   return `## What to build
 
 ${tool.summary}
 
 **Why it belongs in RevyHubX.** ${tool.why}
+
+${waveCopy}
 
 ## Where the data comes from
 
@@ -197,21 +207,33 @@ function existingTitles() {
 }
 
 function labelsFor(tool) {
+  const tier = issueTier(tool);
   return [
     ...CAMPAIGN_LABELS,
     AREA_LABELS[tool.category],
-    `difficulty:${tool.difficulty}`
+    `difficulty:${tier.difficulty}`
   ];
 }
 
 function main() {
   validateCatalog();
+  if (directApply) {
+    throw new Error(
+      "Direct GitHub publishing is disabled. Use --json, review the exact payloads, " +
+        "then publish them through GrantFox prepare/publish."
+    );
+  }
+  if (batchSize !== 5) {
+    throw new Error("Issues are released in fixed batches of five; --count must be 5.");
+  }
   const titles = existingTitles();
 
   const published = catalog.filter((tool) => titles.has(issueTitle(tool)));
   const implemented = catalog.filter((tool) => isImplemented(root, tool));
-  const remaining = catalog.filter(
-    (tool) => !titles.has(issueTitle(tool)) && !isImplemented(root, tool)
+  const remaining = orderForPublication(
+    catalog.filter(
+      (tool) => !titles.has(issueTitle(tool)) && !isImplemented(root, tool)
+    )
   );
 
   if (listOnly) {
@@ -219,12 +241,19 @@ function main() {
     console.log(`  published: ${published.length}`);
     console.log(`  implemented: ${implemented.length}`);
     console.log(`  remaining: ${remaining.length}\n`);
-    for (const tool of remaining) console.log(`  ${tool.slug.padEnd(28)} ${tool.title}`);
+    for (const tool of remaining) {
+      const tier = issueTier(tool);
+      const order = tier.wave === "advanced" ? `${tier.position}/20` : "later";
+      console.log(
+        `  ${order.padEnd(7)} ${tier.difficulty.padEnd(8)} ` +
+          `${tool.slug.padEnd(28)} ${tool.title}`
+      );
+    }
     return;
   }
 
   const batch = onlySlug
-    ? catalog.filter((tool) => tool.slug === onlySlug)
+    ? remaining.filter((tool) => tool.slug === onlySlug)
     : remaining.slice(0, batchSize);
 
   if (!batch.length) {
@@ -232,34 +261,35 @@ function main() {
     return;
   }
 
+  const payloads = batch.map((tool) => ({
+    title: issueTitle(tool),
+    body: body(tool),
+    labels: labelsFor(tool),
+    tier: issueTier(tool),
+    slug: tool.slug
+  }));
+
+  if (jsonOnly) {
+    console.log(JSON.stringify(payloads, null, 2));
+    return;
+  }
+
   console.log(
-    `${apply ? "Creating" : "Dry run for"} ${batch.length} issue(s) on ${repo}` +
+    `Dry run for ${batch.length} GrantFox issue(s) on ${repo}` +
       `  (${remaining.length} remaining in the catalogue)\n`
   );
 
-  for (const tool of batch) {
-    const title = issueTitle(tool);
-    const labels = labelsFor(tool);
-
-    if (!apply) {
-      console.log(`── ${title}`);
-      console.log(`   labels: ${labels.join(", ")}`);
-      console.log(`   body:   ${body(tool).length} characters\n`);
-      continue;
-    }
-
-    const url = gh([
-      "issue", "create",
-      "-R", repo,
-      "--title", title,
-      "--body", body(tool),
-      ...labels.flatMap((label) => ["--label", label])
-    ]).trim();
-
-    console.log(`created  ${title}\n         ${url}`);
+  for (const payload of payloads) {
+    console.log(`── ${payload.title}`);
+    console.log(
+      `   wave:   ${payload.tier.wave}` +
+        (payload.tier.position ? ` ${payload.tier.position}/${payload.tier.total}` : "")
+    );
+    console.log(`   labels: ${payload.labels.join(", ")}`);
+    console.log(`   body:   ${payload.body.length} characters\n`);
   }
 
-  if (!apply) console.log("Re-run with --apply to create these issues.");
+  console.log("Re-run with --json, review the payloads, then use GrantFox prepare/publish.");
 }
 
 main();

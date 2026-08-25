@@ -65,6 +65,8 @@ npm run dev                  # dev server
 npm run registry             # regenerate the feature registry
 npm run new:feature          # scaffold a complete feature slice
 npm run verify:features      # check every slice against the feature contract
+npm run verify:issues        # check 40+ independent issues and the advanced wave
+npm run issues               # preview the next five GrantFox issue payloads
 npm run test                 # unit, hook, component and accessibility tests
 npm run lint
 npm run build
@@ -80,6 +82,9 @@ Start with [CONTRIBUTING.md](./CONTRIBUTING.md) and
 ```bash
 npm run new:feature -- <slug> "<Title>" <category>
 ```
+
+Maintainers publish contributor work in independent batches of five using the
+[GrantFox issue workflow](./docs/ISSUE_PUBLISHING.md).
 
 ## Security
 
