@@ -1,14 +1,14 @@
-import { Sparkles } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import type { FeatureManifest } from "@/core/registry/types";
 
 export const manifest: FeatureManifest = {
   slug: "asset-statistics",
   title: "Asset Supply and Holder Statistics",
-  description: "TODO: one sentence describing what this tool does.",
-  character: "TODO: one in-world character line.",
+  description: "View circulating supply, trustline holder statistics, and issuer flags for any Stellar asset.",
+  character: "The ledgers do not lie. Let us see who truly holds the power.",
   category: "assets",
   status: "beta",
-  icon: Sparkles,
+  icon: BarChart3,
   networks: ["testnet", "mainnet"],
-  keywords: ["asset-statistics"]
+  keywords: ["assets", "supply", "holders", "statistics", "trustlines", "flags", "claimable balances"]
 };

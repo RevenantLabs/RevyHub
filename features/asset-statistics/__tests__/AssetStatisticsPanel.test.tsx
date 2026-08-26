@@ -1,17 +1,28 @@
-import { describe, expect, it } from "vitest";
-import { renderFeature, screen } from "@/core/testing/render";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, beforeAll, afterEach, afterAll } from "vitest";
+import { setupServer } from "msw/node";
+import { NetworkProvider } from "@/core/network/NetworkProvider";
 import { AssetStatisticsPanel } from "@/features/asset-statistics/components/AssetStatisticsPanel";
-import { copy } from "@/features/asset-statistics/copy";
+import { handlers } from "@/features/asset-statistics/msw/handlers";
+
+const server = setupServer(...handlers);
+beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 describe("AssetStatisticsPanel", () => {
-  it("renders the empty state before any input", () => {
-    renderFeature(<AssetStatisticsPanel />);
-    expect(screen.getByText(copy.emptyTitle)).toBeInTheDocument();
+  it("renders empty state initially", () => {
+    render(<AssetStatisticsPanel />, { wrapper: NetworkProvider });
+    expect(screen.getByText("No asset checked yet")).toBeInTheDocument();
   });
 
-  it("shows a validation error when submitted empty", async () => {
-    const { user } = renderFeature(<AssetStatisticsPanel />);
-    await user.click(screen.getByRole("button", { name: copy.submit }));
-    expect(await screen.findByRole("alert")).toBeInTheDocument();
+  it("submits and shows results", async () => {
+    render(<AssetStatisticsPanel />, { wrapper: NetworkProvider });
+    
+    fireEvent.change(screen.getByLabelText("Asset code"), { target: { value: "USDC" } });
+    fireEvent.change(screen.getByLabelText("Issuer address"), { target: { value: "GBBD47IF6LWK7P7MDEVSCWTTCJM4NUIQ35M4MPMHEUEH9DMB2UCA36GZ" } });
+    fireEvent.click(screen.getByRole("button", { name: "Check statistics" }));
+    
+    expect(await screen.findByText("Asset Statistics")).toBeInTheDocument();
   });
 });

@@ -1,12 +1,49 @@
-import { ok, type Result } from "@/core/result/result";
+import { err, ok, type Result } from "@/core/result/result";
+import { horizonServer } from "@/core/horizon/client";
 import type { StellarNetwork } from "@/core/network/types";
+import { toAssetStatisticsErrorCode } from "@/features/asset-statistics/lib/assetStatistics.errors";
 import type { AssetStatisticsErrorCode, AssetStatisticsInput, AssetStatisticsResult } from "@/features/asset-statistics/types";
 
-/** Core tool logic. Never throws for expected failures — returns a Result. */
-export async function runAssetStatistics(
+export async function checkAssetStatistics(
   input: AssetStatisticsInput,
-  _network: StellarNetwork,
-  _signal?: AbortSignal
+  network: StellarNetwork
 ): Promise<Result<AssetStatisticsResult, AssetStatisticsErrorCode>> {
-  return ok({ summary: input.value });
+  try {
+    const response = await horizonServer(network)
+      .assets()
+      .forCode(input.assetCode)
+      .forIssuer(input.issuerId)
+      .call();
+
+    const record = response.records[0];
+    if (!record) {
+      return err("asset_not_found");
+    }
+
+    return ok({
+      assetCode: record.asset_code,
+      issuerId: record.asset_issuer,
+      supply: record.amount,
+      claimableBalancesAmount: record.claimable_balances_amount,
+      numClaimableBalances: record.num_claimable_balances,
+      flags: {
+        authRequired: record.flags.auth_required,
+        authRevocable: record.flags.auth_revocable,
+        authImmutable: record.flags.auth_immutable,
+        clawbackEnabled: record.flags.clawback_enabled
+      },
+      accounts: {
+        authorized: record.accounts.authorized,
+        authorizedToMaintainLiabilities: record.accounts.authorized_to_maintain_liabilities,
+        unauthorized: record.accounts.unauthorized
+      },
+      balances: {
+        authorized: record.balances.authorized,
+        authorizedToMaintainLiabilities: record.balances.authorized_to_maintain_liabilities,
+        unauthorized: record.balances.unauthorized
+      }
+    });
+  } catch (error) {
+    return err(toAssetStatisticsErrorCode(error));
+  }
 }

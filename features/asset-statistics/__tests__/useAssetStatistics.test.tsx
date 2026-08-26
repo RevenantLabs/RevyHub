@@ -1,23 +1,56 @@
-import { describe, expect, it } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
+import { describe, expect, it, beforeAll, afterEach, afterAll } from "vitest";
+import { setupServer } from "msw/node";
 import { NetworkProvider } from "@/core/network/NetworkProvider";
+import { handlers } from "@/features/asset-statistics/msw/handlers";
 import { useAssetStatistics } from "@/features/asset-statistics/hooks/useAssetStatistics";
 
-function wrapper({ children }: { children: React.ReactNode }) {
-  return <NetworkProvider initialNetwork="testnet">{children}</NetworkProvider>;
-}
+const server = setupServer(...handlers);
+beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 describe("useAssetStatistics", () => {
-  it("starts idle", () => {
-    const { result } = renderHook(() => useAssetStatistics(), { wrapper });
+  it("starts in idle state", () => {
+    const { result } = renderHook(() => useAssetStatistics(), {
+      wrapper: NetworkProvider
+    });
     expect(result.current.state.status).toBe("idle");
   });
 
-  it("reports an error for empty input", async () => {
-    const { result } = renderHook(() => useAssetStatistics(), { wrapper });
-    await act(async () => {
-      await result.current.submit("");
+  it("transitions to loading then success", async () => {
+    const { result } = renderHook(() => useAssetStatistics(), {
+      wrapper: NetworkProvider
     });
-    await waitFor(() => expect(result.current.state.status).toBe("error"));
+
+    act(() => {
+      result.current.submit({ assetCode: "USDC", issuerId: "GBBD47IF6LWK7P7MDEVSCWTTCJM4NUIQ35M4MPMHEUEH9DMB2UCA36GZ" });
+    });
+
+    expect(result.current.state.status).toBe("loading");
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    expect(result.current.state.status).toBe("success");
+    if (result.current.state.status === "success") {
+      expect(result.current.state.result.assetCode).toBe("USDC");
+    }
+  });
+
+  it("transitions to error on bad input", async () => {
+    const { result } = renderHook(() => useAssetStatistics(), {
+      wrapper: NetworkProvider
+    });
+
+    act(() => {
+      result.current.submit({ assetCode: "", issuerId: "" });
+    });
+
+    expect(result.current.state.status).toBe("error");
+    if (result.current.state.status === "error") {
+      expect(result.current.state.code).toBe("empty_asset_code");
+    }
   });
 });
