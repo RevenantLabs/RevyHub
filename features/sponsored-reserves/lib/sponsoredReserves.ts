@@ -1,4 +1,3 @@
-import { Horizon } from "@stellar/stellar-sdk";
 import { ok, err, type Result } from "@/core/result/result";
 import { horizonServer } from "@/core/horizon/client";
 import type { StellarNetwork } from "@/core/network/types";
