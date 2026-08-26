@@ -1,5 +1,3 @@
-import type { AccountDataEntriesResult } from "@/features/account-data-entries/types";
+import { Keypair } from "@stellar/stellar-sdk";
 
-export const accountDataEntriesFixture: AccountDataEntriesResult = {
-  summary: "example"
-};
+export const mockAccount = Keypair.random().publicKey();

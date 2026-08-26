@@ -1,6 +1,11 @@
 import { http, HttpResponse } from "msw";
 
-/** Request mocks used by this slice's tests. Keep responses realistic. */
 export const handlers = [
-  http.get("https://horizon-testnet.stellar.org/*", () => HttpResponse.json({}))
+  http.get("*/accounts/*", () => {
+    return HttpResponse.json({
+      data: {
+        "hello": Buffer.from("world").toString("base64")
+      }
+    });
+  })
 ];

@@ -1,9 +1,6 @@
-import { Sparkles } from "lucide-react";
-import { EmptyState } from "@/core/ui/EmptyState";
-import { copy } from "@/features/account-data-entries/copy";
+import React from 'react';
+import { copy } from "../copy";
 
 export function AccountDataEntriesEmptyState() {
-  return (
-    <EmptyState icon={Sparkles} title={copy.emptyTitle} description={copy.emptyDescription} />
-  );
+  return <div data-testid="account-data-entries-empty-state">{copy.result.emptyState}</div>;
 }

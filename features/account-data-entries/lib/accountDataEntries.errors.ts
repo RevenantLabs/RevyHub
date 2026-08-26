@@ -1,8 +1,8 @@
-import { classifyHorizonError } from "@/core/horizon/errors";
-import type { AccountDataEntriesErrorCode } from "@/features/account-data-entries/types";
+import type { AccountDataEntriesErrorCode } from "../types";
 
-/** Maps transport failures onto this tool's own error codes. */
-export function toAccountDataEntriesErrorCode(error: unknown): AccountDataEntriesErrorCode {
-  const { code } = classifyHorizonError(error);
-  return code === "not_found" ? "not_found" : "request_failed";
-}
+export const ACCOUNT_DATA_ENTRIES_ERROR_MESSAGES: Record<AccountDataEntriesErrorCode, string> = {
+  empty_input: "Account ID is required.",
+  invalid_account_id: "Invalid Ed25519 public key format.",
+  account_not_found: "Account not found on the network.",
+  request_failed: "Failed to fetch account data entries."
+};

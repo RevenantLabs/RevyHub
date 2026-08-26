@@ -1,43 +1,37 @@
-"use client";
-
-import { useState, type FormEvent } from "react";
-import { Button } from "@/core/ui/Button";
+import React, { useState } from 'react';
 import { Field } from "@/core/ui/Field";
 import { Input } from "@/core/ui/Input";
-import { copy } from "@/features/account-data-entries/copy";
+import { Button } from "@/core/ui/Button";
+import { copy } from "../copy";
 
-export function AccountDataEntriesForm({
-  onSubmit,
-  pending
-}: {
-  onSubmit: (value: string) => void;
-  pending: boolean;
-}) {
-  const [value, setValue] = useState("");
+interface Props {
+  onSubmit: (val: string) => void;
+  loading: boolean;
+}
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    onSubmit(value);
-  }
+export function AccountDataEntriesForm({ onSubmit, loading }: Props) {
+  const [val, setVal] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(val);
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Field label={copy.formLabel} hint={copy.formHint}>
-        {({ inputId, describedBy, invalid }) => (
+    <form onSubmit={handleSubmit} data-testid="account-data-entries-form" className="space-y-4" noValidate>
+      <Field label={copy.form.accountIdLabel}>
+        {({ inputId, describedBy }) => (
           <Input
             id={inputId}
             aria-describedby={describedBy}
-            aria-invalid={invalid}
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            autoComplete="off"
-            spellCheck={false}
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            placeholder={copy.form.accountIdPlaceholder}
+            disabled={loading}
           />
         )}
       </Field>
-      <Button type="submit" disabled={pending}>
-        {pending ? "Working..." : copy.submit}
-      </Button>
+      <Button type="submit" disabled={loading}>{copy.form.submitLabel}</Button>
     </form>
   );
 }

@@ -1,1 +1,2 @@
-export { AccountDataEntriesPanel as default } from "@/features/account-data-entries/components/AccountDataEntriesPanel";
+import { AccountDataEntriesPanel } from "./components/AccountDataEntriesPanel";
+export default AccountDataEntriesPanel;

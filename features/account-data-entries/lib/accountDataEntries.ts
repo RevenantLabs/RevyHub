@@ -1,12 +1,34 @@
-import { ok, type Result } from "@/core/result/result";
-import type { StellarNetwork } from "@/core/network/types";
-import type { AccountDataEntriesErrorCode, AccountDataEntriesInput, AccountDataEntriesResult } from "@/features/account-data-entries/types";
+import { err, ok, type Result } from "@/core/result/result";
+import type { AccountDataEntriesErrorCode, AccountDataEntriesResult, AccountDataEntry } from "../types";
+import { decodeDataEntry } from "./format";
 
-/** Core tool logic. Never throws for expected failures — returns a Result. */
-export async function runAccountDataEntries(
-  input: AccountDataEntriesInput,
-  _network: StellarNetwork,
-  _signal?: AbortSignal
+export async function fetchAccountDataEntries(
+  accountId: string, 
+  networkUrl: string
 ): Promise<Result<AccountDataEntriesResult, AccountDataEntriesErrorCode>> {
-  return ok({ summary: input.value });
+  try {
+    const res = await fetch(`${networkUrl}/accounts/${accountId}`);
+    if (res.status === 404) {
+      return err("account_not_found");
+    }
+    if (!res.ok) {
+      return err("request_failed");
+    }
+    
+    const data = await res.json();
+    const dataMapping: Record<string, string> = data.data || {};
+    
+    const entries: AccountDataEntry[] = Object.entries(dataMapping).map(([key, rawBase64]) => {
+      const decoded = decodeDataEntry(rawBase64);
+      return {
+        key,
+        rawBase64,
+        ...decoded
+      };
+    });
+    
+    return ok({ entries });
+  } catch {
+    return err("request_failed");
+  }
 }

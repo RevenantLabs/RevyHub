@@ -4,8 +4,8 @@ import type { FeatureManifest } from "@/core/registry/types";
 export const manifest: FeatureManifest = {
   slug: "account-data-entries",
   title: "Account Data Entry Viewer",
-  description: "TODO: one sentence describing what this tool does.",
-  character: "TODO: one in-world character line.",
+  description: "View key-value data entries on a Stellar account.",
+  character: "Here is your account data.",
   category: "accounts",
   status: "beta",
   icon: Sparkles,
