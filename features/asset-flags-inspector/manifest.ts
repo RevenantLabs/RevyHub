@@ -1,14 +1,14 @@
-import { Sparkles } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import type { FeatureManifest } from "@/core/registry/types";
 
 export const manifest: FeatureManifest = {
   slug: "asset-flags-inspector",
   title: "Issuer Authorization Flags Inspector",
-  description: "TODO: one sentence describing what this tool does.",
-  character: "TODO: one in-world character line.",
+  description: "Check an account's authorization flags and see their consequences for asset holders.",
+  character: "Before you buy a token, know if the issuer can freeze it or claw it back.",
   category: "assets",
   status: "beta",
-  icon: Sparkles,
+  icon: ShieldAlert,
   networks: ["testnet", "mainnet"],
-  keywords: ["asset-flags-inspector"]
+  keywords: ["authorization", "flags", "asset", "issuer", "trustline", "clawback", "freeze"]
 };

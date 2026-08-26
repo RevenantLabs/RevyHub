@@ -1,11 +1,10 @@
 # Issuer Authorization Flags Inspector
 
-TODO: what this tool does, in two or three sentences.
+This tool allows users to inspect the authorization flags set on a given Stellar account. It presents the four authorization flags (auth_required, auth_revocable, auth_immutable, auth_clawback_enabled) with clear, plain-language consequences for holders of assets issued by that account.
 
 ## How it works
 
-TODO: the data source, the request it makes (or why it makes none), and the
-shape of the result.
+The tool accepts a valid Stellar account ID and queries the Horizon server (`/accounts/:accountId`) to fetch the account's details. It extracts the `flags` object from the response and maps it to a human-readable display of authorization requirements, highlighting combinations like full issuer control and immutable settings.
 
 ## Files
 
@@ -22,4 +21,4 @@ shape of the result.
 
 ## Safety
 
-TODO: state explicitly that this tool never asks for a secret key.
+This tool only reads public data from the network and never asks for or requires a secret key.

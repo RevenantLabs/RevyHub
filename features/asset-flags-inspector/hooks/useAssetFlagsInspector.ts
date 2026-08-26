@@ -4,8 +4,8 @@ import { useCallback, useRef, useState } from "react";
 import { useNetwork } from "@/core/network/NetworkProvider";
 import { isErr, type Result } from "@/core/result/result";
 import { parseAssetFlagsInspectorInput } from "@/features/asset-flags-inspector/schema";
-import { runAssetFlagsInspector } from "@/features/asset-flags-inspector/lib/assetFlagsInspector";
-import { toAssetFlagsInspectorErrorCode } from "@/features/asset-flags-inspector/lib/assetFlagsInspector.errors";
+import { runAssetFlagsInspector } from "@/features/asset-flags-inspector/lib/asset-flags";
+import { toAssetFlagsInspectorErrorCode } from "@/features/asset-flags-inspector/lib/asset-flags.errors";
 import type { AssetFlagsInspectorErrorCode, AssetFlagsInspectorResult } from "@/features/asset-flags-inspector/types";
 
 export type AssetFlagsInspectorState =
@@ -35,8 +35,7 @@ export function useAssetFlagsInspector() {
       try {
         const result: Result<AssetFlagsInspectorResult, AssetFlagsInspectorErrorCode> = await runAssetFlagsInspector(
           parsed.value,
-          network,
-          next.signal
+          network
         );
         if (next.signal.aborted) return;
         setState(

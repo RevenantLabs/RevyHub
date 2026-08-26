@@ -36,7 +36,7 @@ export function AssetFlagsInspectorForm({
         )}
       </Field>
       <Button type="submit" disabled={pending}>
-        {pending ? "Working..." : copy.submit}
+        {pending ? copy.loading : copy.submit}
       </Button>
     </form>
   );

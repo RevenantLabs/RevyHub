@@ -1,8 +1,10 @@
 import { classifyHorizonError } from "@/core/horizon/errors";
 import type { AssetFlagsInspectorErrorCode } from "@/features/asset-flags-inspector/types";
 
-/** Maps transport failures onto this tool's own error codes. */
 export function toAssetFlagsInspectorErrorCode(error: unknown): AssetFlagsInspectorErrorCode {
   const { code } = classifyHorizonError(error);
-  return code === "not_found" ? "not_found" : "request_failed";
+
+  if (code === "not_found") return "account_not_found";
+  if (code === "rate_limited") return "rate_limited";
+  return "request_failed";
 }
