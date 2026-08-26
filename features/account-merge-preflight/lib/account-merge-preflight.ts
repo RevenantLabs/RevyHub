@@ -71,22 +71,27 @@ export async function checkAccountMergePreflight(
   }
 
   // Sponsorships
-  if (sourceAccount.num_sponsoring > 0) {
+  const record = sourceAccount as unknown as {
+    num_sponsoring?: number;
+    num_sponsored?: number;
+    sponsor?: string;
+  };
+  if (record.num_sponsoring && record.num_sponsoring > 0) {
     blockingItems.push({
       type: "sponsorship",
-      description: `${sourceAccount.num_sponsoring} sponsored`
+      description: `${record.num_sponsoring} sponsored`
     });
   }
-  if (sourceAccount.num_sponsored > 0) {
+  if (record.num_sponsored && record.num_sponsored > 0) {
     blockingItems.push({
       type: "sponsorship",
-      description: `${sourceAccount.num_sponsored} sponsoring`
+      description: `${record.num_sponsored} sponsoring`
     });
   }
-  if (sourceAccount.sponsor) {
+  if (record.sponsor) {
     blockingItems.push({
       type: "sponsorship",
-      description: `Sponsored by ${sourceAccount.sponsor}`
+      description: `Sponsored by ${record.sponsor}`
     });
   }
 
