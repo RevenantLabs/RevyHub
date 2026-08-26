@@ -66,6 +66,7 @@ function isAccountPayload(value: unknown): value is HorizonMergeAccount {
     Array.isArray(account.balances) &&
     typeof account.data === "object" &&
     account.data !== null &&
+    !Array.isArray(account.data) &&
     typeof account.flags?.auth_immutable === "boolean" &&
     typeof account.thresholds?.high_threshold === "number" &&
     Number.isInteger(account.thresholds.high_threshold) &&
@@ -156,6 +157,14 @@ function analyzeMergePreflightUnchecked(
     sponsorshipCount === null ||
     sponsoredSubentryCount === null ||
     signerWeights.some((weight) => weight === null)
+  ) {
+    return err("request_failed");
+  }
+
+  if (
+    sourceStroops > INT64_MAX ||
+    destinationStroops > INT64_MAX ||
+    destinationBuyingLiabilities > INT64_MAX
   ) {
     return err("request_failed");
   }
@@ -260,6 +269,8 @@ export async function checkAccountMergePreflight(
   network: StellarNetwork,
   signal?: AbortSignal
 ): Promise<Result<AccountMergePreflightResult, AccountMergePreflightErrorCode>> {
+  if (input.sourceAccountId === input.destinationAccountId) return err("same_account");
+
   const controller = new AbortController();
   const abortFromCaller = () => controller.abort();
   if (signal?.aborted) abortFromCaller();
