@@ -4,39 +4,79 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/core/ui/Button";
 import { Field } from "@/core/ui/Field";
 import { Input } from "@/core/ui/Input";
+import { useNetwork } from "@/core/network/NetworkProvider";
 import { copy } from "@/features/account-merge-preflight/copy";
+import type {
+  AccountMergeField,
+  AccountMergePreflightInput
+} from "@/features/account-merge-preflight/types";
 
 export function AccountMergePreflightForm({
   onSubmit,
-  pending
+  pending,
+  field,
+  fieldError
 }: {
-  onSubmit: (value: string) => void;
+  onSubmit: (value: AccountMergePreflightInput) => void;
   pending: boolean;
+  field: AccountMergeField | null;
+  fieldError?: string;
 }) {
-  const [value, setValue] = useState("");
+  const [sourceAccountId, setSourceAccountId] = useState("");
+  const [destinationAccountId, setDestinationAccountId] = useState("");
+  const { label: networkLabel } = useNetwork();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    onSubmit(value);
+    onSubmit({ sourceAccountId, destinationAccountId });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Field label={copy.formLabel} hint={copy.formHint}>
-        {({ inputId, describedBy, invalid }) => (
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <Field
+        label={copy.sourceLabel}
+        hint={`${copy.sourceHint} ${networkLabel}.`}
+        error={field === "sourceAccountId" ? fieldError : undefined}
+        required
+      >
+        {({ inputId, describedBy, invalid, required }) => (
           <Input
             id={inputId}
             aria-describedby={describedBy}
             aria-invalid={invalid}
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
+            required={required}
+            value={sourceAccountId}
+            onChange={(event) => setSourceAccountId(event.target.value)}
+            placeholder={copy.sourcePlaceholder}
             autoComplete="off"
             spellCheck={false}
+            className="font-mono text-xs"
+          />
+        )}
+      </Field>
+      <Field
+        label={copy.destinationLabel}
+        hint={`${copy.destinationHint} ${networkLabel}.`}
+        error={field === "destinationAccountId" ? fieldError : undefined}
+        required
+      >
+        {({ inputId, describedBy, invalid, required }) => (
+          <Input
+            id={inputId}
+            aria-describedby={describedBy}
+            aria-invalid={invalid}
+            required={required}
+            value={destinationAccountId}
+            onChange={(event) => setDestinationAccountId(event.target.value)}
+            placeholder={copy.destinationPlaceholder}
+            autoComplete="off"
+            spellCheck={false}
+            className="font-mono text-xs"
           />
         )}
       </Field>
       <Button type="submit" disabled={pending}>
-        {pending ? "Working..." : copy.submit}
+        {pending ? copy.loading : copy.submit}
       </Button>
     </form>
   );

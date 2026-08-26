@@ -2,60 +2,75 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useNetwork } from "@/core/network/NetworkProvider";
-import { isErr, type Result } from "@/core/result/result";
-import { parseAccountMergePreflightInput } from "@/features/account-merge-preflight/schema";
-import { runAccountMergePreflight } from "@/features/account-merge-preflight/lib/accountMergePreflight";
-import { toAccountMergePreflightErrorCode } from "@/features/account-merge-preflight/lib/accountMergePreflight.errors";
-import type { AccountMergePreflightErrorCode, AccountMergePreflightResult } from "@/features/account-merge-preflight/types";
+import type { StellarNetwork } from "@/core/network/types";
+import { isErr } from "@/core/result/result";
+import {
+  FIELD_OF_CODE,
+  parseAccountMergePreflightInput,
+  type RawAccountMergePreflightInput
+} from "@/features/account-merge-preflight/schema";
+import { checkAccountMergePreflight } from "@/features/account-merge-preflight/lib/accountMergePreflight";
+import type {
+  AccountMergeField,
+  AccountMergePreflightErrorCode,
+  AccountMergePreflightResult
+} from "@/features/account-merge-preflight/types";
 
 export type AccountMergePreflightState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "success"; result: AccountMergePreflightResult }
-  | { status: "error"; code: AccountMergePreflightErrorCode };
+  | { status: "error"; code: AccountMergePreflightErrorCode; field: AccountMergeField | null };
+
+const IDLE: AccountMergePreflightState = { status: "idle" };
+
+interface HeldState {
+  state: AccountMergePreflightState;
+  network: StellarNetwork;
+}
 
 export function useAccountMergePreflight() {
   const { network } = useNetwork();
-  const [state, setState] = useState<AccountMergePreflightState>({ status: "idle" });
+  const [held, setHeld] = useState<HeldState>({ state: IDLE, network });
   const controller = useRef<AbortController | null>(null);
+  const state = held.network === network ? held.state : IDLE;
 
   const submit = useCallback(
-    async (raw: string) => {
+    async (raw: RawAccountMergePreflightInput) => {
       controller.current?.abort();
       const parsed = parseAccountMergePreflightInput(raw);
       if (isErr(parsed)) {
-        setState({ status: "error", code: parsed.code });
+        setHeld({
+          state: { status: "error", code: parsed.code, field: FIELD_OF_CODE[parsed.code] },
+          network
+        });
         return;
       }
 
       const next = new AbortController();
       controller.current = next;
-      setState({ status: "loading" });
+      setHeld({ state: { status: "loading" }, network });
 
-      try {
-        const result: Result<AccountMergePreflightResult, AccountMergePreflightErrorCode> = await runAccountMergePreflight(
-          parsed.value,
-          network,
-          next.signal
-        );
-        if (next.signal.aborted) return;
-        setState(
-          result.ok
-            ? { status: "success", result: result.value }
-            : { status: "error", code: result.code }
-        );
-      } catch (error) {
-        if (next.signal.aborted) return;
-        setState({ status: "error", code: toAccountMergePreflightErrorCode(error) });
-      }
+      const result = await checkAccountMergePreflight(parsed.value, network, next.signal);
+      if (next.signal.aborted) return;
+      setHeld({
+        state: result.ok
+          ? { status: "success", result: result.value }
+          : {
+              status: "error",
+              code: result.code,
+              field: FIELD_OF_CODE[result.code]
+            },
+        network
+      });
     },
     [network]
   );
 
   const reset = useCallback(() => {
     controller.current?.abort();
-    setState({ status: "idle" });
-  }, []);
+    setHeld({ state: IDLE, network });
+  }, [network]);
 
   return { state, submit, reset };
 }
