@@ -18,6 +18,18 @@ must never be pre-solved in the repository before it is offered.
 The stable wave order lives in `scripts/issue-status.mjs`. Detailed product
 requirements live in `scripts/issue-catalog.mjs`.
 
+The active GrantFox project, repository, campaign and required labels live in
+`scripts/grantfox-config.mjs`. For the current campaign they are:
+
+- Project: `RevenantLabs` (`16987fb9-18ec-4555-acd9-dbf2c8ec9074`)
+- Repository: `RevyHub` (`1302133299`)
+- Campaign: `Third Campaign` (`624dee9c-2bc5-48fc-ae07-3c2c2a8262e8`)
+- Required labels: `GrantFox OSS`, `Maybe Rewarded`, `Third Campaign`
+
+Do not reuse labels from a completed campaign such as
+`Official Campaign | FWC26`; GrantFox campaign visibility follows the active
+campaign attachment and its corresponding label.
+
 ## Preview the next batch
 
 ```bash
@@ -33,10 +45,12 @@ slug for each issue. Review all five payloads before publishing.
 
 Direct GitHub publishing is intentionally disabled. For each reviewed payload:
 
-1. Call GrantFox `prepare_issue` with the RevyHub repository ID.
+1. Call GrantFox `prepare_issue` with the configured project/repository IDs and
+   all three required campaign labels.
 2. Show the exact returned preview to the maintainer.
 3. Publish that draft with its `draft_id` and `approved_hash`.
-4. Confirm the issue appears in both GrantFox and GitHub before preparing the
+4. Attach the returned GrantFox issue to the configured campaign UUID.
+5. Confirm the issue appears in both GrantFox and GitHub before preparing the
    next batch.
 
 This flow is required because a GitHub issue created outside GrantFox is not

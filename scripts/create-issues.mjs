@@ -15,6 +15,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { catalog, categoryLabels } from "./issue-catalog.mjs";
+import { grantfoxConfig } from "./grantfox-config.mjs";
 import {
   isImplemented,
   issueTier,
@@ -35,10 +36,7 @@ const batchSize = countArg === -1 ? 5 : Number(argv[countArg + 1]);
 const onlySlug = slugArg === -1 ? null : argv[slugArg + 1];
 
 const CAMPAIGN_LABELS = [
-  "Official Campaign | FWC26",
-  "GrantFox OSS",
-  "Maybe Rewarded",
-  "Stellar Wave",
+  ...grantfoxConfig.requiredLabels,
   "help wanted",
   "enhancement"
 ];

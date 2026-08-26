@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { catalog, categoryLabels } from "./issue-catalog.mjs";
+import { grantfoxConfig } from "./grantfox-config.mjs";
 import {
   advancedWaveSlugs,
   isImplemented,
@@ -27,6 +28,20 @@ function requireText(tool, field) {
 }
 
 export function validateCatalog() {
+  for (const field of ["projectId", "repositoryId", "campaignId", "campaignName"]) {
+    if (typeof grantfoxConfig[field] !== "string" || !grantfoxConfig[field].trim()) {
+      fail(`GrantFox ${field} must be configured`);
+    }
+  }
+  if (
+    grantfoxConfig.requiredLabels.length !== 3 ||
+    !grantfoxConfig.requiredLabels.includes("GrantFox OSS") ||
+    !grantfoxConfig.requiredLabels.includes("Maybe Rewarded") ||
+    !grantfoxConfig.requiredLabels.includes(grantfoxConfig.campaignName)
+  ) {
+    fail("GrantFox labels must include GrantFox OSS, Maybe Rewarded and the active campaign name");
+  }
+
   const slugs = new Set();
   const titles = new Set();
 
