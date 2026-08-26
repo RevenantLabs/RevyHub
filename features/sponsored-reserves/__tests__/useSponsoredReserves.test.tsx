@@ -1,23 +1,39 @@
 import { describe, expect, it } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { NetworkProvider } from "@/core/network/NetworkProvider";
 import { useSponsoredReserves } from "@/features/sponsored-reserves/hooks/useSponsoredReserves";
+import { accountId } from "@/features/sponsored-reserves/fixtures/sponsoredReserves.fixture";
+import { resetHorizonClients } from "@/core/horizon/client";
 
 function wrapper({ children }: { children: React.ReactNode }) {
-  return <NetworkProvider initialNetwork="testnet">{children}</NetworkProvider>;
+  return <NetworkProvider>{children}</NetworkProvider>;
 }
 
 describe("useSponsoredReserves", () => {
-  it("starts idle", () => {
+  it("transitions from idle to success", async () => {
+    resetHorizonClients();
     const { result } = renderHook(() => useSponsoredReserves(), { wrapper });
+
     expect(result.current.state.status).toBe("idle");
+
+    await act(async () => {
+      await result.current.submit(accountId);
+    });
+
+    expect(result.current.state.status).toBe("success");
+    if (result.current.state.status === "success") {
+      expect(result.current.state.data.accountId).toBe(accountId);
+    }
   });
 
-  it("reports an error for empty input", async () => {
+  it("transitions to error on bad input", async () => {
+    resetHorizonClients();
     const { result } = renderHook(() => useSponsoredReserves(), { wrapper });
+
     await act(async () => {
-      await result.current.submit("");
+      await result.current.submit("invalid");
     });
-    await waitFor(() => expect(result.current.state.status).toBe("error"));
+
+    expect(result.current.state.status).toBe("error");
   });
 });

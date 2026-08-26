@@ -1,9 +1,10 @@
 "use client";
 
 import { Card } from "@/core/ui/Card";
+import { SkeletonRows } from "@/core/ui/Skeleton";
 import { StatusMessage } from "@/core/ui/StatusMessage";
 import { useSponsoredReserves } from "@/features/sponsored-reserves/hooks/useSponsoredReserves";
-import { errorCopy } from "@/features/sponsored-reserves/copy";
+import { copy, errorCopy } from "@/features/sponsored-reserves/copy";
 import { SponsoredReservesForm } from "@/features/sponsored-reserves/components/SponsoredReservesForm";
 import { SponsoredReservesResult } from "@/features/sponsored-reserves/components/SponsoredReservesResult";
 import { SponsoredReservesEmptyState } from "@/features/sponsored-reserves/components/SponsoredReservesEmptyState";
@@ -17,6 +18,15 @@ export function SponsoredReservesPanel() {
         <SponsoredReservesForm onSubmit={submit} pending={state.status === "loading"} />
       </Card>
 
+      {state.status === "loading" ? (
+        <Card>
+          <p className="sr-only" role="status">
+            {copy.loading}
+          </p>
+          <SkeletonRows rows={4} />
+        </Card>
+      ) : null}
+
       {state.status === "error" ? (
         <StatusMessage
           type="error"
@@ -25,7 +35,7 @@ export function SponsoredReservesPanel() {
         />
       ) : null}
 
-      {state.status === "success" ? <SponsoredReservesResult result={state.result} /> : null}
+      {state.status === "success" ? <SponsoredReservesResult data={state.data} /> : null}
 
       {state.status === "idle" ? <SponsoredReservesEmptyState /> : null}
     </div>

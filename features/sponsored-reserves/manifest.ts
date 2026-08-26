@@ -1,14 +1,6 @@
-import { Sparkles } from "lucide-react";
-import type { FeatureManifest } from "@/core/registry/types";
-
-export const manifest: FeatureManifest = {
-  slug: "sponsored-reserves",
+export default {
   title: "Sponsored Reserves Inspector",
-  description: "TODO: one sentence describing what this tool does.",
-  character: "TODO: one in-world character line.",
+  description: "Check which of an account's subentries are sponsored and by whom, and which reserves the account is sponsoring for others.",
   category: "accounts",
-  status: "beta",
-  icon: Sparkles,
-  networks: ["testnet", "mainnet"],
-  keywords: ["sponsored-reserves"]
+  icon: "Search"
 };

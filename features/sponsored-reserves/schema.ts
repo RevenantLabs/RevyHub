@@ -1,10 +1,20 @@
-import { err, ok, type Result } from "@/core/result/result";
-import { normalizeInput } from "@/core/lib/strings";
-import type { SponsoredReservesErrorCode, SponsoredReservesInput } from "@/features/sponsored-reserves/types";
+import { StrKey } from "@stellar/stellar-sdk";
+import { ok, err, type Result } from "@/core/result/result";
+import type { SponsoredReservesInput, SponsoredReservesErrorCode } from "./types";
 
-/** Parses raw form input into a validated request, without throwing. */
-export function parseSponsoredReservesInput(raw: string): Result<SponsoredReservesInput, SponsoredReservesErrorCode> {
-  const value = normalizeInput(raw);
-  if (!value) return err("empty_input");
-  return ok({ value });
+export function parseSponsoredReservesInput(
+  accountId: string
+): Result<SponsoredReservesInput, SponsoredReservesErrorCode> {
+  const input = accountId.trim();
+
+  if (!input) {
+    return err("empty_input");
+  }
+
+  // Reject anything starting with 'S' early to prevent accidental secret key submission
+  if (input.startsWith("S") || !StrKey.isValidEd25519PublicKey(input)) {
+    return err("invalid_address");
+  }
+
+  return ok({ accountId: input });
 }

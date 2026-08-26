@@ -1,15 +1,22 @@
-/**
- * End-to-end specification for the Sponsored Reserves Inspector tool.
- *
- * Documented as executable steps so the behaviour is reviewable even before a
- * browser runner is wired into CI.
- */
-export const spec = {
-  route: "/tools/sponsored-reserves",
-  steps: [
-    { action: "visit", target: "/tools/sponsored-reserves" },
-    { action: "expect", target: "heading", value: "Sponsored Reserves Inspector" },
-    { action: "click", target: "submit" },
-    { action: "expect", target: "alert" }
-  ]
-} as const;
+import { test, expect } from "@playwright/test";
+import { copy } from "../copy";
+import { accountId } from "../fixtures/sponsoredReserves.fixture";
+
+test.describe("Sponsored Reserves Inspector", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/tools/sponsored-reserves");
+  });
+
+  test("shows empty state initially", async ({ page }) => {
+    await expect(page.getByText(copy.description)).toBeVisible();
+    await expect(page.getByRole("button", { name: copy.submit })).toBeVisible();
+  });
+
+  test("loads and displays sponsored reserves", async ({ page }) => {
+    await page.getByLabel(copy.formLabel).fill(accountId);
+    await page.getByRole("button", { name: copy.submit }).click();
+
+    await expect(page.getByText(copy.result.sponsoredByOthers)).toBeVisible();
+    await expect(page.getByText(copy.result.sponsoringForOthers)).toBeVisible();
+  });
+});
