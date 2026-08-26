@@ -13,7 +13,7 @@ export function SequenceInspectorResult({ result }: SequenceInspectorResultProps
       </div>
 
       <div className="rounded-lg border border-slate-200 overflow-hidden">
-        <div className="grid grid-cols-1 divide-y divide-slate-200">
+        <dl className="grid grid-cols-1 divide-y divide-slate-200">
           <div className="p-4 sm:grid sm:grid-cols-3 sm:gap-4">
             <dt className="text-sm font-medium text-slate-500">{copy.currentSequence}</dt>
             <dd className="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0 font-mono break-all select-all">
@@ -50,7 +50,7 @@ export function SequenceInspectorResult({ result }: SequenceInspectorResultProps
               </dd>
             </div>
           )}
-        </div>
+        </dl>
       </div>
 
       <div className="rounded-lg bg-blue-50 p-4">
