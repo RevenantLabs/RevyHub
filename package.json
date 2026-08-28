@@ -20,7 +20,8 @@
     "new:feature": "node scripts/new-feature.mjs",
     "postinstall": "node scripts/generate-registry.mjs",
     "check": "npm run lint && npm run test && npm run verify:features && npm run verify:issues && npm run build",
-    "issues": "node scripts/create-issues.mjs"
+    "issues": "node scripts/create-issues.mjs",
+    "issues:drips": "node scripts/create-issues.mjs --target drips"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^13.3.0",

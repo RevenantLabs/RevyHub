@@ -16,6 +16,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { catalog, categoryLabels } from "./issue-catalog.mjs";
 import { grantfoxConfig } from "./grantfox-config.mjs";
+import { dripsConfig } from "./drips-config.mjs";
 import {
   isImplemented,
   issueTier,
@@ -27,19 +28,31 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repo = process.env.GH_REPO || "RevenantLabs/RevyHub";
 
 const argv = process.argv.slice(2);
+const targetArg = argv.indexOf("--target");
+const target = targetArg === -1 ? "grantfox" : argv[targetArg + 1];
+
+if (!["grantfox", "drips"].includes(target)) {
+  throw new Error(`Unknown target "${target}". Use --target grantfox or --target drips.`);
+}
+
+const isDrips = target === "drips";
 const directApply = argv.includes("--apply");
 const jsonOnly = argv.includes("--json");
 const listOnly = argv.includes("--list");
 const countArg = argv.indexOf("--count");
 const slugArg = argv.indexOf("--slug");
-const batchSize = countArg === -1 ? 5 : Number(argv[countArg + 1]);
+const defaultBatchSize = isDrips ? dripsConfig.batchSize : 5;
+const batchSize = countArg === -1 ? defaultBatchSize : Number(argv[countArg + 1]);
 const onlySlug = slugArg === -1 ? null : argv[slugArg + 1];
 
-const CAMPAIGN_LABELS = [
-  ...grantfoxConfig.requiredLabels,
-  "help wanted",
-  "enhancement"
-];
+/**
+ * Programme labels. The two sets are mutually exclusive: an issue belongs to
+ * one funding programme, and carrying both would make it ambiguous which one a
+ * contributor is being rewarded through.
+ */
+const PROGRAMME_LABELS = isDrips
+  ? [...dripsConfig.requiredLabels, "help wanted", "enhancement"]
+  : [...grantfoxConfig.requiredLabels, "help wanted", "enhancement"];
 
 const AREA_LABELS = {
   accounts: "area:stellar",
@@ -207,7 +220,7 @@ function existingTitles() {
 function labelsFor(tool) {
   const tier = issueTier(tool);
   return [
-    ...CAMPAIGN_LABELS,
+    ...PROGRAMME_LABELS,
     AREA_LABELS[tool.category],
     `difficulty:${tier.difficulty}`
   ];
@@ -215,14 +228,21 @@ function labelsFor(tool) {
 
 function main() {
   validateCatalog();
-  if (directApply) {
+  // GrantFox issues have to be registered against a campaign, so they are
+  // published through GrantFox prepare/publish rather than created directly.
+  // Drips registers issues through its own wave-program API afterwards, so the
+  // GitHub issue is an ordinary maintainer action and may be created here.
+  if (directApply && !isDrips) {
     throw new Error(
-      "Direct GitHub publishing is disabled. Use --json, review the exact payloads, " +
-        "then publish them through GrantFox prepare/publish."
+      "Direct GitHub publishing is disabled for GrantFox. Use --json, review the exact " +
+        "payloads, then publish them through GrantFox prepare/publish."
     );
   }
-  if (batchSize !== 5) {
-    throw new Error("Issues are released in fixed batches of five; --count must be 5.");
+  if (batchSize !== defaultBatchSize) {
+    throw new Error(
+      `${target} issues are released in fixed batches of ${defaultBatchSize}; ` +
+        `--count must be ${defaultBatchSize}.`
+    );
   }
   const titles = existingTitles();
 
@@ -272,8 +292,29 @@ function main() {
     return;
   }
 
+  if (directApply) {
+    console.log(`Creating ${payloads.length} ${target} issue(s) on ${repo}\n`);
+
+    for (const payload of payloads) {
+      const url = gh([
+        "issue", "create",
+        "-R", repo,
+        "--title", payload.title,
+        "--body", payload.body,
+        ...payload.labels.flatMap((label) => ["--label", label])
+      ]).trim();
+
+      console.log(`created  ${payload.title}\n         ${url}`);
+    }
+
+    console.log(
+      `\n${remaining.length - payloads.length} issue(s) still unpublished in the catalogue.`
+    );
+    return;
+  }
+
   console.log(
-    `Dry run for ${batch.length} GrantFox issue(s) on ${repo}` +
+    `Dry run for ${batch.length} ${target} issue(s) on ${repo}` +
       `  (${remaining.length} remaining in the catalogue)\n`
   );
 
@@ -287,7 +328,11 @@ function main() {
     console.log(`   body:   ${payload.body.length} characters\n`);
   }
 
-  console.log("Re-run with --json, review the payloads, then use GrantFox prepare/publish.");
+  console.log(
+    isDrips
+      ? "Re-run with --apply to create these issues."
+      : "Re-run with --json, review the payloads, then use GrantFox prepare/publish."
+  );
 }
 
 main();
