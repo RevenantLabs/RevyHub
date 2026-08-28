@@ -13,7 +13,14 @@ import {
 } from "./issue-status.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const MINIMUM_PUBLISHABLE_ISSUES = 40;
+/**
+ * The catalogue must define at least this many independent tools.
+ *
+ * This is a floor on what has been *designed*, not on what is left. Delivered
+ * work leaves the publishable list by definition, so checking the remainder
+ * would make a contributor's merged pull request break the build.
+ */
+const MINIMUM_CATALOG_SIZE = 40;
 const REQUIRED_ADVANCED_WAVE_SIZE = 20;
 const difficulties = new Set(["medium", "advanced"]);
 
@@ -108,34 +115,38 @@ export function validateCatalog() {
     fail("advanced wave contains duplicate slugs");
   }
 
+  if (catalog.length < MINIMUM_CATALOG_SIZE) {
+    fail(
+      `the catalogue defines only ${catalog.length} tools; ` +
+        `${MINIMUM_CATALOG_SIZE} independent issues are required`
+    );
+  }
+
   const bySlug = new Map(catalog.map((tool) => [tool.slug, tool]));
   for (const slug of advancedWaveSlugs) {
     const tool = bySlug.get(slug);
     if (!tool) fail(`advanced wave references unknown slug "${slug}"`);
-    if (isImplemented(root, tool)) {
-      fail(`advanced wave issue "${slug}" is already implemented`);
-    }
     if (issueTier(tool).difficulty !== "advanced") {
       fail(`advanced wave issue "${slug}" is not labelled advanced`);
     }
   }
 
+  // A delivered tool is the goal, not a defect. It simply leaves the queue.
+  const deliveredWave = advancedWaveSlugs.filter((slug) => isImplemented(root, bySlug.get(slug)));
+  const remainingWave = advancedWaveSlugs.filter((slug) => !isImplemented(root, bySlug.get(slug)));
+
   const publishable = orderForPublication(
     catalog.filter((tool) => !isImplemented(root, tool))
   );
-  if (publishable.length < MINIMUM_PUBLISHABLE_ISSUES) {
-    fail(
-      `only ${publishable.length} independent issues remain; ` +
-        `${MINIMUM_PUBLISHABLE_ISSUES} are required`
-    );
+
+  // The wave still has to come first, and in its declared order — but only the
+  // part of it that is still undelivered.
+  const actualWaveHead = publishable.slice(0, remainingWave.length).map((tool) => tool.slug);
+  if (actualWaveHead.some((slug, index) => slug !== remainingWave[index])) {
+    fail("the remaining advanced-wave issues are not queued in their declared order");
   }
 
-  const firstWave = publishable.slice(0, REQUIRED_ADVANCED_WAVE_SIZE).map((tool) => tool.slug);
-  if (firstWave.some((slug, index) => slug !== advancedWaveSlugs[index])) {
-    fail("the first twenty publishable issues do not match the advanced wave order");
-  }
-
-  for (const tool of publishable.slice(REQUIRED_ADVANCED_WAVE_SIZE)) {
+  for (const tool of publishable.slice(remainingWave.length)) {
     if (issueTier(tool).difficulty !== "medium") {
       fail(`post-wave issue "${tool.slug}" must be labelled medium`);
     }
@@ -144,7 +155,9 @@ export function validateCatalog() {
   return {
     total: catalog.length,
     publishable: publishable.length,
-    advanced: advancedWaveSlugs.length
+    delivered: deliveredWave.length,
+    advanced: advancedWaveSlugs.length,
+    remainingWave: remainingWave.length
   };
 }
 
@@ -154,7 +167,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log(
       `[issue-catalog] OK: ${result.total} detailed tools, ` +
         `${result.publishable} currently publishable, ` +
-        `${result.advanced} in the first advanced wave`
+        `${result.delivered}/${result.advanced} of the advanced wave delivered`
     );
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
