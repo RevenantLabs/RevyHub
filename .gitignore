@@ -24,6 +24,9 @@ playwright-report/
 .env.local
 .env*.local
 
+# local agent checkouts of other repositories
+worktrees/
+
 # vercel
 .vercel
 

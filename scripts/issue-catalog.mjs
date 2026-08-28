@@ -226,43 +226,6 @@ export const catalog = [
 
   // ------------------------------------------------------------------ assets
   {
-    slug: "asset-metadata",
-    title: "Asset Metadata from stellar.toml",
-    category: "assets",
-    difficulty: "advanced",
-    summary:
-      "Given an asset code and issuer, find the issuer's home domain, fetch its `stellar.toml`, and show the declared metadata for that asset.",
-    why:
-      "SEP-1 is how an asset says what it is. Reading it by hand means finding the home domain, guessing the well-known path and parsing TOML.",
-    source:
-      "Horizon `GET /accounts/{issuer}` for `home_domain`, then `https://{home_domain}/.well-known/stellar.toml`.",
-    criteria: [
-      "The issuer's home domain is resolved from Horizon rather than typed by the user.",
-      "The `[[CURRENCIES]]` entry matching the asset code and issuer is located and displayed; a toml that lists other assets but not this one is a distinct, named outcome.",
-      "Declared fields — name, description, image, decimals, status, `is_asset_anchored` — are shown when present and clearly marked absent when not.",
-      "An issuer with no home domain is reported as such, with an explanation that the asset publishes no metadata.",
-      "The toml is fetched over HTTPS only, and a non-HTTPS home domain is refused."
-    ],
-    codes: [
-      ["empty_asset_code", "no asset code submitted"],
-      ["invalid_asset_code", "not 1-12 alphanumeric characters"],
-      ["empty_issuer", "no issuer submitted"],
-      ["invalid_issuer", "issuer fails the StrKey checksum"],
-      ["issuer_not_found", "the issuing account does not exist on this network"],
-      ["no_home_domain", "the issuer declares no home domain"],
-      ["toml_unreachable", "the toml could not be fetched"],
-      ["toml_invalid", "the response was not parseable TOML"],
-      ["asset_not_listed", "the toml is valid but does not list this asset"]
-    ],
-    reference: "features/trustline-checker",
-    notes:
-      "Everything in the toml is attacker-controlled — the issuer publishes it. Render every field as text, never as markup, and never fetch a URL the toml supplies. Declared metadata says what the issuer claims, not what is true.",
-    outOfScope: [
-      "Do not implement SEP-6, SEP-24 or SEP-31 endpoint discovery — that is its own tool.",
-      "Do not render remote images from the toml."
-    ]
-  },
-  {
     slug: "asset-statistics",
     title: "Asset Supply and Holder Statistics",
     category: "assets",
@@ -563,38 +526,6 @@ export const catalog = [
   },
 
   // ------------------------------------------------------------ transactions
-  {
-    slug: "xdr-decoder",
-    title: "Transaction XDR Decoder",
-    category: "transactions",
-    difficulty: "advanced",
-    summary:
-      "Decode a base64 transaction envelope entirely in the browser and show source account, fee, sequence, preconditions, memo, signatures and every operation with its parameters.",
-    why:
-      "XDR is what wallets and tools actually exchange. Being able to read one without submitting it anywhere is the single most useful debugging step in Stellar.",
-    source: "Local only. `TransactionBuilder.fromXDR` from the SDK; nothing is transmitted.",
-    offline: true,
-    criteria: [
-      "Both `TransactionEnvelope` and `FeeBumpTransactionEnvelope` are handled, and a fee bump shows the inner transaction as well.",
-      "Every operation is listed with its type and its own parameters, not just its name.",
-      "Preconditions — time bounds, ledger bounds, min sequence — are shown when present.",
-      "Signatures are listed by hint with a count; the tool states that it does not verify them.",
-      "A network passphrase selector is present, and the tool explains that the same XDR hashes differently per network."
-    ],
-    codes: [
-      ["empty_input", "nothing submitted"],
-      ["invalid_base64", "the input is not valid base64"],
-      ["invalid_xdr", "valid base64 that is not a transaction envelope"],
-      ["unsupported_envelope", "an envelope type this tool does not decode"]
-    ],
-    reference: "features/payment-qr",
-    notes:
-      "An XDR envelope is untrusted input from a stranger. Decoding must never throw into the UI, and the tool must never offer to sign or submit — that is exactly the social-engineering path this tool should refuse to be part of.",
-    outOfScope: [
-      "Do not sign, submit or simulate the transaction.",
-      "Do not build XDR — decoding only."
-    ]
-  },
   {
     slug: "result-code-explainer",
     title: "Transaction Result Code Explainer",
@@ -987,37 +918,6 @@ export const catalog = [
     ]
   },
   {
-    slug: "fee-statistics",
-    title: "Network Fee Statistics",
-    category: "network",
-    difficulty: "medium",
-    summary:
-      "Show current network fee statistics — the fee distribution across recent ledgers and ledger capacity usage — and turn them into a concrete fee recommendation.",
-    why:
-      "Underpaying the fee gets a transaction dropped in a busy ledger. The percentile data that answers 'what should I pay' is published but rarely read.",
-    source: "Horizon `GET /fee_stats`.",
-    criteria: [
-      "The full fee-charged percentile distribution is displayed, not just the minimum.",
-      "Ledger capacity usage is shown as a percentage with an explanation of what surge pricing means.",
-      "A concrete recommended fee is derived from the percentiles and the reasoning is stated.",
-      "Both `fee_charged` and `max_fee` distributions are shown and the difference between them is explained.",
-      "All fees are shown in stroops and in XLM."
-    ],
-    codes: [
-      ["endpoint_unreachable", "the endpoint did not respond"],
-      ["unexpected_response", "the response was not a fee-stats document"],
-      ["rate_limited", "Horizon 429"],
-      ["request_failed", "transport failure or timeout"]
-    ],
-    reference: "features/balance-viewer",
-    notes:
-      "The distinction between `fee_charged` (what was actually paid) and `max_fee` (what was offered) is the point of the tool. A version that shows only one of them answers the wrong question.",
-    outOfScope: [
-      "Do not chart fees over time.",
-      "Do not submit transactions at the recommended fee."
-    ]
-  },
-  {
     slug: "ledger-lookup",
     title: "Ledger Lookup",
     category: "network",
@@ -1280,42 +1180,6 @@ export const catalog = [
   },
 
   // -------------------------------------------------------------- standards
-  {
-    slug: "federation-resolver",
-    title: "Federation Address Resolver",
-    category: "standards",
-    difficulty: "advanced",
-    summary:
-      "Resolve a `name*domain.com` federated address to a Stellar account through SEP-2, and resolve an account back to a federated name where the server supports it.",
-    why:
-      "Federated addresses are the human-readable layer of Stellar payments, and resolving one by hand means finding a toml, reading a field and calling an endpoint.",
-    source:
-      "`https://{domain}/.well-known/stellar.toml` for `FEDERATION_SERVER`, then that server's `?q=&type=name` endpoint.",
-    criteria: [
-      "Forward resolution (`name*domain.com` to an account) works, including the returned memo type and memo value.",
-      "Reverse resolution (account to name) is attempted and reported as unsupported when the server does not offer it.",
-      "The federation server URL is discovered from the toml, never guessed from the domain.",
-      "A returned memo is displayed prominently, with a warning that omitting it can lose the payment.",
-      "Only HTTPS federation servers are used, and a non-HTTPS server is refused."
-    ],
-    codes: [
-      ["empty_input", "nothing submitted"],
-      ["invalid_federated_address", "not in name*domain form"],
-      ["toml_unreachable", "the domain's stellar.toml could not be fetched"],
-      ["no_federation_server", "the toml declares no FEDERATION_SERVER"],
-      ["insecure_server", "the declared server is not HTTPS"],
-      ["name_not_found", "the federation server returned 404 for this name"],
-      ["reverse_unsupported", "the server does not support reverse lookup"],
-      ["request_failed", "transport failure or timeout"]
-    ],
-    reference: "features/trustline-checker",
-    notes:
-      "The federation server is a third-party endpoint named by a third-party toml. Treat every field it returns as untrusted text, follow no redirects to non-HTTPS, and never render its output as markup.",
-    outOfScope: [
-      "Do not send a payment to the resolved account.",
-      "Do not cache resolutions across sessions."
-    ]
-  },
   {
     slug: "sep10-inspector",
     title: "SEP-10 Challenge Transaction Inspector",

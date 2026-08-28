@@ -11,7 +11,8 @@ export default defineConfig([
       "node_modules/**",
       "out/**",
       ".grantfox-agents/**",
-      ".drips-agents/**"
+      ".drips-agents/**",
+      "worktrees/**"
     ]
   }
 ]);

@@ -30,6 +30,27 @@ export const NETWORK_LABELS: Record<StellarNetwork, string> = {
   mainnet: "Mainnet"
 };
 
+export interface NetworkMeta {
+  label: string;
+  /** Short line the helper cast uses when explaining which chain it is on. */
+  blurb: string;
+  /** Mainnet moves real value, so the UI gives it the cautious tone. */
+  tone: "info" | "warning";
+}
+
+export const NETWORK_META: Record<StellarNetwork, NetworkMeta> = {
+  testnet: {
+    label: "Testnet",
+    blurb: "a practice network where XLM has no market value",
+    tone: "info"
+  },
+  mainnet: {
+    label: "Mainnet",
+    blurb: "the public network where balances hold real value",
+    tone: "warning"
+  }
+};
+
 export const FRIENDBOT_URL = "https://friendbot.stellar.org";
 
 export const NETWORK_STORAGE_KEY = "revyhubx-network";
