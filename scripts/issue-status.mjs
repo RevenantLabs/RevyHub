@@ -27,7 +27,7 @@ export const advancedWaveSlugs = [
   "account-signers",
   "account-data-entries",
   "reserve-calculator",
-  "sponsored-reserves",
+  "contract-inspector",
   "sequence-inspector",
   "account-merge-preflight",
   "asset-statistics",
