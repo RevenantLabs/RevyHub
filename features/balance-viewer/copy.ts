@@ -9,6 +9,11 @@ export const copy = {
   emptyDescription:
     "Paste an account address to see every asset it holds on the selected network.",
   resultTitle: "Balances",
+  filterLabel: "Filter balances",
+  filterHint: "Matches asset code or issuer address. Searching XLM includes the native balance.",
+  filterPlaceholder: "e.g. USDC or issuer address",
+  filterEmptyTitle: "No balances match this filter",
+  filterEmptyDescription: "Try a different asset code or issuer address, or clear the filter to see every line.",
   noBalancesTitle: "This account holds no balances",
   noBalancesDescription:
     "The account exists but currently has no asset lines. This is unusual — every funded account holds at least a native XLM balance.",

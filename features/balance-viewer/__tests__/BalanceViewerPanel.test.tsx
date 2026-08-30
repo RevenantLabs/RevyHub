@@ -31,6 +31,35 @@ describe("BalanceViewerPanel", () => {
     expect(screen.getByText("1,250.5")).toBeInTheDocument();
   });
 
+  it("filters balance rows client-side without refetching", async () => {
+    resetHorizonClients();
+    const { user } = renderFeature(<BalanceViewerPanel />);
+
+    await user.type(screen.getByLabelText(copy.formLabel), accountId);
+    await user.click(screen.getByRole("button", { name: copy.submit }));
+    await waitFor(() => expect(screen.getByRole("table")).toBeInTheDocument());
+
+    await user.type(screen.getByLabelText(copy.filterLabel), "USDC");
+    expect(screen.queryByRole("rowheader", { name: /XLM \(native\)/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("rowheader", { name: /USDC/ })).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText(copy.filterLabel));
+    expect(screen.getByRole("rowheader", { name: /XLM \(native\)/ })).toBeInTheDocument();
+  });
+
+  it("shows an empty filter state when nothing matches", async () => {
+    resetHorizonClients();
+    const { user } = renderFeature(<BalanceViewerPanel />);
+
+    await user.type(screen.getByLabelText(copy.formLabel), accountId);
+    await user.click(screen.getByRole("button", { name: copy.submit }));
+    await waitFor(() => expect(screen.getByRole("table")).toBeInTheDocument());
+
+    await user.type(screen.getByLabelText(copy.filterLabel), "zzznomatch");
+    expect(screen.getByText(copy.filterEmptyTitle)).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
   it("explains a missing account instead of a raw error", async () => {
     resetHorizonClients();
     const { user } = renderFeature(<BalanceViewerPanel />);

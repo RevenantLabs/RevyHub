@@ -19,6 +19,20 @@ export function formatAssetLabel(balance: DisplayBalance): string {
   return balance.assetCode;
 }
 
+/** Case-insensitive match against asset code, issuer, or native XLM. */
+export function balanceMatchesFilter(balance: DisplayBalance, query: string): boolean {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+
+  if (balance.kind === "native") {
+    return "xlm".includes(normalized) || normalized.includes("xlm") || "native".includes(normalized);
+  }
+
+  const code = balance.assetCode.toLowerCase();
+  const issuer = balance.issuer?.toLowerCase() ?? "";
+  return code.includes(normalized) || issuer.includes(normalized);
+}
+
 /** Returns the sum of both liability sides, or null when neither is present. */
 export function totalLiabilities(balance: DisplayBalance): string | null {
   const selling = balance.sellingLiabilities;
