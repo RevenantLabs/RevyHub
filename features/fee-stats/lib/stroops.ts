@@ -32,3 +32,15 @@ export function toStroopAmount(value: string | number | null | undefined): Stroo
     xlm: `${padded.slice(0, -STROOPS_PER_XLM)}.${padded.slice(-STROOPS_PER_XLM)}`
   };
 }
+
+/** Multiply an exact stroop amount by a bounded operation count. */
+export function multiplyStroops(
+  amount: StroopAmount | null | undefined,
+  operationCount: number
+): StroopAmount | null {
+  if (!amount || !Number.isInteger(operationCount) || operationCount < 1 || operationCount > 100) {
+    return null;
+  }
+
+  return toStroopAmount((BigInt(amount.stroops) * BigInt(operationCount)).toString());
+}
