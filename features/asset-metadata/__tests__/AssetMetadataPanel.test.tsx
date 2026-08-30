@@ -70,4 +70,21 @@ describe("AssetMetadataPanel", () => {
     expect(await screen.findByText(copy.provenanceTitle)).toBeInTheDocument();
     expect(screen.getByText(`https://${DOMAIN}/.well-known/stellar.toml`)).toBeInTheDocument();
   });
+
+  it("filters currencies by code, name, or issuer and shows a filter empty state", async () => {
+    const { user } = renderFeature(<AssetMetadataPanel />);
+    await read(user, DOMAIN);
+
+    const filter = await screen.findByLabelText(copy.filterLabel);
+    await user.type(filter, "eurc");
+
+    expect(screen.getByRole("heading", { name: "EURC" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "USDC" })).not.toBeInTheDocument();
+
+    await user.clear(filter);
+    expect(screen.getByRole("heading", { name: "USDC" })).toBeInTheDocument();
+
+    await user.type(filter, "does-not-exist");
+    expect(screen.getByText(copy.filterEmptyDescription)).toBeInTheDocument();
+  });
 });
