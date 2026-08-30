@@ -37,6 +37,7 @@ export function calculateReserve(inputs: ReserveInputs): ReserveCalculatorResult
   const sponsored = BigInt(inputs.numSponsored) * baseReserve;
   const minimumBalance = baseAccount + subentries + sponsoring - sponsored;
   const rawSpendable = nativeBalance - minimumBalance - sellingLiabilities;
+  const shortfall = minimumBalance - nativeBalance;
 
   return {
     accountId: inputs.accountId,
@@ -50,6 +51,7 @@ export function calculateReserve(inputs: ReserveInputs): ReserveCalculatorResult
     numSponsoring: inputs.numSponsoring,
     numSponsored: inputs.numSponsored,
     belowMinimum: nativeBalance < minimumBalance,
+    minimumBalanceShortfall: stroopsToAmount(shortfall > 0n ? shortfall : 0n),
     breakdown: {
       baseAccount: stroopsToAmount(baseAccount),
       subentries: stroopsToAmount(subentries),

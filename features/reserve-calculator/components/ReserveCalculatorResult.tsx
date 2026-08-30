@@ -14,7 +14,7 @@ export function ReserveCalculatorResult({ data }: { data: ReserveCalculatorResul
         <StatusMessage
           type="warning"
           title={copy.belowMinimumTitle}
-          description={copy.belowMinimumDescription}
+          description={copy.belowMinimumDescription(data.minimumBalanceShortfall)}
         />
       ) : null}
 

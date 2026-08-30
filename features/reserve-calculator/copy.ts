@@ -25,8 +25,8 @@ export const copy = {
   sponsoringLabel: (count: number) => `Entries sponsored by this account (+${count})`,
   sponsoredLabel: (count: number) => `Entries sponsored for this account (−${count})`,
   belowMinimumTitle: "This account is below its minimum balance",
-  belowMinimumDescription:
-    "Its native XLM balance is lower than the reserve required by its current ledger entries.",
+  belowMinimumDescription: (shortfall: string) =>
+    `Its native XLM balance is lower than the reserve required by its current ledger entries by ${shortfall} XLM.`,
   sourceNote: (sequence: string) => `Base reserve read from live ledger ${sequence}.`
 } as const;
 

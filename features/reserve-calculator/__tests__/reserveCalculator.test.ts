@@ -70,6 +70,7 @@ describe("reserve arithmetic", () => {
 
     expect(result.minimumBalance).toBe("2.0000000");
     expect(result.belowMinimum).toBe(true);
+    expect(result.minimumBalanceShortfall).toBe("1.0000000");
     expect(result.spendableBalance).toBe("0.0000000");
   });
 });
