@@ -1,3 +1,5 @@
+import { xdr } from "@stellar/stellar-sdk";
+
 /** Fees are reported in stroops; 10,000,000 stroops make one XLM. */
 export function stroopsToXlm(stroops: string): string {
   const value = BigInt(stroops);
@@ -42,4 +44,47 @@ export function formatMemo(memoType: string, memo?: string): string {
 export function formatTimestamp(iso: string): string {
   const date = new Date(iso);
   return Number.isNaN(date.getTime()) ? iso : date.toISOString().replace("T", " ").replace(".000Z", " UTC");
+}
+
+function camelToSnake(name: string): string {
+  return name
+    .replace(/([A-Z])/g, "_$1")
+    .toLowerCase()
+    .replace(/^_/, "");
+}
+
+/** Decode the most specific failed result code from a transaction result XDR. */
+export function extractResultCode(resultXdr?: string): string | undefined {
+  if (!resultXdr?.trim()) return undefined;
+
+  try {
+    const decoded = xdr.TransactionResult.fromXDR(resultXdr, "base64");
+    const transactionCode = camelToSnake(decoded.result().switch().name);
+
+    if (transactionCode === "tx_success") return undefined;
+
+    if (transactionCode === "tx_failed") {
+      for (const operation of decoded.result().results()) {
+        const outerCode = camelToSnake(operation.switch().name);
+        if (outerCode === "op_inner") {
+          const tr = operation.value() as xdr.OperationResultTr;
+          const innerType = tr.switch().name;
+          const accessor = `${innerType}Result` as keyof xdr.OperationResultTr;
+          const reader = tr[accessor];
+          if (typeof reader === "function") {
+            const nested = (reader as () => { switch(): { name: string } }).call(tr);
+            if (nested && typeof nested.switch === "function") {
+              return camelToSnake(nested.switch().name);
+            }
+          }
+          continue;
+        }
+        if (outerCode !== "op_success") return outerCode;
+      }
+    }
+
+    return transactionCode;
+  } catch {
+    return undefined;
+  }
 }

@@ -11,6 +11,7 @@ export const copy = {
   operationsTitle: "Operations",
   succeeded: "This transaction succeeded",
   failed: "This transaction failed",
+  resultCodeLabel: "Result code",
   noOperations: "Horizon returned no readable operations for this transaction."
 } as const;
 
