@@ -51,6 +51,12 @@ export function TrustlineCheckerResult({ result }: { result: TrustlineResult }) 
             { label: "Asset", value: formatAssetIdentity(result.assetCode, result.issuerId), mono: true },
             { label: "Balance", value: result.balance, mono: true },
             { label: "Trust limit", value: formatLimit(result.limit) },
+            { label: copy.buyingLiabilitiesLabel, value: result.buyingLiabilities, mono: true },
+            {
+              label: copy.remainingReceivingCapacityLabel,
+              value: result.remainingReceivingCapacity,
+              mono: true
+            },
             {
               label: "Authorization",
               value: describeAuthorization(

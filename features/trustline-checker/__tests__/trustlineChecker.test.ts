@@ -24,7 +24,46 @@ describe("findTrustline", () => {
     expect(result.exists).toBe(true);
     if (!result.exists) return;
     expect(result.balance).toBe("25.0000000");
+    expect(result.buyingLiabilities).toBe("0.0000000");
+    expect(result.remainingReceivingCapacity).toBe("922337203660.4775807");
     expect(result.authorized).toBe(true);
+  });
+
+  it("subtracts buying liabilities with exact stroop arithmetic", () => {
+    const result = findTrustline(
+      [{
+        asset_type: "credit_alphanum4",
+        asset_code: "USDC",
+        asset_issuer: issuerId,
+        balance: "1.0000001",
+        limit: "2.0000000",
+        buying_liabilities: "0.2500002"
+      }],
+      "USDC",
+      issuerId
+    );
+
+    expect(result).toMatchObject({
+      buyingLiabilities: "0.2500002",
+      remainingReceivingCapacity: "0.7499997"
+    });
+  });
+
+  it("clamps capacity at zero when liabilities consume the limit", () => {
+    const result = findTrustline(
+      [{
+        asset_type: "credit_alphanum4",
+        asset_code: "USDC",
+        asset_issuer: issuerId,
+        balance: "2.0000000",
+        limit: "2.0000000",
+        buying_liabilities: "0.0000001"
+      }],
+      "USDC",
+      issuerId
+    );
+
+    expect(result.exists && result.remainingReceivingCapacity).toBe("0.0000000");
   });
 
   it("matches the asset code case-insensitively", () => {

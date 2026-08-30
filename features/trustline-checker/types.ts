@@ -10,6 +10,8 @@ export interface TrustlineFound {
   issuerId: string;
   balance: string;
   limit: string;
+  buyingLiabilities: string;
+  remainingReceivingCapacity: string;
   authorized: boolean;
   authorizedToMaintainLiabilities: boolean;
 }
