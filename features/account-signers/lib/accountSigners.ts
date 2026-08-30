@@ -58,6 +58,10 @@ export function assessThresholds(
     level,
     requiredWeight: thresholds[level],
     availableWeight,
+    shortfallWeight: (BigInt(thresholds[level]) > total
+      ? BigInt(thresholds[level]) - total
+      : 0n
+    ).toString(),
     canBeMet: total >= BigInt(thresholds[level])
   }));
 }

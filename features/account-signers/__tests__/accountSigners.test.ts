@@ -59,9 +59,9 @@ describe("signer analysis", () => {
 
   it("flags only thresholds above the total available weight", () => {
     expect(assessThresholds({ low: "1", medium: "10", high: "11" }, "10")).toEqual([
-      { level: "low", requiredWeight: "1", availableWeight: "10", canBeMet: true },
-      { level: "medium", requiredWeight: "10", availableWeight: "10", canBeMet: true },
-      { level: "high", requiredWeight: "11", availableWeight: "10", canBeMet: false }
+      { level: "low", requiredWeight: "1", availableWeight: "10", shortfallWeight: "0", canBeMet: true },
+      { level: "medium", requiredWeight: "10", availableWeight: "10", shortfallWeight: "0", canBeMet: true },
+      { level: "high", requiredWeight: "11", availableWeight: "10", shortfallWeight: "1", canBeMet: false }
     ]);
   });
 

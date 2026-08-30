@@ -173,7 +173,7 @@ export function AccountSignersResult({ result }: { result: AccountSignersResultV
                     </Badge>
                     {!threshold.canBeMet ? (
                       <p className="mt-2 max-w-xs text-xs leading-5 text-[#9f342d]">
-                        {copy.thresholdUnreachableDescription}
+                        {copy.thresholdUnreachableDescription(threshold.shortfallWeight)}
                       </p>
                     ) : null}
                   </td>

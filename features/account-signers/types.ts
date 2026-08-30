@@ -23,6 +23,7 @@ export interface ThresholdAssessment {
   level: ThresholdLevel;
   requiredWeight: string;
   availableWeight: string;
+  shortfallWeight: string;
   canBeMet: boolean;
 }
 
