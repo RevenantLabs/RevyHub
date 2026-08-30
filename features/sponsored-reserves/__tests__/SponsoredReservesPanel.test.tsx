@@ -32,6 +32,10 @@ describe("SponsoredReservesPanel", () => {
     expect(screen.getByText(copy.reserveUnits(6))).toBeInTheDocument();
     expect(screen.getByText(copy.reserveUnits(2))).toBeInTheDocument();
     expect(screen.getByText(`+2 ${copy.xlmUnit}`)).toBeInTheDocument();
+    expect(screen.getByText(copy.entriesSummaryTitle)).toBeInTheDocument();
+    for (const kind of Object.keys(copy.entryKinds) as Array<keyof typeof copy.entryKinds>) {
+      expect(screen.getByText(copy.entryCount(copy.entryKinds[kind], 1))).toBeInTheDocument();
+    }
     expect(screen.getAllByRole("rowheader")).toHaveLength(5);
     expect(screen.getByRole("rowheader", { name: "#812345" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: copy.entryKinds.account })).toBeInTheDocument();
@@ -58,6 +62,7 @@ describe("SponsoredReservesPanel", () => {
 
     expect(await screen.findByText(copy.noRelationshipsTitle)).toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.queryByText(copy.entriesSummaryTitle)).not.toBeInTheDocument();
   });
 
   it("validates an address before sending a request", async () => {

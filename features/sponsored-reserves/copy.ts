@@ -30,6 +30,8 @@ export const copy = {
   noSponsoredEntriesDescription:
     "This account sponsors reserves for others, but none of its own entries, trustlines, signers, offers or data entries are sponsored.",
   entriesTitle: "Entries sponsored for this account",
+  entriesSummaryTitle: "Sponsored entries by type",
+  entryCount: (label: string, count: number) => `${label}: ${count}`,
   entriesNote:
     "A sponsored account entry moves two reserve units; every other entry moves one.",
   columnKind: "Kind",

@@ -1,4 +1,5 @@
 import { ShieldCheck } from "lucide-react";
+import { Fragment } from "react";
 import { Card, CardHeader, CardTitle } from "@/core/ui/Card";
 import { CopyableValue } from "@/core/ui/CopyableValue";
 import { EmptyState } from "@/core/ui/EmptyState";
@@ -6,7 +7,8 @@ import { copy } from "@/features/sponsored-reserves/copy";
 import {
   formatEntryReference,
   formatStroops,
-  reserveEffectDirection
+  reserveEffectDirection,
+  summarizeSponsoredEntries
 } from "@/features/sponsored-reserves/lib/format";
 import type { SponsoredReservesResult as SponsoredReservesResultValue } from "@/features/sponsored-reserves/types";
 
@@ -19,6 +21,8 @@ function effectDescription(stroops: string): string {
 
 export function SponsoredReservesResult({ data }: { data: SponsoredReservesResultValue }) {
   const hasRelationships = data.numSponsored > 0 || data.numSponsoring > 0;
+  const hasSponsoredEntries = hasRelationships && data.sponsoredEntries.length > 0;
+  const entrySummary = summarizeSponsoredEntries(data.sponsoredEntries);
 
   return (
     <div className="space-y-5">
@@ -80,11 +84,20 @@ export function SponsoredReservesResult({ data }: { data: SponsoredReservesResul
         />
       ) : null}
 
-      {data.sponsoredEntries.length ? (
+      {hasSponsoredEntries ? (
         <Card>
           <CardHeader>
             <CardTitle>{copy.entriesTitle}</CardTitle>
           </CardHeader>
+          <p className="mb-4 text-sm text-[#4e5c73]">
+            <span className="font-bold text-[#172033]">{copy.entriesSummaryTitle}</span>: {" "}
+            {entrySummary.map(({ kind, count }, index) => (
+              <Fragment key={kind}>
+                {index > 0 ? " · " : null}
+                <span>{copy.entryCount(copy.entryKinds[kind], count)}</span>
+              </Fragment>
+            ))}
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[42rem] border-collapse text-left text-sm">
               <caption className="sr-only">{copy.entriesCaption(data.accountId)}</caption>
