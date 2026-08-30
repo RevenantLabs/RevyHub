@@ -21,6 +21,7 @@ export interface ReserveCalculatorResult {
   numSponsoring: number;
   numSponsored: number;
   belowMinimum: boolean;
+  minimumBalanceShortfall: string;
   breakdown: ReserveBreakdown;
 }
 
