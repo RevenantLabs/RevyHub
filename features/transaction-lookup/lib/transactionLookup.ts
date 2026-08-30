@@ -1,6 +1,7 @@
 import { err, ok, type Result } from "@/core/result/result";
 import { horizonServer } from "@/core/horizon/client";
 import type { StellarNetwork } from "@/core/network/types";
+import { extractResultCode } from "@/features/transaction-lookup/lib/format";
 import { toTransactionErrorCode } from "@/features/transaction-lookup/lib/transactionLookup.errors";
 import type {
   TransactionErrorCode,
@@ -33,7 +34,7 @@ export function normalizeTransaction(
   transaction: HorizonTransaction,
   operations: HorizonOperation[]
 ): TransactionSummary {
-  return {
+  const summary: TransactionSummary = {
     hash: transaction.hash,
     ledger: transaction.ledger,
     successful: transaction.successful,
@@ -46,6 +47,13 @@ export function normalizeTransaction(
     memo: transaction.memo,
     operations: operations.map(normalizeOperation)
   };
+
+  if (!transaction.successful) {
+    const resultCode = extractResultCode(transaction.result_xdr);
+    if (resultCode) summary.resultCode = resultCode;
+  }
+
+  return summary;
 }
 
 export function normalizeOperation(operation: HorizonOperation): TransactionOperation {

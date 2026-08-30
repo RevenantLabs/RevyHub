@@ -12,6 +12,27 @@ import {
 import type { TransactionSummary } from "@/features/transaction-lookup/types";
 
 export function TransactionLookupResult({ transaction }: { transaction: TransactionSummary }) {
+  const detailItems = [
+    { label: "Hash", value: <CopyableValue label="hash" value={transaction.hash} visible={8} /> },
+    { label: "Ledger", value: String(transaction.ledger), mono: true },
+    { label: "Created", value: formatTimestamp(transaction.createdAt) },
+    {
+      label: "Source account",
+      value: <CopyableValue label="source account" value={transaction.sourceAccount} />
+    },
+    { label: "Fee charged", value: formatFee(transaction.feeCharged) },
+    { label: "Max fee", value: formatFee(transaction.maxFee) },
+    { label: "Memo", value: formatMemo(transaction.memoType, transaction.memo) },
+    { label: "Operations", value: String(transaction.operationCount) }
+  ];
+
+  if (!transaction.successful && transaction.resultCode) {
+    detailItems.splice(1, 0, {
+      label: copy.resultCodeLabel,
+      value: <CopyableValue label="result code" value={transaction.resultCode} visible={transaction.resultCode.length} />
+    });
+  }
+
   return (
     <div className="space-y-4">
       <StatusMessage
@@ -23,21 +44,7 @@ export function TransactionLookupResult({ transaction }: { transaction: Transact
         <CardHeader>
           <CardTitle>{copy.resultTitle}</CardTitle>
         </CardHeader>
-        <DataList
-          items={[
-            { label: "Hash", value: <CopyableValue label="hash" value={transaction.hash} visible={8} /> },
-            { label: "Ledger", value: String(transaction.ledger), mono: true },
-            { label: "Created", value: formatTimestamp(transaction.createdAt) },
-            {
-              label: "Source account",
-              value: <CopyableValue label="source account" value={transaction.sourceAccount} />
-            },
-            { label: "Fee charged", value: formatFee(transaction.feeCharged) },
-            { label: "Max fee", value: formatFee(transaction.maxFee) },
-            { label: "Memo", value: formatMemo(transaction.memoType, transaction.memo) },
-            { label: "Operations", value: String(transaction.operationCount) }
-          ]}
-        />
+        <DataList items={detailItems} />
       </Card>
 
       <Card>

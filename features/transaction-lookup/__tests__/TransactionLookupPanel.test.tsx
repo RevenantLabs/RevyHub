@@ -40,6 +40,8 @@ describe("TransactionLookupPanel", () => {
     await user.click(screen.getByRole("button", { name: copy.submit }));
 
     expect(await screen.findByText(copy.failed)).toBeInTheDocument();
+    expect(screen.getByText(copy.resultCodeLabel)).toBeInTheDocument();
+    expect(screen.getByText("payment_underfunded")).toBeInTheDocument();
     expect(screen.getByText(copy.noOperations)).toBeInTheDocument();
   });
 

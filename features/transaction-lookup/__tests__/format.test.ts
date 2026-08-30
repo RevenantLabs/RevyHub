@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  extractResultCode,
   formatFee,
   formatMemo,
   formatOperationType,
   formatTimestamp,
   stroopsToXlm
 } from "@/features/transaction-lookup/lib/format";
+import { failedPaymentResultXdr } from "@/features/transaction-lookup/fixtures/transactionLookup.fixture";
 
 describe("stroopsToXlm", () => {
   it("converts using integer arithmetic", () => {
@@ -54,5 +56,15 @@ describe("formatTimestamp", () => {
 
   it("passes an unparseable value through", () => {
     expect(formatTimestamp("not a date")).toBe("not a date");
+  });
+});
+
+describe("extractResultCode", () => {
+  it("returns the inner operation code for a failed transaction", () => {
+    expect(extractResultCode(failedPaymentResultXdr)).toBe("payment_underfunded");
+  });
+
+  it("returns undefined for missing XDR", () => {
+    expect(extractResultCode(undefined)).toBeUndefined();
   });
 });
