@@ -3,6 +3,9 @@ import type { StroopAmount } from "@/features/fee-stats/types";
 /** One XLM is 10,000,000 stroops. */
 const STROOPS_PER_XLM = 7;
 
+export const MIN_OPERATION_COUNT = 1;
+export const MAX_OPERATION_COUNT = 100;
+
 /**
  * Converts a stroop value into an exact stroops/XLM pair.
  *
@@ -31,4 +34,20 @@ export function toStroopAmount(value: string | number | null | undefined): Stroo
     stroops: normalized,
     xlm: `${padded.slice(0, -STROOPS_PER_XLM)}.${padded.slice(-STROOPS_PER_XLM)}`
   };
+}
+
+export function parseOperationCount(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (!/^\d+$/.test(trimmed)) return null;
+
+  const value = Number(trimmed);
+  if (!Number.isInteger(value)) return null;
+  if (value < MIN_OPERATION_COUNT || value > MAX_OPERATION_COUNT) return null;
+  return value;
+}
+
+export function multiplyStroops(amount: StroopAmount, operationCount: number): StroopAmount {
+  const total = BigInt(amount.stroops) * BigInt(operationCount);
+  return toStroopAmount(total.toString())!;
 }

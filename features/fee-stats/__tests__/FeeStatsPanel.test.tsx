@@ -24,6 +24,33 @@ describe("FeeStatsPanel", () => {
     expect(screen.getByText(copy.chargedTitle)).toBeInTheDocument();
     expect(screen.getByText(copy.maxFeeTitle)).toBeInTheDocument();
     expect(screen.getAllByRole("table")).toHaveLength(2);
+    expect(screen.getByLabelText(copy.calculatorLabel)).toHaveValue("1");
+  });
+
+  it("estimates a total fee from the suggested per-operation amount", async () => {
+    resetHorizonClients();
+    const { user } = renderFeature(<FeeStatsPanel />, { network: "testnet" });
+
+    await user.click(screen.getByRole("button", { name: copy.submit }));
+    await screen.findByText(congestionCopy.calm.title);
+
+    await user.clear(screen.getByLabelText(copy.calculatorLabel));
+    await user.type(screen.getByLabelText(copy.calculatorLabel), "3");
+
+    expect(screen.getByText(copy.calculatorTotalLabel)).toBeInTheDocument();
+    expect(screen.getByText("300")).toBeInTheDocument();
+  });
+
+  it("validates operation counts locally without refetching", async () => {
+    resetHorizonClients();
+    const { user } = renderFeature(<FeeStatsPanel />, { network: "testnet" });
+
+    await user.click(screen.getByRole("button", { name: copy.submit }));
+    await screen.findByText(congestionCopy.calm.title);
+
+    await user.clear(screen.getByLabelText(copy.calculatorLabel));
+    await user.type(screen.getByLabelText(copy.calculatorLabel), "0");
+    expect(screen.getByText(copy.calculatorInvalidCount)).toBeInTheDocument();
   });
 
   it("warns and recommends a higher fee on a congested ledger", async () => {

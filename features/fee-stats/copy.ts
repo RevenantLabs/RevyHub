@@ -21,7 +21,14 @@ export const copy = {
   minLabel: "Minimum",
   modeLabel: "Most common",
   maxLabel: "Maximum",
-  fetchedAtLabel: "Read at"
+  fetchedAtLabel: "Read at",
+  calculatorTitle: "Total fee estimate",
+  calculatorDescription: "Multiply the suggested per-operation fee by how many operations your transaction will include.",
+  calculatorLabel: "Operation count",
+  calculatorHint: "Whole number from 1 to 100. Changing this does not reload fee statistics.",
+  calculatorTotalLabel: "Estimated total fee",
+  calculatorInvalidCount: "Enter a whole number from 1 to 100.",
+  calculatorUnavailable: "Horizon did not provide a usable fee recommendation, so a total cannot be estimated."
 } as const;
 
 export const congestionCopy: Record<CongestionLevel, { title: string; description: string }> = {
