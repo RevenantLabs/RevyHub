@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle } from "@/core/ui/Card";
 import { Badge } from "@/core/ui/Badge";
 import { CopyableValue } from "@/core/ui/CopyableValue";
@@ -12,6 +13,17 @@ import {
 import type { TomlResult } from "@/features/asset-metadata/types";
 
 export function AssetMetadataResult({ result }: { result: TomlResult }) {
+  const [filter, setFilter] = useState("");
+  const filteredCurrencies = useMemo(() => {
+    const query = filter.trim().toLowerCase();
+    if (!query) return result.currencies;
+    return result.currencies.filter((currency) =>
+      [currency.code, currency.name, currency.issuer].some((value) =>
+        value?.toLowerCase().includes(query)
+      )
+    );
+  }, [filter, result.currencies]);
+
   return (
     <div className="space-y-4">
       <StatusMessage
@@ -33,8 +45,22 @@ export function AssetMetadataResult({ result }: { result: TomlResult }) {
             <CardTitle>{copy.resultTitle}</CardTitle>
           </CardHeader>
 
+          <label className="mb-4 block text-sm font-semibold text-[#4e5c73]">
+            {copy.filterLabel}
+            <input
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
+              placeholder={copy.filterPlaceholder}
+              className="mt-2 w-full rounded-md border border-[#cbd7e5] px-3 py-2 font-normal"
+            />
+          </label>
+
+          {filteredCurrencies.length === 0 ? (
+            <p className="text-sm leading-6 text-[#4e5c73]">{copy.filterEmptyDescription}</p>
+          ) : null}
+
           <ul className="space-y-5">
-            {result.currencies.map((currency, index) => (
+            {filteredCurrencies.map((currency, index) => (
               <li
                 key={`${currency.code}-${currency.issuer ?? index}`}
                 className="rounded-lg border border-[#e3ebf5] bg-white/60 p-4"

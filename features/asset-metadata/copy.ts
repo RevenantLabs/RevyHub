@@ -10,6 +10,9 @@ export const copy = {
   emptyDescription:
     "Enter a domain to see the assets it declares in its stellar.toml under SEP-0001.",
   resultTitle: "Declared assets",
+  filterLabel: "Filter assets",
+  filterPlaceholder: "Search code, name, or issuer",
+  filterEmptyDescription: "No declared assets match this filter.",
   provenanceTitle: "Where this came from",
   noCurrenciesTitle: "This domain declares no assets",
   noCurrenciesDescription:
