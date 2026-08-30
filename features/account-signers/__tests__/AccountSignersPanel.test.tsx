@@ -59,7 +59,7 @@ describe("AccountSignersPanel", () => {
     }
     expect(within(thresholdTable).getByText(copy.thresholdUnreachableLabel)).toBeInTheDocument();
     expect(
-      within(thresholdTable).getByText(copy.thresholdUnreachableDescription)
+      within(thresholdTable).getByText(copy.thresholdUnreachableDescription("1"))
     ).toBeInTheDocument();
   });
 

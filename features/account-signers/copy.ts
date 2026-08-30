@@ -48,8 +48,8 @@ export const copy = {
   thresholdStatusColumn: "Status",
   thresholdReachableLabel: "Can be met",
   thresholdUnreachableLabel: "Cannot be met",
-  thresholdUnreachableDescription:
-    "This threshold is higher than the total weight of every signer combined, so no signer combination can meet it.",
+  thresholdUnreachableDescription: (shortfall: string) =>
+    `This threshold is higher than the total weight of every signer combined. Missing weight: ${shortfall}.`,
   signerTableCaption: (accountId: string) => `Signers configured for account ${accountId}`,
   signerCopyLabel: (position: number) => `signer ${position} key`,
   thresholdTableCaption: (accountId: string) =>
