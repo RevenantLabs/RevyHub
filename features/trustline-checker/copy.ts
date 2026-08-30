@@ -15,6 +15,8 @@ export const copy = {
   foundTitle: "Trustline found",
   missingTitle: "No trustline for this asset and issuer",
   resultTitle: "Trustline details",
+  buyingLiabilitiesLabel: "Buying liabilities",
+  remainingReceivingCapacityLabel: "Remaining receiving capacity",
   otherIssuersTitle: "This account trusts the same code from a different issuer"
 } as const;
 
