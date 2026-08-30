@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   formatEntryReference,
   formatStroops,
-  reserveEffectDirection
+  reserveEffectDirection,
+  summarizeSponsoredEntries
 } from "@/features/sponsored-reserves/lib/format";
 
 describe("formatStroops", () => {
@@ -30,6 +31,27 @@ describe("formatEntryReference", () => {
     expect(
       formatEntryReference({ id: "data:name", kind: "data", reference: "name", sponsor: "G" })
     ).toBe("name");
+  });
+});
+
+describe("summarizeSponsoredEntries", () => {
+  it("counts entries in table order and omits kinds with no entries", () => {
+    expect(
+      summarizeSponsoredEntries([
+        { id: "offer:1", kind: "offer", reference: "1", sponsor: "G" },
+        { id: "account:G", kind: "account", reference: "G", sponsor: "G" },
+        { id: "offer:2", kind: "offer", reference: "2", sponsor: "G" },
+        { id: "data:name", kind: "data", reference: "name", sponsor: "G" }
+      ])
+    ).toEqual([
+      { kind: "account", count: 1 },
+      { kind: "offer", count: 2 },
+      { kind: "data", count: 1 }
+    ]);
+  });
+
+  it("returns no summary items when there are no entries", () => {
+    expect(summarizeSponsoredEntries([])).toEqual([]);
   });
 });
 
