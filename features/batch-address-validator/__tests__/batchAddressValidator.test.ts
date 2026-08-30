@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runBatchAddressValidator } from "@/features/batch-address-validator/lib/batchAddressValidator";
+import { cleanUniquePublicAddresses, runBatchAddressValidator } from "@/features/batch-address-validator/lib/batchAddressValidator";
 import {
   batchAddressValidatorFixture,
   commaSeparatedInput,
@@ -73,5 +73,17 @@ describe("runBatchAddressValidator edge cases", () => {
   it("marks unsupported kinds as invalid with the same code as the single validator", () => {
     const result = runBatchAddressValidator({ lines: [truncatedPublicKey] });
     expect(result.lines[0].code).toBe("bad_checksum_or_length");
+  });
+});
+
+describe("cleanUniquePublicAddresses", () => {
+  it("returns unique valid G-addresses in first-occurrence order", () => {
+    const result = runBatchAddressValidator({ lines: mixedAddressList });
+    expect(cleanUniquePublicAddresses(result)).toEqual([validPublicKey, secondPublicKey]);
+  });
+
+  it("never includes rejected secret seeds", () => {
+    const result = runBatchAddressValidator({ lines: secretSeedList });
+    expect(cleanUniquePublicAddresses(result)).toEqual([validPublicKey]);
   });
 });

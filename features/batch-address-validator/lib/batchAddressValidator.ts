@@ -46,3 +46,15 @@ export function runBatchAddressValidator(
 
   return { lines, summary };
 }
+
+/** Returns each validated public G-address once, preserving first occurrence order. */
+export function cleanUniquePublicAddresses(result: BatchAddressValidatorResult): string[] {
+  const seen = new Set<string>();
+  return result.lines.reduce<string[]>((addresses, entry) => {
+    if (entry.valid && entry.address.startsWith("G") && !seen.has(entry.address)) {
+      seen.add(entry.address);
+      addresses.push(entry.address);
+    }
+    return addresses;
+  }, []);
+}
