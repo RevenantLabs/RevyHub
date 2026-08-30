@@ -115,8 +115,9 @@ function body(tool) {
   const outOfScope = tool.outOfScope.map((item) => `- ${item}`).join("\n");
   const offline = tool.offline === true;
   const tier = issueTier(tool);
-  const waveCopy = tier.wave === "advanced"
-    ? `**Delivery wave.** Advanced issue ${tier.position} of ${tier.total}. It is fully independent: completing any other issue is not a prerequisite.`
+  const waveName = tier.wave === "advanced-two" ? "Advanced wave two" : "Advanced";
+  const waveCopy = tier.position
+    ? `**Delivery wave.** ${waveName} issue ${tier.position} of ${tier.total}. It is fully independent: completing any other issue is not a prerequisite.`
     : `**Delivery wave.** ${tier.difficulty === "advanced" ? "Advanced" : "Medium"} backlog. It is fully independent: completing any other issue is not a prerequisite.`;
 
   return `## What to build

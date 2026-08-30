@@ -7,6 +7,8 @@ import { catalog, categoryLabels } from "./issue-catalog.mjs";
 import { grantfoxConfig } from "./grantfox-config.mjs";
 import {
   advancedWaveSlugs,
+  advancedWaveTwoSlugs,
+  allAdvancedWaveSlugs,
   isImplemented,
   issueTier,
   orderForPublication
@@ -123,17 +125,42 @@ export function validateCatalog() {
   }
 
   const bySlug = new Map(catalog.map((tool) => [tool.slug, tool]));
-  for (const slug of advancedWaveSlugs) {
+
+  if (new Set(allAdvancedWaveSlugs).size !== allAdvancedWaveSlugs.length) {
+    fail("a slug appears in more than one advanced wave");
+  }
+
+  for (const [label, wave] of [
+    ["advanced wave one", advancedWaveSlugs],
+    ["advanced wave two", advancedWaveTwoSlugs]
+  ]) {
+    if (wave.length !== REQUIRED_ADVANCED_WAVE_SIZE) {
+      fail(`${label} must contain exactly ${REQUIRED_ADVANCED_WAVE_SIZE} issues (found ${wave.length})`);
+    }
+    for (const slug of wave) {
+      if (!bySlug.has(slug)) fail(`${label} references unknown slug "${slug}"`);
+    }
+  }
+
+  /*
+   * Wave two promises difficulty, so membership is not enough: every entry has
+   * to be catalogued advanced on its own merits. An entry the catalogue itself
+   * calls medium would be mislabelled to the contributor picking it up and
+   * mispriced by whoever sets its reward.
+   *
+   * Wave one predates the rule and is already published and largely delivered;
+   * re-cataloguing it now would be churn against issues people have finished.
+   */
+  for (const slug of advancedWaveTwoSlugs) {
     const tool = bySlug.get(slug);
-    if (!tool) fail(`advanced wave references unknown slug "${slug}"`);
-    if (issueTier(tool).difficulty !== "advanced") {
-      fail(`advanced wave issue "${slug}" is not labelled advanced`);
+    if (tool && tool.difficulty !== "advanced") {
+      fail(`advanced wave two issue "${slug}" is catalogued as ${tool.difficulty}, not advanced`);
     }
   }
 
   // A delivered tool is the goal, not a defect. It simply leaves the queue.
-  const deliveredWave = advancedWaveSlugs.filter((slug) => isImplemented(root, bySlug.get(slug)));
-  const remainingWave = advancedWaveSlugs.filter((slug) => !isImplemented(root, bySlug.get(slug)));
+  const deliveredWave = allAdvancedWaveSlugs.filter((slug) => isImplemented(root, bySlug.get(slug)));
+  const remainingWave = allAdvancedWaveSlugs.filter((slug) => !isImplemented(root, bySlug.get(slug)));
 
   const publishable = orderForPublication(
     catalog.filter((tool) => !isImplemented(root, tool))
@@ -156,7 +183,7 @@ export function validateCatalog() {
     total: catalog.length,
     publishable: publishable.length,
     delivered: deliveredWave.length,
-    advanced: advancedWaveSlugs.length,
+    advanced: allAdvancedWaveSlugs.length,
     remainingWave: remainingWave.length
   };
 }

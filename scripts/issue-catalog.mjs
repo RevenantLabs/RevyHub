@@ -1345,7 +1345,7 @@ export const catalog = [
     slug: "trade-history",
     title: "Trade History Viewer",
     category: "developer",
-    difficulty: "medium",
+    difficulty: "advanced",
     summary:
       "Browse executed trades for an asset pair or an account on Stellar's decentralised exchange, showing price, amounts and both counterparties.",
     why:
@@ -1405,6 +1405,359 @@ export const catalog = [
     outOfScope: [
       "Do not create or cancel offers.",
       "Do not show the order book around each offer."
+    ]
+  },
+
+  // ------------------------------------------------- advanced wave two (#347+)
+  // A second high-difficulty wave: each of these needs recursive decoding,
+  // exact integer arithmetic, or a protocol rule that is easy to get
+  // confidently wrong.
+{
+    slug: "soroban-spec-viewer",
+    title: "Soroban Contract Interface Viewer",
+    category: "soroban",
+    difficulty: "advanced",
+    summary:
+      "Read a deployed contract's WASM interface directly from the chain and render every exported function, its argument and return types, and its declared custom types and errors.",
+    why:
+      "Calling a Soroban contract means knowing its interface, and today that means finding the source or trusting a README. The contract itself carries the answer in its spec entries; nothing surfaces it.",
+    source:
+      "Soroban RPC `getLedgerEntries` for the contract instance and its WASM, then the `SC_SPEC_ENTRY` records embedded in the WASM `contractspecv0` custom section.",
+    criteria: [
+      "Every exported function is listed with its argument names, argument types and return type.",
+      "Declared structs, unions, enums and error enums are rendered with their fields and variants.",
+      "Nested and generic types (`Vec<T>`, `Map<K,V>`, `Option<T>`, tuples) render with their parameters rather than as opaque names.",
+      "A contract whose WASM carries no spec section is a specific, named outcome — not a generic failure.",
+      "The WASM hash the interface was read from is shown, so the reader knows which build they are looking at."
+    ],
+    codes: [
+      ["empty_input", "no contract ID submitted"],
+      ["invalid_contract_id", "not a valid C… address"],
+      ["contract_not_found", "the RPC endpoint has no instance for this contract"],
+      ["wasm_unavailable", "the instance resolves but its WASM could not be read"],
+      ["no_spec_section", "the WASM carries no contractspecv0 section"],
+      ["spec_unreadable", "the spec section is present but does not decode"],
+      ["rpc_error", "the endpoint returned a JSON-RPC error object"],
+      ["request_failed", "transport failure or timeout"]
+    ],
+    reference: "features/xdr-inspector",
+    notes:
+      "Two lookups, not one: the contract instance gives a WASM hash, and the WASM must then be fetched by that hash. Cache nothing across contract IDs — showing one contract's interface under another's address is worse than showing none.",
+    outOfScope: [
+      "Do not invoke any contract function.",
+      "Do not decompile or render the WASM bytecode itself."
+    ]
+  },
+  {
+    slug: "soroban-auth-inspector",
+    title: "Soroban Authorization Entry Inspector",
+    category: "soroban",
+    difficulty: "advanced",
+    summary:
+      "Decode the authorization entries attached to a Soroban invocation and render the authorisation tree: who must sign, for which sub-invocation, under which nonce and expiry.",
+    why:
+      "Soroban authorisation is a tree, not a signature. A user asked to sign an invocation cannot currently see which sub-calls that signature also authorises — which is precisely where a malicious contract hides.",
+    source: "Local only. `SorobanAuthorizationEntry` decoded from a pasted transaction envelope.",
+    offline: true,
+    criteria: [
+      "Every authorization entry is rendered as a tree of invocations, not a flat list.",
+      "Each node names the contract, the function and its decoded arguments.",
+      "The credentials of each entry are distinguished: source-account versus address credentials with nonce and signature expiration ledger.",
+      "An entry authorising a sub-invocation the top-level call does not obviously imply is called out, since that is the case a signer most needs to see.",
+      "An envelope carrying no Soroban authorisation is a specific outcome, distinct from one that fails to decode."
+    ],
+    codes: [
+      ["empty_input", "nothing submitted"],
+      ["invalid_base64", "the input is not valid base64"],
+      ["invalid_xdr", "valid base64 that is not a transaction envelope"],
+      ["not_soroban", "the envelope contains no host-function invocation"],
+      ["no_authorization", "the invocation declares no authorization entries"],
+      ["auth_unreadable", "an authorization entry is present but does not decode"]
+    ],
+    reference: "features/xdr-inspector",
+    notes:
+      "The nested invocations are the point. A flat render would hide exactly what this tool exists to reveal, so build the tree first as a pure recursive structure and test it three levels deep before any UI.",
+    outOfScope: [
+      "Do not sign anything, and do not offer to.",
+      "Do not simulate the invocation — that is the simulation explainer."
+    ]
+  },
+  {
+    slug: "soroban-fee-estimator",
+    title: "Soroban Resource Fee Estimator",
+    category: "soroban",
+    difficulty: "advanced",
+    summary:
+      "Turn a transaction's declared Soroban resources into the resource fee it will actually be charged, itemised by instruction, ledger-read, ledger-write, bandwidth and rent components.",
+    why:
+      "A Soroban transaction fails with `tx_insufficient_fee` and gives no breakdown. Resource fees are computed from several independently priced dimensions, and nothing shows which one dominates.",
+    source:
+      "Local computation from a pasted envelope's `SorobanResources`, plus Soroban RPC `getFeeStats` and `getLatestLedger` for current pricing.",
+    criteria: [
+      "The fee is itemised by component, with each component's resource count and unit price shown, not just the total.",
+      "The dominant component is identified, since that is the one worth optimising.",
+      "Rent (TTL extension) is priced separately from execution, and the distinction is explained.",
+      "The declared resource fee in the envelope is compared against the computed estimate, and a shortfall is named as such.",
+      "All arithmetic uses integer stroops end to end; no component is computed with floating point."
+    ],
+    codes: [
+      ["empty_input", "nothing submitted"],
+      ["invalid_xdr", "the input did not decode to a transaction envelope"],
+      ["not_soroban", "the envelope declares no Soroban resources"],
+      ["pricing_unavailable", "current network pricing could not be fetched"],
+      ["rpc_error", "the endpoint returned a JSON-RPC error object"],
+      ["request_failed", "transport failure or timeout"]
+    ],
+    reference: "features/fee-stats",
+    notes:
+      "Fees are int64 stroops and the products overflow `Number` quickly. Do the whole computation in `BigInt` and only format at the edge — a fee estimator that is wrong in the last digits is worse than none.",
+    outOfScope: [
+      "Do not submit or simulate the transaction.",
+      "Do not attempt to rewrite the transaction to make it cheaper."
+    ]
+  },
+  {
+    slug: "multisig-analyzer",
+    title: "Multisig Signature Weight Analyzer",
+    category: "accounts",
+    difficulty: "advanced",
+    summary:
+      "Given a transaction envelope and its source account, work out which threshold each operation requires, total the weight of the signatures already present, and state exactly what is still missing.",
+    why:
+      "A multisig transaction that is one signature short fails with `tx_bad_auth` and says nothing about who still needs to sign. The answer is computable from the envelope and the account's signers.",
+    source:
+      "Local decoding of a pasted envelope, plus Horizon `GET /accounts/{account_id}` for signers and thresholds.",
+    criteria: [
+      "The required threshold is derived per operation, and the highest one across the transaction is the one reported.",
+      "Each existing signature is attributed to a signer by hint, and unattributable signatures are reported rather than ignored.",
+      "The accumulated weight is compared against the requirement, and the shortfall is stated as a number.",
+      "Signers that could still close the gap are listed, including the case where no remaining combination can.",
+      "An operation with its own source account is evaluated against that account, not the transaction source."
+    ],
+    codes: [
+      ["empty_input", "nothing submitted"],
+      ["invalid_xdr", "the input did not decode to a transaction envelope"],
+      ["account_not_found", "the source account does not exist on this network"],
+      ["signer_lookup_failed", "the account resolved but its signers could not be read"],
+      ["rate_limited", "Horizon 429"],
+      ["request_failed", "5xx, transport failure or timeout"]
+    ],
+    reference: "features/account-signers",
+    notes:
+      "Operations with their own source account are the trap: evaluating them against the transaction source produces a confident, wrong answer. Handle that case explicitly and test it.",
+    outOfScope: [
+      "Do not verify signature cryptography — attribution by hint is the scope.",
+      "Do not collect or submit signatures."
+    ]
+  },
+  {
+    slug: "ledger-entry-decoder",
+    title: "Ledger Entry and Key Decoder",
+    category: "transactions",
+    difficulty: "advanced",
+    summary:
+      "Decode a base64 `LedgerKey` or `LedgerEntry` and render what it addresses or contains, across every entry type the protocol defines.",
+    why:
+      "Ledger keys and entries appear throughout RPC responses, footprints and diagnostics as opaque base64. Reading one currently means writing a script.",
+    source: "Local only. `xdr.LedgerKey` and `xdr.LedgerEntry` from the SDK; nothing is transmitted.",
+    offline: true,
+    criteria: [
+      "Both `LedgerKey` and `LedgerEntry` are accepted, and the tool reports which one it decoded rather than requiring the user to say.",
+      "Every entry type is handled: account, trustline, offer, data, claimable balance, liquidity pool, contract data, contract code, config setting and TTL.",
+      "Contract data entries render their key and durability, and the contract they belong to.",
+      "Entry extension fields (sponsorship, last-modified ledger) are surfaced when present.",
+      "An unrecognised or future entry type degrades to a readable summary rather than failing the whole decode."
+    ],
+    codes: [
+      ["empty_input", "nothing submitted"],
+      ["invalid_base64", "the input is not valid base64"],
+      ["not_a_ledger_type", "valid base64 that is neither a LedgerKey nor a LedgerEntry"],
+      ["unsupported_entry_type", "an entry type this decoder does not render"]
+    ],
+    reference: "features/xdr-inspector",
+    notes:
+      "Try `LedgerKey` and `LedgerEntry` in a defined order and report which one succeeded. Guessing from length or a prefix will misclassify, and a confidently wrong decode is worse than asking.",
+    outOfScope: [
+      "Do not fetch the live entry from the network.",
+      "Do not encode — decoding only."
+    ]
+  },
+  {
+    slug: "claimable-predicate-builder",
+    title: "Claimable Balance Predicate Builder",
+    category: "assets",
+    difficulty: "advanced",
+    summary:
+      "Build a claimable balance predicate as a tree of `and`, `or`, `not` and time conditions, preview in plain language who can claim and when, and produce the XDR.",
+    why:
+      "Predicates are the whole point of claimable balances and the reason they are avoided. Written by hand they are easy to get backwards, and the mistake is only visible when a claim fails.",
+    source: "Local only. `xdr.ClaimPredicate` built and encoded in the browser.",
+    offline: true,
+    criteria: [
+      "The full predicate grammar is supported: unconditional, absolute time, relative time, `not`, `and`, `or`, nested arbitrarily.",
+      "The tree is rendered as plain-language text alongside the structure, so a mistake is visible before it is encoded.",
+      "A claimability timeline is previewed: at what times the predicate is true, given a creation time.",
+      "A predicate that can never be true is detected and reported, since that permanently locks the balance.",
+      "The encoded XDR round-trips back to the same tree, asserted by a test."
+    ],
+    codes: [
+      ["empty_predicate", "no predicate was built"],
+      ["invalid_time_bound", "a time value is not a valid absolute or relative bound"],
+      ["too_deeply_nested", "the tree exceeds the protocol's nesting limit"],
+      ["unsatisfiable", "the predicate can never evaluate true"],
+      ["encoding_failed", "the tree is valid but did not encode"]
+    ],
+    reference: "features/claimable-balances",
+    notes:
+      "`not(unconditional)` locks the balance forever, and so do several less obvious combinations. Detecting unsatisfiability is the feature, not a nicety — a builder that cheerfully encodes a permanent lock is a trap.",
+    outOfScope: [
+      "Do not create the claimable balance on chain.",
+      "Do not claim an existing balance."
+    ]
+  },
+  {
+    slug: "sep7-signature-verifier",
+    title: "SEP-0007 URI Signature Verifier",
+    category: "standards",
+    difficulty: "advanced",
+    summary:
+      "Verify that a `web+stellar:` payment request was signed by the domain it claims, by resolving that domain's `stellar.toml` signing key and checking the URI signature.",
+    why:
+      "RevyHubX can already read a SEP-0007 URI but explicitly states it does not verify the signature. Verification is what separates a request from a domain from a request that merely names one.",
+    source:
+      "`https://{origin_domain}/.well-known/stellar.toml` for `URI_REQUEST_SIGNING_KEY`, then local Ed25519 verification of the URI payload.",
+    criteria: [
+      "The signing key is resolved from the declared `origin_domain`, never from the URI itself.",
+      "The payload is reconstructed exactly as SEP-0007 specifies before verification, with the signature parameter excluded.",
+      "A verified signature, an invalid signature, and an absent signature are three distinct outcomes with different wording.",
+      "A URI whose `origin_domain` publishes no signing key is reported as unverifiable, not as invalid.",
+      "The tool states plainly that a verified signature proves the domain signed the request, and nothing about whether paying it is wise."
+    ],
+    codes: [
+      ["empty_input", "nothing submitted"],
+      ["wrong_scheme", "not a web+stellar URI"],
+      ["no_signature", "the URI carries no signature parameter"],
+      ["no_origin_domain", "the URI carries a signature but names no origin domain"],
+      ["toml_unreachable", "the origin domain's stellar.toml could not be fetched"],
+      ["no_signing_key", "the toml declares no URI_REQUEST_SIGNING_KEY"],
+      ["invalid_signing_key", "the declared key is not a valid Stellar public key"],
+      ["signature_invalid", "the signature does not verify against the declared key"],
+      ["request_failed", "transport failure or timeout"]
+    ],
+    reference: "features/federation-resolver",
+    notes:
+      "Reconstructing the signed payload byte-for-byte is the whole difficulty; a single ordering or encoding difference turns every valid signature into an invalid one. Never report `signature_invalid` when the real problem was that the key could not be fetched.",
+    outOfScope: [
+      "Do not execute or hand off the payment.",
+      "Do not sign URIs."
+    ]
+  },
+  {
+    slug: "liquidity-pool-calculator",
+    title: "Liquidity Pool Deposit and Withdraw Calculator",
+    category: "assets",
+    difficulty: "advanced",
+    summary:
+      "Compute what a deposit into or withdrawal from a liquidity pool actually yields, including the shares minted, the price bounds the operation requires, and the slippage implied by the current reserves.",
+    why:
+      "Pool deposits are rejected for price bounds the depositor never chose, and withdrawals return amounts nobody predicted. Both are computable from the pool's reserves before anything is submitted.",
+    source: "Horizon `GET /liquidity_pools/{liquidity_pool_id}` for reserves, total shares and fee.",
+    criteria: [
+      "A deposit computes the shares minted and the exact reserve amounts consumed at the current ratio.",
+      "The minimum and maximum price bounds the deposit requires are derived and shown as exact fractions.",
+      "A withdrawal computes the amount of each reserve returned for a given share count.",
+      "Slippage against the current ratio is shown, and a deposit that would move the pool materially is called out.",
+      "An empty pool is handled: the first deposit sets the ratio, and the tool says so instead of dividing by zero."
+    ],
+    codes: [
+      ["empty_pool_id", "no pool ID submitted"],
+      ["invalid_pool_id", "not 64 hexadecimal characters"],
+      ["pool_not_found", "Horizon 404 on the selected network"],
+      ["invalid_amount", "the deposit or share amount is not a positive 7-decimal value"],
+      ["insufficient_shares", "the withdrawal exceeds the pool's total shares"],
+      ["rate_limited", "Horizon 429"],
+      ["request_failed", "5xx, transport failure or timeout"]
+    ],
+    reference: "features/liquidity-pool-inspector",
+    notes:
+      "Every ratio here is a fraction of two 7-decimal amounts. Compute in `BigInt` with an explicit scale and state the precision kept; a floating-point square root in the share maths is how these calculators quietly disagree with the ledger.",
+    outOfScope: [
+      "Do not deposit or withdraw — this is a calculator.",
+      "Do not estimate impermanent loss over time."
+    ]
+  },
+  {
+    slug: "trade-aggregation-viewer",
+    title: "Trade Aggregation Viewer",
+    category: "developer",
+    difficulty: "advanced",
+    summary:
+      "Read Horizon's trade aggregations for an asset pair and render open, high, low, close and volume per interval, with the resolution and time bounds under the reader's control.",
+    why:
+      "Trade aggregations are the only price history Stellar publishes natively, and their resolution and offset rules are subtle enough that most consumers use them wrongly.",
+    source: "Horizon `GET /trade_aggregations` with base and counter asset parameters.",
+    criteria: [
+      "Only the resolutions Horizon accepts are offered, and the offset rules that apply to each are enforced rather than left to fail server-side.",
+      "Each bucket shows open, high, low, close, base volume, counter volume and trade count.",
+      "Prices use Horizon's exact numerator and denominator, not the rounded decimal.",
+      "A range that returns no buckets is reported as no trading activity, distinct from a rejected request.",
+      "The time bounds actually used are shown, since Horizon aligns them to the resolution rather than honouring them exactly."
+    ],
+    codes: [
+      ["empty_base_asset", "no base asset submitted"],
+      ["invalid_base_asset", "base asset code or issuer is invalid"],
+      ["empty_counter_asset", "no counter asset submitted"],
+      ["invalid_counter_asset", "counter asset code or issuer is invalid"],
+      ["same_asset", "both sides name the same asset"],
+      ["invalid_resolution", "the resolution is not one Horizon supports"],
+      ["invalid_offset", "the offset is not valid for the chosen resolution"],
+      ["no_trades", "the range is valid but contains no aggregated trades"],
+      ["rate_limited", "Horizon 429"],
+      ["request_failed", "5xx, transport failure or timeout"]
+    ],
+    reference: "features/trustline-checker",
+    notes:
+      "The offset rules are the part everyone gets wrong: an offset must be a whole number of hours, less than the resolution, and only applies to resolutions of an hour or more. Enforce that locally so the user gets an explanation instead of a Horizon 400.",
+    outOfScope: [
+      "Do not draw a candlestick chart — tabular output is the scope.",
+      "Do not aggregate client-side across resolutions."
+    ]
+  },
+  {
+    slug: "sponsorship-planner",
+    title: "Sponsorship and Reserve Planner",
+    category: "accounts",
+    difficulty: "advanced",
+    summary:
+      "Plan a sponsored account setup: work out which subentries a sponsor would cover, what reserve that costs the sponsor, and what the sponsored account is left needing.",
+    why:
+      "Sponsorship is the mechanism that lets an application onboard users without funding each account, and getting the reserve arithmetic wrong means either a stuck onboarding or an unexpectedly drained sponsor.",
+    source:
+      "Horizon `GET /accounts/{account_id}` for both accounts, plus the current base reserve from the latest ledger.",
+    criteria: [
+      "The reserve cost of each planned subentry is itemised: trustlines, signers, data entries, offers and claimable balances.",
+      "The sponsor's resulting minimum balance is computed, including subentries it already sponsors.",
+      "The sponsored account's own minimum balance after the plan is shown, and the amount it still needs is named.",
+      "The begin/end sponsorship sandwich the plan implies is described in order, since operations outside it are not sponsored.",
+      "A sponsor whose balance cannot cover the plan is reported with the exact shortfall."
+    ],
+    codes: [
+      ["empty_sponsor", "no sponsor address submitted"],
+      ["invalid_sponsor", "sponsor fails the StrKey checksum"],
+      ["empty_sponsored", "no sponsored address submitted"],
+      ["invalid_sponsored", "sponsored account fails the StrKey checksum"],
+      ["same_account", "sponsor and sponsored are the same account"],
+      ["sponsor_not_found", "the sponsor does not exist on this network"],
+      ["ledger_unavailable", "the current base reserve could not be read"],
+      ["rate_limited", "Horizon 429"],
+      ["request_failed", "5xx, transport failure or timeout"]
+    ],
+    reference: "features/sponsored-reserves",
+    notes:
+      "A sponsored account that does not yet exist is the normal case, not an error — that is what sponsorship is for. Treat a missing sponsored account as a plan input, and only a missing sponsor as a failure.",
+    outOfScope: [
+      "Do not build or submit sponsorship operations.",
+      "Do not revoke existing sponsorships."
     ]
   }
 ];
