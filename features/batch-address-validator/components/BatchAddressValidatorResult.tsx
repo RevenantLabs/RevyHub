@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle } from "@/core/ui/Card";
 import { Badge } from "@/core/ui/Badge";
 import { CopyableValue } from "@/core/ui/CopyableValue";
@@ -5,6 +6,7 @@ import { DataList } from "@/core/ui/DataList";
 import { StatusMessage } from "@/core/ui/StatusMessage";
 import { copy } from "@/features/batch-address-validator/copy";
 import {
+  cleanUniquePublicAddresses,
   formatDuplicateLines,
   formatLineReason,
   formatSummary
@@ -25,6 +27,8 @@ function lineBadgeLabel(valid: boolean, code: string): string {
 
 export function BatchAddressValidatorResult({ result }: { result: BatchAddressValidatorResultValue }) {
   const { summary, lines } = result;
+  const [copied, setCopied] = useState(false);
+  const cleanAddresses = useMemo(() => cleanUniquePublicAddresses(result), [result]);
   const allValid = summary.invalid === 0 && summary.duplicated === 0;
 
   return (
@@ -48,6 +52,30 @@ export function BatchAddressValidatorResult({ result }: { result: BatchAddressVa
           ]}
         />
       </Card>
+
+      {cleanAddresses.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{copy.cleanListTitle}</CardTitle>
+          </CardHeader>
+          <textarea
+            readOnly
+            aria-label={copy.cleanListLabel}
+            value={cleanAddresses.join("\n")}
+            className="min-h-28 w-full rounded-md border border-[#cbd7e5] bg-[#f8fbff] p-3 font-mono text-xs"
+          />
+          <button
+            type="button"
+            className="mt-3 rounded-md bg-[#172033] px-4 py-2 text-sm font-semibold text-white"
+            onClick={async () => {
+              await navigator.clipboard.writeText(cleanAddresses.join("\n"));
+              setCopied(true);
+            }}
+          >
+            {copied ? copy.cleanListCopied : copy.cleanListCopy}
+          </button>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
