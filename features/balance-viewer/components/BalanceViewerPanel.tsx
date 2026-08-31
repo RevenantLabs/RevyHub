@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card } from "@/core/ui/Card";
 import { SkeletonRows } from "@/core/ui/Skeleton";
 import { StatusMessage } from "@/core/ui/StatusMessage";
@@ -32,6 +33,16 @@ export function BalanceViewerPanel() {
           type="error"
           title={errorCopy[state.code].title}
           description={errorCopy[state.code].description}
+          action={
+            state.code === "account_not_found" ? (
+              <Link
+                href="/tools/testnet-faucet"
+                className="font-semibold text-[#9f342d] underline underline-offset-2"
+              >
+                Open Testnet Faucet Helper
+              </Link>
+            ) : undefined
+          }
         />
       ) : null}
 
