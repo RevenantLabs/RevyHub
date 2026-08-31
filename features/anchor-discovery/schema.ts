@@ -1,5 +1,4 @@
 import { err, ok, type Result } from "@/core/result/result";
-import { err, ok, type Result } from "@/core/result/result";
 import { normalizeInput } from "@/core/lib/strings";
 import type { AnchorDiscoveryErrorCode, AnchorDiscoveryInput } from "@/features/anchor-discovery/types";
 

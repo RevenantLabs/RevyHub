@@ -18,6 +18,7 @@ export interface SignatureVerifierResult {
 }
 
 export type SignatureVerifierErrorCode =
+  | "empty_input"
   | "empty_public_key"
   | "invalid_public_key"
   | "empty_message"

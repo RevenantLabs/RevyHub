@@ -3,15 +3,20 @@ import { Keypair, StrKey } from "@stellar/stellar-sdk";
 import type { StellarNetwork } from "@/core/network/types";
 import type { MessageEncoding, SignatureEncoding, SignatureVerifierErrorCode, SignatureVerifierInput, SignatureVerifierResult } from "@/features/signature-verifier/types";
 
-function decode(value: string, encoding: MessageEncoding | SignatureEncoding): Buffer | null {
-  if (encoding === "utf8") return Buffer.from(value, "utf8");
+function decode(value: string, encoding: MessageEncoding | SignatureEncoding): Uint8Array | null {
+  if (encoding === "utf8") return new TextEncoder().encode(value);
   if (encoding === "hex") {
     if (!/^[0-9a-f]+$/i.test(value) || value.length % 2 !== 0) return null;
-    return Buffer.from(value, "hex");
+    const bytes = new Uint8Array(value.length / 2);
+    for (let index = 0; index < bytes.length; index += 1) bytes[index] = Number.parseInt(value.slice(index * 2, index * 2 + 2), 16);
+    return bytes;
   }
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value)) return null;
-  const bytes = Buffer.from(value, "base64");
-  if (bytes.length === 0 || Buffer.from(bytes).toString("base64").replace(/=+$/, "") !== value.replace(/=+$/, "")) return null;
+  let binary: string;
+  try { binary = atob(value); } catch { return null; }
+  if (!binary.length || btoa(binary).replace(/=+$/, "") !== value.replace(/=+$/, "")) return null;
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
   return bytes;
 }
 

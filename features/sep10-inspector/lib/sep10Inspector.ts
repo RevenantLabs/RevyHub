@@ -30,7 +30,7 @@ function bytes(value: unknown): Uint8Array | undefined {
 function textValue(value: unknown): string | undefined {
   if (typeof value === "string") return value;
   const raw = bytes(value);
-  if (raw) return Buffer.from(raw).toString("utf8");
+  if (raw) return new TextDecoder("utf-8", { fatal: false }).decode(raw);
   if (value && typeof value === "object" && "toString" in value) return String(value);
   return undefined;
 }
@@ -108,7 +108,7 @@ export function inspectSep10Challenge(envelopeXdr: string, nowSeconds = Math.flo
     if (raw) source = StrKey.encodeEd25519PublicKey(raw);
   } else if (sourceAccount) {
     try {
-      source = encodeMuxedAccountToAddress(sourceAccount, true);
+      source = (encodeMuxedAccountToAddress as unknown as (account: unknown, includeMuxed?: boolean) => string)(sourceAccount, true);
     } catch {
       const raw = bytes(member(sourceAccount, "ed25519"));
       if (raw) source = StrKey.encodeEd25519PublicKey(raw);
@@ -135,7 +135,7 @@ export function inspectSep10Challenge(envelopeXdr: string, nowSeconds = Math.flo
     valid,
     sequence,
     serverSigningAccount: source,
-    timeBounds: { minTime, maxTime },
+    timeBounds: { minTime: minTime ?? "0", maxTime: maxTime ?? "0" },
     operations: operationDetails,
     rules,
     network: member(transaction, "networkPassphrase") ? String(member(transaction, "networkPassphrase")) : undefined,

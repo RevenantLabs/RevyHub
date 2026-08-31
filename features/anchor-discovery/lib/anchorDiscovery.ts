@@ -67,7 +67,14 @@ export async function discoverAnchor(input: AnchorDiscoveryInput, options: { fet
   if (new TextEncoder().encode(raw).byteLength > MAX_TOML_BYTES) return err("toml_invalid");
   const parsed = parseToml(raw);
   if (!parsed) return err("toml_invalid");
-  const services = Object.fromEntries(Object.entries(SERVICE_KEYS).map(([name, keys]) => [name, keys.some((key) => Boolean(parsed.values[key]))])) as AnchorServicePresence;
+  const services: AnchorServicePresence = {
+    sep6: SERVICE_KEYS.sep6.some((key) => Boolean(parsed.values[key])),
+    sep10: SERVICE_KEYS.sep10.some((key) => Boolean(parsed.values[key])),
+    sep12: SERVICE_KEYS.sep12.some((key) => Boolean(parsed.values[key])),
+    sep24: SERVICE_KEYS.sep24.some((key) => Boolean(parsed.values[key])),
+    sep31: SERVICE_KEYS.sep31.some((key) => Boolean(parsed.values[key])),
+    sep38: SERVICE_KEYS.sep38.some((key) => Boolean(parsed.values[key])),
+  };
   if (!Object.values(services).some(Boolean)) return err("no_services");
   return ok({
     summary: "stellar.toml discovered and SEP service endpoints classified.",
