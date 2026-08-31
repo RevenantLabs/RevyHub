@@ -1,12 +1,40 @@
-.next
-node_modules
-out
-dist
-coverage
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+build/
+
+# generated feature registry — rebuilt by scripts/generate-registry.mjs
+core/registry/*.generated.ts
+
+# typescript
+*.tsbuildinfo
+
+# testing
+coverage/
+test-results/
+playwright-report/
+
+# local env
 .env
+.env.local
 .env*.local
+
+# local agent checkouts of other repositories
+worktrees/
+
+# vercel
+.vercel
+
+# os
+.DS_Store
+*.pem
+
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.DS_Store
-.vercel

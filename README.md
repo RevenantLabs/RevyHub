@@ -1,131 +1,91 @@
 # RevyHubX
 
-Open-source web toolkit for Stellar developers. The MVP includes address validation, testnet balance inspection, trustline checks, payment QR generation, transaction lookup, Freighter wallet examples, and a Friendbot helper.
+An open-source toolkit of small, focused utilities for Stellar developers —
+address validation, balance and trustline inspection, transaction lookup,
+payment requests, wallet detection and testnet funding, with more tools being
+added continuously by contributors.
 
-## Why This Exists
+Every tool is read-only. RevyHubX never asks for a secret key and never signs
+or submits a transaction.
 
-Stellar developers often need small utilities while learning, testing, or building integrations. RevyHubX collects those workflows in one Vercel-friendly Next.js app with clean, modular code that contributors can extend.
+## Architecture in one paragraph
 
-## GrantFox Context
+The app is a small stable **core** plus any number of independent **feature
+slices**. Each tool is one directory under `features/` that owns its logic,
+validation, state, UI, tests, fixtures, request mocks and documentation. The
+tool registry is *generated* from those directories, so adding a tool requires
+creating one new directory and editing nothing else — which is what lets many
+contributors work in parallel without ever conflicting.
 
-This project is being prepared as an open-source Stellar ecosystem project for GrantFox. The goal is to provide a working MVP while keeping the codebase modular and contributor-friendly. Maintainer-led work now includes tested Stellar validation utilities, CI quality gates, documented architecture, and focused contributor issues for the next layer of improvements.
+See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) and
+[docs/FEATURE_CONTRACT.md](./docs/FEATURE_CONTRACT.md).
 
-## Features
+## Tools
 
-- Validate Stellar public addresses with Stellar SDK StrKey checks
-- Switch between Stellar testnet and mainnet for Horizon-backed tools
-- Inspect Stellar wallet balances through Horizon
-- Check trustlines for issued Stellar assets
-- Generate demo payment QR codes and copyable payment URIs
-- Look up transaction hashes on the selected network
-- Detect Freighter wallet public keys and wallet network mismatch states
-- Fund testnet accounts through Friendbot
+| Tool | What it does |
+| --- | --- |
+| Address Validator | Validates Stellar addresses and explains exactly why one is rejected |
+| Balance Viewer | Every balance an account holds, including pool shares |
+| Trustline Checker | Whether an account trusts a specific asset from a specific issuer |
+| Payment QR Generator | Builds a SEP-0007 request and renders it as a QR code |
+| Transaction Lookup | Ledger, fee, memo, result and operations for a transaction hash |
+| Freighter Connect | Detects the wallet and warns about a network mismatch |
+| Testnet Faucet | Funds a testnet account through Friendbot |
 
-## Payment URI Format
+## Tech stack
 
-The Payment QR Generator builds [SEP-0007](https://stellar.org/protocol/sep-7) `web+stellar:pay` operation URIs so generated QR codes follow the standard wallets already parse:
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS ·
+`@stellar/stellar-sdk` · Vitest · Testing Library · MSW · axe-core
 
-```
-web+stellar:pay?destination=GDEST...&amount=10.5&memo=Invoice+1001&memo_type=MEMO_TEXT&network_passphrase=Test+SDF+Network+%3B+September+2015
-```
-
-- `destination` and `amount` are always included.
-- `asset_code` and `asset_issuer` are included only for issued assets; native XLM payments omit both, per SEP-0007 (absence of these fields means XLM).
-- `memo` is included with `memo_type=MEMO_TEXT` when a memo is entered.
-- `network_passphrase` is included for testnet requests and omitted for mainnet, since the public network is the SEP-0007 default.
-
-## Tech Stack
-
-- Next.js App Router
-- React and TypeScript
-- Tailwind CSS
-- Stellar SDK
-- qrcode
-- lucide-react
-
-## Screenshots
-
-Screenshots will be added after the first Vercel deployment.
-
-New to Stellar concepts? Read [docs/STELLAR_BASICS.md](./docs/STELLAR_BASICS.md).
-
-## Extending RevyHubX
-
-Want to add another Stellar utility? Read the step-by-step guide: [docs/EXTENDING.md](./docs/EXTENDING.md).
-
-## Local Setup
+## Local setup
 
 ```bash
-git clone https://github.com/RevenantLabs/RevyHubX.git
-cd RevyHubX
+git clone https://github.com/RevenantLabs/RevyHub.git
+cd RevyHub
 npm install
+npm run dev
 ```
 
-Copy the example environment file if you want to customize endpoints:
-
-```bash
-cp .env.example .env.local
-```
-
-## Environment Variables
+Optional environment overrides:
 
 ```env
 NEXT_PUBLIC_STELLAR_NETWORK=testnet
 NEXT_PUBLIC_HORIZON_TESTNET_URL=https://horizon-testnet.stellar.org
 NEXT_PUBLIC_HORIZON_MAINNET_URL=https://horizon.stellar.org
+NEXT_PUBLIC_SOROBAN_RPC_TESTNET_URL=https://soroban-testnet.stellar.org
+NEXT_PUBLIC_SOROBAN_RPC_MAINNET_URL=https://mainnet.sorobanrpc.com
 ```
 
-The app uses testnet by default and includes a persisted network switch for Horizon-backed tools. The Friendbot faucet remains testnet-only.
+Testnet is the default, and the network switch in the header is persisted.
 
 ## Commands
 
 ```bash
-npm run dev
-npm run test
-npm run build
+npm run dev                  # dev server
+npm run registry             # regenerate the feature registry
+npm run new:feature          # scaffold a complete feature slice
+npm run verify:features      # check every slice against the feature contract
+npm run verify:issues        # check 40+ independent issues and the advanced wave
+npm run issues               # preview the next five GrantFox issue payloads
+npm run test                 # unit, hook, component and accessibility tests
 npm run lint
+npm run build
+npm run check                # everything CI runs
 ```
 
-## Quality Gates
+## Contributing
 
-The repository includes unit tests for core Stellar validation and payment URI behavior. Pull requests and pushes to `main` run:
+Most open issues ask for a new tool, and each one is a complete vertical slice.
+Start with [CONTRIBUTING.md](./CONTRIBUTING.md) and
+[docs/FEATURE_CONTRACT.md](./docs/FEATURE_CONTRACT.md), then:
 
 ```bash
-npm run lint
-npm run test
-npm run build
+npm run new:feature -- <slug> "<Title>" <category>
 ```
 
-See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for the code structure and maintainer expectations.
+Maintainers publish contributor work in independent batches of five using the
+[GrantFox issue workflow](./docs/ISSUE_PUBLISHING.md).
 
-Security expectations are documented in [SECURITY.md](./SECURITY.md).
+## Security
 
-## Deploy on Vercel
-
-See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for Vercel setup, environment variables, pre-deploy checks, and common deployment errors.
-
-## Contribution
-
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request.
-
-## Roadmap
-
-See [docs/ROADMAP.md](./docs/ROADMAP.md).
-
-The architecture overview is available in [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
-
-## Issue Ideas
-
-See [docs/ISSUES.md](./docs/ISSUES.md) for contributor-ready GitHub issue ideas.
-
-## Create GitHub Issues
-
-Use GitHub CLI to publish every roadmap item from `docs/ISSUES.md` into the repository Issues tab:
-
-```bash
-gh auth login
-npm run issues:dry-run
-npm run issues:create
-```
-
-The script skips issues with titles that already exist and creates labels such as `area:frontend` and `difficulty:advanced`.
+See [SECURITY.md](./SECURITY.md). RevyHubX is read-only by design.
