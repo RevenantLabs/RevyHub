@@ -68,6 +68,7 @@ npm run verify:features      # check every slice against the feature contract
 npm run verify:issues        # check 40+ independent issues and the advanced wave
 npm run issues               # preview the next five GrantFox issue payloads
 npm run test                 # unit, hook, component and accessibility tests
+npm run test:coverage        # unit tests with a coverage summary
 npm run lint
 npm run build
 npm run check                # everything CI runs
@@ -85,6 +86,11 @@ npm run new:feature -- <slug> "<Title>" <category>
 
 Maintainers publish contributor work in independent batches of five using the
 [GrantFox issue workflow](./docs/ISSUE_PUBLISHING.md).
+
+`npm run test:coverage` writes the human-readable table to
+`coverage/coverage.txt` and machine-readable totals to
+`coverage/coverage-summary.json`. Coverage is informational and does not
+enforce a global percentage threshold.
 
 ## Security
 
