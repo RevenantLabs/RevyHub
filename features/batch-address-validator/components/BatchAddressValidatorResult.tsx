@@ -5,8 +5,8 @@ import { CopyableValue } from "@/core/ui/CopyableValue";
 import { DataList } from "@/core/ui/DataList";
 import { StatusMessage } from "@/core/ui/StatusMessage";
 import { copy } from "@/features/batch-address-validator/copy";
+import { cleanUniquePublicAddresses } from "@/features/batch-address-validator/lib/batchAddressValidator";
 import {
-  cleanUniquePublicAddresses,
   formatDuplicateLines,
   formatLineReason,
   formatSummary
