@@ -68,10 +68,17 @@ npm run verify:features      # check every slice against the feature contract
 npm run verify:issues        # check 40+ independent issues and the advanced wave
 npm run issues               # preview the next five GrantFox issue payloads
 npm run test                 # unit, hook, component and accessibility tests
+npm run test:coverage        # the same tests, plus a coverage report
 npm run lint
 npm run build
 npm run check                # everything CI runs
 ```
+
+`npm run test:coverage` writes a table to `coverage/coverage.txt` and totals to
+`coverage/coverage-summary.json`. CI runs it in place of `npm run test` and
+pastes the table into the job summary, so a pull request shows what its changes
+covered without anyone downloading an artifact. Coverage is reported, not
+enforced: there is no global threshold to game.
 
 ## Contributing
 
