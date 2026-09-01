@@ -59,4 +59,24 @@ describe("PaymentQrPanel", () => {
     expect(await screen.findByText(errorCopy.memo_too_long.title)).toBeInTheDocument();
     expect(screen.getByLabelText(copy.memoLabel)).toHaveAttribute("aria-invalid", "true");
   });
+
+  it("renders live byte and character counters that update on input", async () => {
+    const { user } = renderFeature(<PaymentQrPanel />);
+
+    expect(screen.getByText(copy.memoCounter(0))).toBeInTheDocument();
+    expect(screen.getByText(copy.msgCounter(0))).toBeInTheDocument();
+
+    const memoInput = screen.getByLabelText(copy.memoLabel);
+    await user.type(memoInput, "Hello");
+    expect(screen.getByText(copy.memoCounter(5))).toBeInTheDocument();
+
+    // Multibyte UTF-8 characters (emoji = 4 bytes)
+    await user.clear(memoInput);
+    await user.type(memoInput, "🚀");
+    expect(screen.getByText(copy.memoCounter(4))).toBeInTheDocument();
+
+    const msgInput = screen.getByLabelText(copy.msgLabel);
+    await user.type(msgInput, "Thanks for coffee!");
+    expect(screen.getByText(copy.msgCounter(18))).toBeInTheDocument();
+  });
 });
