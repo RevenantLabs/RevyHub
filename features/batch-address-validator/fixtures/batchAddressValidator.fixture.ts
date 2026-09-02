@@ -18,3 +18,5 @@ export const secretSeedList = [validPublicKey, secretSeed];
 export const commaSeparatedInput = `${validPublicKey}, ${secondPublicKey}`;
 export const spaceSeparatedInput = `${validPublicKey} ${secondPublicKey}`;
 export const newlineSeparatedInput = `${validPublicKey}\n${secondPublicKey}`;
+
+export { secretSeed };

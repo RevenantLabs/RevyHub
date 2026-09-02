@@ -49,7 +49,7 @@ function parseTime(value: unknown): string | undefined {
 
 /** Inspect a SEP-10 challenge envelope without contacting Horizon or TOML. */
 export function inspectSep10Challenge(envelopeXdr: string, nowSeconds = Math.floor(Date.now() / 1000)): Result<Sep10InspectorResult, Sep10InspectorErrorCode> {
-  let transaction: any;
+  let transaction: unknown;
   try {
     const envelope = xdr.TransactionEnvelope.fromXDR(envelopeXdr, "base64");
     const envelopeType = variantName(envelope);
@@ -85,7 +85,7 @@ export function inspectSep10Challenge(envelopeXdr: string, nowSeconds = Math.flo
   const maxTime = parseTime(member(bounds, "maxTime"));
   const sequence = stringValue(member(transaction, "seqNum") ?? member(transaction, "sequence")) ?? "0";
   const rules: Sep10Rule[] = [];
-  const operationDetails = operations.map((operation: any) => {
+  const operationDetails = operations.map((operation: unknown) => {
     const body = member(operation, "body");
     const bodyType = variantName(body);
     if (!body || bodyType !== "manageData") return { type: bodyType ?? "unknown" };
@@ -105,13 +105,13 @@ export function inspectSep10Challenge(envelopeXdr: string, nowSeconds = Math.flo
   let source = "";
   if (sourceEd25519) {
     const raw = bytes(sourceEd25519);
-    if (raw) source = StrKey.encodeEd25519PublicKey(raw);
+    if (raw) source = StrKey.encodeEd25519PublicKey(Buffer.from(raw));
   } else if (sourceAccount) {
     try {
       source = (encodeMuxedAccountToAddress as unknown as (account: unknown, includeMuxed?: boolean) => string)(sourceAccount, true);
     } catch {
-      const raw = bytes(member(sourceAccount, "ed25519"));
-      if (raw) source = StrKey.encodeEd25519PublicKey(raw);
+      const raw = Buffer.from(bytes(member(sourceAccount, "ed25519")) ?? []);
+      if (raw) source = StrKey.encodeEd25519PublicKey(Buffer.from(raw));
     }
   }
 
@@ -150,3 +150,5 @@ export async function runSep10Inspector(
 ): Promise<Result<Sep10InspectorResult, Sep10InspectorErrorCode>> {
   return inspectSep10Challenge(input.xdr);
 }
+
+
