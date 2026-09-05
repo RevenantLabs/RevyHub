@@ -27,6 +27,20 @@ beforeAll(() => {
       disconnect() {}
     } as unknown as typeof ResizeObserver;
   }
+
+  // jsdom's localStorage may be missing or incomplete; provide a minimal mock.
+  const store: Record<string, string> = {};
+  Object.defineProperty(window, "localStorage", {
+    writable: true,
+    value: {
+      getItem: (key: string) => store[key] ?? null,
+      setItem: (key: string, value: string) => { store[key] = value; },
+      removeItem: (key: string) => { delete store[key]; },
+      clear: () => { for (const key of Object.keys(store)) delete store[key]; },
+      length: 0,
+      key: () => null,
+    }
+  });
 });
 
 afterEach(() => {
