@@ -55,13 +55,20 @@ function getServerSnapshot(): StellarNetwork {
   return DEFAULT_NETWORK;
 }
 
-function writeNetwork(network: StellarNetwork): void {
+/**
+ * Persists the choice and notifies subscribers. Returns `false` when storage
+ * refused the write, which happens in private windows and when site data is
+ * blocked.
+ */
+function writeNetwork(network: StellarNetwork): boolean {
   try {
     window.localStorage.setItem(NETWORK_STORAGE_KEY, network);
   } catch {
-    // The choice still applies for this session even if it cannot be persisted.
+    return false;
   }
+
   for (const listener of listeners) listener();
+  return true;
 }
 
 export function NetworkProvider({
@@ -77,8 +84,11 @@ export function NetworkProvider({
   const network = override ?? stored;
 
   const setNetwork = useCallback((next: StellarNetwork) => {
-    setOverride(undefined);
-    writeNetwork(next);
+    // When storage refuses the write the choice still has to apply for this
+    // session, so it is held in the provider. Without that the snapshot would
+    // be re-read from storage and the UI would snap straight back to the value
+    // the user just changed away from.
+    setOverride(writeNetwork(next) ? undefined : next);
   }, []);
 
   const value = useMemo<NetworkContextValue>(
