@@ -31,5 +31,7 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup();
-  window.localStorage.clear();
+  if (typeof window.localStorage?.clear === "function") {
+    window.localStorage.clear();
+  }
 });
