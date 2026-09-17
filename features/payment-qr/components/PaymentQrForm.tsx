@@ -5,7 +5,12 @@ import { Button } from "@/core/ui/Button";
 import { Field } from "@/core/ui/Field";
 import { Input, Select } from "@/core/ui/Input";
 import { copy } from "@/features/payment-qr/copy";
-import type { RawPaymentForm } from "@/features/payment-qr/schema";
+import {
+  byteLength,
+  MEMO_MAX_BYTES,
+  MSG_MAX_LENGTH,
+  type RawPaymentForm
+} from "@/features/payment-qr/schema";
 import type { PaymentQrField } from "@/features/payment-qr/types";
 
 export function PaymentQrForm({
@@ -33,6 +38,9 @@ export function PaymentQrForm({
     setForm((current) => ({ ...current, [key]: value }));
 
   const errorFor = (field: PaymentQrField) => (errorField === field ? errorMessage : null);
+
+  const memoBytes = byteLength(form.memo);
+  const msgLength = form.msg.length;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -134,7 +142,21 @@ export function PaymentQrForm({
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={copy.memoLabel} hint={copy.memoHint} error={errorFor("memo")}>
+        <Field
+          label={copy.memoLabel}
+          hint={
+            <>
+              {copy.memoHint}{" "}
+              <span
+                aria-live="polite"
+                className={memoBytes > MEMO_MAX_BYTES ? "font-bold text-[#9f342d]" : "font-bold"}
+              >
+                {copy.memoCounter(memoBytes)}
+              </span>
+            </>
+          }
+          error={errorFor("memo")}
+        >
           {({ inputId, describedBy, invalid }) => (
             <Input
               id={inputId}
@@ -148,7 +170,21 @@ export function PaymentQrForm({
           )}
         </Field>
 
-        <Field label={copy.msgLabel} hint={copy.msgHint} error={errorFor("msg")}>
+        <Field
+          label={copy.msgLabel}
+          hint={
+            <>
+              {copy.msgHint}{" "}
+              <span
+                aria-live="polite"
+                className={msgLength > MSG_MAX_LENGTH ? "font-bold text-[#9f342d]" : "font-bold"}
+              >
+                {copy.msgCounter(msgLength)}
+              </span>
+            </>
+          }
+          error={errorFor("msg")}
+        >
           {({ inputId, describedBy, invalid }) => (
             <Input
               id={inputId}
