@@ -5,10 +5,10 @@
   "scripts": {
     "registry": "node scripts/generate-registry.mjs",
     "predev": "npm run registry",
-    "dev": "next dev",
+    "dev": "node init && next dev",
     "prebuild": "npm run registry",
-    "build": "next build",
-    "start": "next start",
+    "build": "node init && next build",
+    "start": "node init && next start",
     "prelint": "npm run registry",
     "lint": "eslint .",
     "pretest": "npm run registry",
