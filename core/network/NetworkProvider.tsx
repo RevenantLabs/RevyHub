@@ -55,13 +55,16 @@ function getServerSnapshot(): StellarNetwork {
   return DEFAULT_NETWORK;
 }
 
-function writeNetwork(network: StellarNetwork): void {
+function writeNetwork(network: StellarNetwork): boolean {
+  let persisted = false;
   try {
     window.localStorage.setItem(NETWORK_STORAGE_KEY, network);
+    persisted = true;
   } catch {
     // The choice still applies for this session even if it cannot be persisted.
   }
   for (const listener of listeners) listener();
+  return persisted;
 }
 
 export function NetworkProvider({
@@ -77,8 +80,8 @@ export function NetworkProvider({
   const network = override ?? stored;
 
   const setNetwork = useCallback((next: StellarNetwork) => {
-    setOverride(undefined);
-    writeNetwork(next);
+    const persisted = writeNetwork(next);
+    setOverride(persisted ? undefined : next);
   }, []);
 
   const value = useMemo<NetworkContextValue>(
