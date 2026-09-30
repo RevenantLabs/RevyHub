@@ -1,3 +1,5 @@
+import type { PaymentMemoType } from "@/features/payment-qr/lib/memoTypes";
+
 export type PaymentAsset =
   | { kind: "native" }
   | { kind: "issued"; code: string; issuer: string };
@@ -7,6 +9,7 @@ export interface PaymentRequest {
   amount: string;
   asset: PaymentAsset;
   memo?: string;
+  memoType?: PaymentMemoType;
   /** Free-text label shown by the wallet, from SEP-0007. */
   msg?: string;
 }
@@ -27,6 +30,7 @@ export type PaymentQrErrorCode =
   | "invalid_asset_code"
   | "invalid_asset_issuer"
   | "memo_too_long"
+  | "invalid_memo"
   | "message_too_long"
   | "qr_generation_failed";
 
@@ -35,5 +39,6 @@ export type PaymentQrField =
   | "amount"
   | "assetCode"
   | "assetIssuer"
+  | "memoType"
   | "memo"
   | "msg";

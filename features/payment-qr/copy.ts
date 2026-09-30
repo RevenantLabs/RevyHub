@@ -10,8 +10,9 @@ export const copy = {
   assetIssued: "Issued asset",
   assetCodeLabel: "Asset code",
   assetIssuerLabel: "Asset issuer",
+  memoTypeLabel: "Memo type (optional)",
   memoLabel: "Memo (optional)",
-  memoHint: "A text memo, up to 28 bytes. Emoji and accented letters cost more than one byte.",
+  memoHint: "Choose a memo type, then enter a value that matches Stellar limits for that type.",
   msgLabel: "Message to the payer (optional)",
   msgHint: "Shown by the wallet before the payer confirms. Up to 300 characters.",
   submit: "Generate QR code",
@@ -53,6 +54,10 @@ export const errorCopy: Record<PaymentQrErrorCode, { title: string; description:
   memo_too_long: {
     title: "The memo is too long",
     description: "A Stellar text memo holds 28 bytes. Non-ASCII characters use more than one byte each."
+  },
+  invalid_memo: {
+    title: "That memo value is not valid",
+    description: "Check the memo type guidance and enter a value that matches Stellar limits."
   },
   message_too_long: {
     title: "The message is too long",

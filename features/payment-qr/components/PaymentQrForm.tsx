@@ -5,6 +5,12 @@ import { Button } from "@/core/ui/Button";
 import { Field } from "@/core/ui/Field";
 import { Input, Select } from "@/core/ui/Input";
 import { copy } from "@/features/payment-qr/copy";
+import {
+  MEMO_PLACEHOLDERS,
+  PAYMENT_MEMO_TYPE_GUIDANCE,
+  PAYMENT_MEMO_TYPES,
+  type PaymentMemoType
+} from "@/features/payment-qr/lib/memoTypes";
 import type { RawPaymentForm } from "@/features/payment-qr/schema";
 import type { PaymentQrField } from "@/features/payment-qr/types";
 
@@ -25,6 +31,7 @@ export function PaymentQrForm({
     assetKind: "native",
     assetCode: "",
     assetIssuer: "",
+    memoType: "text",
     memo: "",
     msg: ""
   });
@@ -134,6 +141,28 @@ export function PaymentQrForm({
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={copy.memoTypeLabel} hint={PAYMENT_MEMO_TYPE_GUIDANCE[form.memoType]}>
+          {({ inputId }) => (
+            <Select
+              id={inputId}
+              value={form.memoType}
+              onChange={(event) => set("memoType", event.target.value as PaymentMemoType)}
+            >
+              {PAYMENT_MEMO_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type === "text"
+                    ? "Text memo"
+                    : type === "id"
+                      ? "ID memo"
+                      : type === "hash"
+                        ? "Hash memo"
+                        : "Return memo"}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+
         <Field label={copy.memoLabel} hint={copy.memoHint} error={errorFor("memo")}>
           {({ inputId, describedBy, invalid }) => (
             <Input
@@ -142,7 +171,8 @@ export function PaymentQrForm({
               aria-invalid={invalid}
               value={form.memo}
               onChange={(event) => set("memo", event.target.value)}
-              placeholder="Invoice 1001"
+              placeholder={MEMO_PLACEHOLDERS[form.memoType]}
+              inputMode={form.memoType === "id" ? "numeric" : "text"}
               autoComplete="off"
             />
           )}

@@ -12,6 +12,7 @@ export const nativeForm: RawPaymentForm = {
   assetKind: "native",
   assetCode: "",
   assetIssuer: "",
+  memoType: "text",
   memo: "",
   msg: ""
 };

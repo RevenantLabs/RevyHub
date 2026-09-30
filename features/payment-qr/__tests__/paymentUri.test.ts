@@ -61,6 +61,46 @@ describe("buildPaymentUri", () => {
     expect(buildPaymentUri(request)).toBe(buildPaymentUri(request));
   });
 
+  it("includes memo_type for ID, hash, and return memos", () => {
+    const validHash = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    expect(
+      parsePaymentUri(
+        buildPaymentUri({
+          destination,
+          amount: "10",
+          asset: { kind: "native" },
+          memo: "9223372036854775807",
+          memoType: "id"
+        })
+      )
+    ).toMatchObject({ memo: "9223372036854775807", memo_type: "MEMO_ID" });
+
+    expect(
+      parsePaymentUri(
+        buildPaymentUri({
+          destination,
+          amount: "10",
+          asset: { kind: "native" },
+          memo: validHash,
+          memoType: "hash"
+        })
+      )
+    ).toMatchObject({ memo: validHash, memo_type: "MEMO_HASH" });
+
+    expect(
+      parsePaymentUri(
+        buildPaymentUri({
+          destination,
+          amount: "10",
+          asset: { kind: "native" },
+          memo: validHash,
+          memoType: "return"
+        })
+      )
+    ).toMatchObject({ memo: validHash, memo_type: "MEMO_RETURN" });
+  });
+
   it("round-trips through the parser", () => {
     const uri = buildPaymentUri({
       destination,

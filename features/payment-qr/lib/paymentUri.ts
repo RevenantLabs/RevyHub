@@ -1,3 +1,4 @@
+import { PAYMENT_MEMO_TYPE_URI_VALUES } from "@/features/payment-qr/lib/memoTypes";
 import type { PaymentRequest } from "@/features/payment-qr/types";
 
 /**
@@ -17,8 +18,9 @@ export function buildPaymentUri(request: PaymentRequest): string {
   }
 
   if (request.memo) {
+    const memoType = request.memoType ?? "text";
     params.set("memo", request.memo);
-    params.set("memo_type", "MEMO_TEXT");
+    params.set("memo_type", PAYMENT_MEMO_TYPE_URI_VALUES[memoType]);
   }
 
   if (request.msg) params.set("msg", request.msg);

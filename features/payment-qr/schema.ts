@@ -1,5 +1,9 @@
 import { StrKey } from "@stellar/stellar-sdk";
 import { err, ok, type Result } from "@/core/result/result";
+import {
+  normalizePaymentMemo,
+  type PaymentMemoType
+} from "@/features/payment-qr/lib/memoTypes";
 import type {
   PaymentQrErrorCode,
   PaymentQrField,
@@ -25,6 +29,7 @@ export const FIELD_OF_CODE: Record<PaymentQrErrorCode, PaymentQrField | null> = 
   invalid_asset_code: "assetCode",
   invalid_asset_issuer: "assetIssuer",
   memo_too_long: "memo",
+  invalid_memo: "memo",
   message_too_long: "msg",
   qr_generation_failed: null
 };
@@ -35,6 +40,7 @@ export interface RawPaymentForm {
   assetKind: "native" | "issued";
   assetCode: string;
   assetIssuer: string;
+  memoType: PaymentMemoType;
   memo: string;
   msg: string;
 }
@@ -48,7 +54,8 @@ export function parsePaymentRequest(
 ): Result<PaymentRequest, PaymentQrErrorCode> {
   const destination = raw.destination.replace(/\s+/g, "");
   const amount = raw.amount.trim();
-  const memo = raw.memo.trim();
+  const memoType = raw.memoType ?? "text";
+  const memoInput = raw.memo.trim();
   const msg = raw.msg.trim();
 
   if (!destination) return err("empty_destination");
@@ -58,9 +65,24 @@ export function parsePaymentRequest(
   if (!AMOUNT.test(amount) || Number(amount) <= 0) return err("invalid_amount");
   if ((amount.split(".")[1] ?? "").length > MAX_DECIMALS) return err("amount_too_precise");
 
-  // A text memo is limited by bytes, not characters: emoji and accented
-  // letters cost more than one byte each.
-  if (memo && byteLength(memo) > MEMO_MAX_BYTES) return err("memo_too_long");
+  let memo: string | undefined;
+  let resolvedMemoType: PaymentMemoType | undefined;
+
+  if (memoInput) {
+    if (memoType === "text") {
+      if (byteLength(memoInput) > MEMO_MAX_BYTES) return err("memo_too_long");
+      memo = memoInput;
+      resolvedMemoType = "text";
+    } else {
+      try {
+        memo = normalizePaymentMemo(memoType, memoInput);
+        resolvedMemoType = memoType;
+      } catch {
+        return err("invalid_memo");
+      }
+    }
+  }
+
   if (msg.length > MSG_MAX_LENGTH) return err("message_too_long");
 
   if (raw.assetKind === "native") {
@@ -68,7 +90,8 @@ export function parsePaymentRequest(
       destination,
       amount,
       asset: { kind: "native" },
-      memo: memo || undefined,
+      memo,
+      memoType: resolvedMemoType,
       msg: msg || undefined
     });
   }
@@ -84,7 +107,8 @@ export function parsePaymentRequest(
     destination,
     amount,
     asset: { kind: "issued", code: code.toUpperCase(), issuer },
-    memo: memo || undefined,
+    memo,
+    memoType: resolvedMemoType,
     msg: msg || undefined
   });
 }
