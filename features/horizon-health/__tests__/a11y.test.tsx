@@ -1,0 +1,10 @@
+import { it } from "vitest";
+import { renderFeature, screen } from "@/core/testing/render";
+import { expectNoAxeViolations } from "@/core/testing/axe";
+import { withMswHandlers } from "@/core/testing/msw";
+import { handlers } from "../msw/handlers";
+import { HorizonHealthPanel } from "../components/HorizonHealthPanel";
+import { copy } from "../copy";
+withMswHandlers(...handlers);
+it("has no WCAG violations initially", async () => {const {container} = renderFeature(<HorizonHealthPanel/>); await expectNoAxeViolations(container);});
+it("has no WCAG violations with results", async () => {const {container, user} = renderFeature(<HorizonHealthPanel/>); await user.click(screen.getByRole("button", {name: copy.submit})); await screen.findByText(copy.healthy); await expectNoAxeViolations(container);});

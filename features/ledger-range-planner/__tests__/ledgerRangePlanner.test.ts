@@ -1,0 +1,11 @@
+import {expect,it} from "vitest";
+import {withMswHandlers} from "@/core/testing/msw";
+import {parseInput} from "../schema";
+import {analyze} from "../lib/ledgerRangePlanner";
+import {sample} from "../fixtures/ledgerRangePlanner.fixture";
+withMswHandlers();
+it("preserves the requested range while exposing retention intersections",()=>{const p=parseInput(sample);expect(p.ok).toBe(true);if(p.ok){const r=analyze(p.value);expect(r.ok&&r.value.values).toMatchObject({requested:"8–16",selected:"8–16",retained:"10–14",older:"8–9",future:"15–16",chunks:"3"});expect(r.ok&&r.value.rows?.map(x=>[x.values.start,x.values.end,x.values.count])).toEqual([["8","11","4"],["12","15","4"],["16","16","1"]]);}});
+it.each([["1","1","2",1],["1","8","4",2],["4294967295","4294967295","1",1]])("handles inclusive uint32 boundaries %s %s",(start,end,chunk,count)=>{const p=parseInput({...sample,start,end,chunk,oldest:"",latest:""});if(p.ok){const r=analyze(p.value);expect(r.ok&&r.value.rows?.length).toBe(count);}});
+it("requires the explicit scope before clipping an export",()=>{const p=parseInput({...sample,scope:"Retained intersection"});if(p.ok){const r=analyze(p.value);expect(r.ok&&r.value.values.selected).toBe("10–14");expect(r.ok&&r.value.rows?.map(x=>x.values.count)).toEqual(["4","1"]);}});
+it("handles no intersection without inventing an interval",()=>{const p=parseInput({...sample,start:"1",end:"2",scope:"Retained intersection"});if(p.ok){const r=analyze(p.value);expect(r.ok&&r.value.values.chunks).toBe("0");expect(r.ok&&r.value.rows).toEqual([]);}});
+it("bounds allocation independently from the ledger span with exact chunk count",()=>{const p=parseInput({...sample,start:"1",end:"4294967295",chunk:"1"});if(p.ok)expect(analyze(p.value)).toEqual({ok:false,code:"too_many_chunks",detail:{totalChunks:"4294967295",maxChunks:"1000"}});});

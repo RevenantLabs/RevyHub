@@ -1,0 +1,4 @@
+import {expect,it} from "vitest";
+import {parseInput} from "../schema";
+import {sample} from "../fixtures/ledgerRangePlanner.fixture";
+it("validates ordering, retention consistency and uint32 bounds",()=>{expect(parseInput({...sample,start:"17"})).toEqual({ok:false,code:"reversed_range"});expect(parseInput({...sample,oldest:"15",latest:"14"})).toEqual({ok:false,code:"invalid_retention"});expect(parseInput({...sample,latest:""})).toEqual({ok:false,code:"invalid_retention"});expect(parseInput({...sample,oldest:"",latest:"",scope:"Retained intersection"})).toEqual({ok:false,code:"invalid_retention"});for(const start of ["0","-1","4294967296","1.5","1e2"])expect(parseInput({...sample,start})).toEqual({ok:false,code:"invalid_input"});expect(parseInput({...sample,start:"1".repeat(41)})).toEqual({ok:false,code:"input_too_large"});expect(parseInput({})).toEqual({ok:false,code:"empty_input"});});

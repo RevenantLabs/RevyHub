@@ -1,0 +1,10 @@
+import {expect,it} from "vitest";
+import {withMswHandlers} from "@/core/testing/msw";
+import {parseInput} from "../schema";
+import {analyze} from "../lib/priceFractionLab";
+import {sample} from "../fixtures/priceFractionLab.fixture";
+withMswHandlers();
+import {preview} from "../lib/priceFractionLab";
+it("reduces repeating fractions and shows exact inverse and zero rational error",()=>{const p=parseInput(sample);expect(p.ok).toBe(true);if(p.ok)expect(analyze(p.value)).toEqual({ok:true,value:{values:{numerator:"1",denominator:"3",decimal:"0.3333333",inverseNumerator:"3",inverseDenominator:"1",inverseDecimal:"3.0000000",error:"0/1"}}});});
+it("enforces reduced signed-int32 boundaries and rejects tiny unrepresentable decimals",()=>{expect(analyze({n:2147483647n,d:1n,precision:0}).ok).toBe(true);expect(analyze({n:4294967294n,d:2n,precision:0}).ok).toBe(true);expect(analyze({n:2147483648n,d:1n,precision:0})).toEqual({ok:false,code:"out_of_range"});expect(analyze({n:1n,d:10000000000n,precision:18})).toEqual({ok:false,code:"out_of_range"});});
+it("truncates previews explicitly and inverse round trips preserve a reduced price",()=>{expect(preview(2n,3n,2)).toBe("0.66");expect(preview(1n,2n,0)).toBe("0");const r=analyze({n:13n,d:7n,precision:4});if(r.ok){const inverse=analyze({n:BigInt(r.value.values.inverseNumerator!),d:BigInt(r.value.values.inverseDenominator!),precision:4});expect(inverse.ok&&inverse.value.values.inverseNumerator).toBe("13");}});

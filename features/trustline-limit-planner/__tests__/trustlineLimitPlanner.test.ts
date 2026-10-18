@@ -1,0 +1,13 @@
+import {expect,it} from "vitest";
+import {withMswHandlers} from "@/core/testing/msw";
+import {parseInput} from "../schema";
+import {analyze} from "../lib/trustlineLimitPlanner";
+import {sample} from "../fixtures/trustlineLimitPlanner.fixture";
+withMswHandlers();
+import {row,otherIssuer} from "../fixtures/trustlineLimitPlanner.fixture";
+import {copy} from "../copy";
+const run=(snapshot:unknown,limit:string)=>{const p=parseInput({snapshot:JSON.stringify(snapshot),limit});if(!p.ok)return p;return analyze(p.value);};
+it("accepts exact equality and blocks a one-stroop shortfall",()=>{const equal=run(row,"10");expect(equal.ok&&equal.value.values).toMatchObject({proposedHeadroom:"0.0000000",status:copy.limitCandidate,currentHeadroom:"10.0000000"});const short=run(row,"9.9999999");expect(short.ok&&short.value.values).toMatchObject({proposedHeadroom:"-0.0000001",status:copy.blocked});expect(parseInput(sample).ok).toBe(true);});
+it("treats deletion as separate and includes selling liabilities",()=>{const r=run({...row,balance:"0",buying_liabilities:"0",selling_liabilities:"0.0000001"},"0");expect(r.ok&&r.value.values.status).toBe(copy.blocked);expect(r.ok&&r.value.values.constraints).toContain(copy.sellingBlock);const clean=run({...row,balance:"0",buying_liabilities:"0",selling_liabilities:"0"},"0");expect(clean.ok&&clean.value.values.status).toBe(copy.deletionCandidate);});
+it("keeps authorization unknown/false distinct and issuer identities separate",()=>{const a=run({...row,is_authorized:undefined},"10");expect(a.ok&&a.value.values.authorized).toBe(copy.unknown);const b=run({...row,is_authorized:false,asset_issuer:otherIssuer},"10");expect(b.ok&&b.value.values.authorized).toBe(copy.no);expect(b.ok&&b.value.values.asset).toContain(otherIssuer);expect(a.ok&&b.ok&&a.value.values.asset!==b.value.values.asset).toBe(true);});
+it("keeps maximum amounts exact",()=>{const r=run({...row,balance:"922337203685.4775807",limit:"922337203685.4775807",buying_liabilities:"0"},"922337203685.4775807");expect(r.ok&&r.value.values.proposedHeadroom).toBe("0.0000000");});

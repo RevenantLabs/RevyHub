@@ -1,0 +1,10 @@
+import { classifyHorizonError } from "@/core/horizon/errors";
+import type { TrustlineErrorCode } from "@/features/trustline-checker/types";
+
+export function toTrustlineErrorCode(error: unknown): TrustlineErrorCode {
+  const { code } = classifyHorizonError(error);
+
+  if (code === "not_found") return "account_not_found";
+  if (code === "rate_limited") return "rate_limited";
+  return "request_failed";
+}

@@ -6,6 +6,13 @@ export default defineConfig([
   ...nextVitals,
   ...nextTs,
   {
-    ignores: [".next/**", "node_modules/**", "out/**"]
+    ignores: [
+      ".next/**",
+      "node_modules/**",
+      "out/**",
+      ".grantfox-agents/**",
+      ".drips-agents/**",
+      "worktrees/**"
+    ]
   }
 ]);

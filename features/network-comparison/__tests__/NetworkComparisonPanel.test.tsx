@@ -1,0 +1,10 @@
+import {expect,it} from "vitest";
+import {renderFeature,screen} from "@/core/testing/render";
+import {withMswHandlers,http,HttpResponse} from "@/core/testing/msw";
+import {horizonUrl} from "@/core/horizon/client";
+import {handlers} from "../msw/handlers";
+import {copy,errorCopy} from "../copy";
+import {NetworkComparisonPanel} from "../components/NetworkComparisonPanel";
+const server=withMswHandlers(...handlers);
+it("shows side-by-side results, protocol warning and reset guidance",async()=>{const {user}=renderFeature(<NetworkComparisonPanel/>);expect(screen.getByText(copy.formHint)).toBeInTheDocument();await user.click(screen.getByRole("button",{name:copy.submit}));expect(await screen.findByText(copy.protocolDiffers)).toBeInTheDocument();expect(screen.getByText(copy.resetNotice)).toBeInTheDocument();expect(screen.getAllByText("60000000")).toHaveLength(3);await user.click(screen.getByRole("button",{name:copy.reset}));expect(screen.getByText(copy.emptyTitle)).toBeInTheDocument();});
+it("retains the healthy column with partial failure advice",async()=>{server.use(http.get(horizonUrl("mainnet","/"),()=>HttpResponse.error()));const {user}=renderFeature(<NetworkComparisonPanel/>);await user.click(screen.getByRole("button",{name:copy.submit}));expect(await screen.findByText(errorCopy.partial_failure.title)).toBeInTheDocument();expect(screen.getAllByText("998").length).toBeGreaterThan(0);expect(screen.getByRole("alert")).toHaveTextContent(errorCopy.request_failed.title);});

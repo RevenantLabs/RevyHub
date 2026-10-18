@@ -1,0 +1,10 @@
+import {it} from "vitest";
+import {renderFeature,screen} from "@/core/testing/render";
+import {expectNoAxeViolations} from "@/core/testing/axe";
+import {withMswHandlers} from "@/core/testing/msw";
+import {handlers} from "../msw/handlers";
+import {NetworkComparisonPanel} from "../components/NetworkComparisonPanel";
+import {copy} from "../copy";
+withMswHandlers(...handlers);
+it("passes axe initially",async()=>{const {container}=renderFeature(<NetworkComparisonPanel/>);await expectNoAxeViolations(container);});
+it("passes axe with both columns",async()=>{const {container,user}=renderFeature(<NetworkComparisonPanel/>);await user.click(screen.getByRole("button",{name:copy.submit}));await screen.findByText(copy.protocolDiffers);await expectNoAxeViolations(container);});

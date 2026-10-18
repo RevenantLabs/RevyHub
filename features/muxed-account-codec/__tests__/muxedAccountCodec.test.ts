@@ -1,0 +1,10 @@
+import {expect,it} from "vitest";
+import {withMswHandlers} from "@/core/testing/msw";
+import {parseInput} from "../schema";
+import {analyze} from "../lib/muxedAccountCodec";
+import {sample} from "../fixtures/muxedAccountCodec.fixture";
+withMswHandlers();
+import {base,muxed} from "../fixtures/muxedAccountCodec.fixture";
+it.each(["0","1","9007199254740993","18446744073709551615"])("round trips the full uint64 ID %s",id=>{const encoded=analyze({mode:"Encode",base,id});expect(encoded.ok).toBe(true);if(encoded.ok){expect(encoded.value.values.base).toBe(base);expect(encoded.value.values.id).toBe(id);const decoded=analyze({mode:"Decode",muxed:encoded.value.values.muxed!});expect(decoded).toEqual(encoded);}});
+it("decodes the deterministic maximum-ID fixture",()=>{const p=parseInput(sample);expect(p.ok).toBe(true);if(p.ok){const r=analyze(p.value);expect(r.ok&&r.value.values).toMatchObject({base,muxed,id:"18446744073709551615"});}});
+it("returns expected domain failures without throwing",()=>{expect(analyze({mode:"Decode",muxed:"bad"})).toEqual({ok:false,code:"invalid_muxed_address"});expect(analyze({mode:"Encode",base:"bad",id:"1"})).toEqual({ok:false,code:"invalid_base_address"});});

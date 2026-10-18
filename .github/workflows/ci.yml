@@ -24,11 +24,37 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate feature registry
+        run: npm run registry
+
+      - name: Verify the feature contract
+        run: npm run verify:features
+
+      - name: Verify the independent issue backlog
+        run: npm run verify:issues
+
       - name: Lint
         run: npm run lint
 
-      - name: Test
-        run: npm run test
+      - name: Test with coverage
+        run: set -o pipefail; mkdir -p coverage && npm run test:coverage | tee coverage/coverage.txt
+
+      - name: Publish coverage summary
+        if: ${{ always() && hashFiles('coverage/coverage.txt') != '' }}
+        run: |
+          {
+            echo "## Unit test coverage"
+            echo
+            echo '```text'
+            cat coverage/coverage.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build
         run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end test
+        run: npm run test:e2e

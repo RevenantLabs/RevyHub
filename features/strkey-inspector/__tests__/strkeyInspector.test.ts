@@ -1,0 +1,12 @@
+import {expect,it} from "vitest";
+import {withMswHandlers} from "@/core/testing/msw";
+import {parseInput} from "../schema";
+import {analyze} from "../lib/strkeyInspector";
+import {sample} from "../fixtures/strkeyInspector.fixture";
+withMswHandlers();
+import {publicKinds,accountId,muxed} from "../fixtures/strkeyInspector.fixture";
+import {copy} from "../copy";
+it("decodes all public kinds supported by the installed SDK",()=>{for(const value of publicKinds){const p=parseInput({value});expect(p.ok).toBe(true);if(p.ok){const r=analyze(p.value);expect(r.ok).toBe(true);if(r.ok)expect(r.value.values.hex?.length).toBe(Number(r.value.values.bytes)*2);}}});
+it("shows exact muxed routing and base account",()=>{const r=analyze({value:muxed});expect(r.ok&&r.value.values).toMatchObject({base:accountId,id:"18446744073709551615"});});
+it("distinguishes checksum failures, unsupported kinds and seeds",()=>{expect(analyze({value:accountId.slice(0,-1)+(accountId.endsWith("A")?"B":"A")})).toEqual({ok:false,code:"bad_checksum"});expect(analyze({value:"Z123"})).toEqual({ok:false,code:"unknown_prefix"});expect(analyze({value:"S-not-a-checksummed-seed"})).toEqual({ok:false,code:"secret_seed_rejected"});expect(copy.labels.hex).toBeTruthy();});
+it("fixture produces the exact raw public-key bytes",()=>{const r=analyze({value:sample.value});expect(r.ok&&r.value.values.bytes).toBe("32");});

@@ -1,89 +1,72 @@
-# Contributing
+# Contributing to RevyHubX
 
-Thanks for helping improve RevyHubX. This project is intentionally modular so contributors can pick focused Stellar, UI, testing, or documentation tasks.
+Thanks for building here. This project is organised so that many people can
+work at the same time without ever colliding — please read
+[docs/FEATURE_CONTRACT.md](./docs/FEATURE_CONTRACT.md) before you start.
 
-## Clone and Install
-
-```bash
-git clone https://github.com/RevenantLabs/RevyHubX.git
-cd RevyHubX
-npm install
-```
-
-## Run Locally
+## Setup
 
 ```bash
+git clone https://github.com/RevenantLabs/RevyHub.git
+cd RevyHub
+npm install          # also generates the feature registry
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+## Adding a tool
 
-## Extending the Toolkit
-
-To add a new tool end-to-end (utility, page, navigation metadata, tests, and error states), follow [docs/EXTENDING.md](./docs/EXTENDING.md).
-
-## Branch Naming
-
-Use short, descriptive branch names:
-
-- `feature/payment-uri-validation`
-- `fix/friendbot-error-state`
-- `docs/vercel-guide`
-- `test/address-validator`
-
-## Commit Style
-
-Prefer clear conventional-style commits:
-
-- `feat: add trustline checker`
-- `fix: handle account not found state`
-- `docs: add Vercel deployment guide`
-- `test: cover address validation`
-
-## Pick an Issue
-
-Start with [docs/ISSUES.md](./docs/ISSUES.md). Choose an issue with a difficulty level that matches your experience, then open a GitHub issue or comment on an existing one before starting larger work.
-
-This project includes [GitHub issue templates](.github/ISSUE_TEMPLATE/) to help structure contributions:
-- [Bug report](.github/ISSUE_TEMPLATE/bug_report.md) — for reporting broken workflows or UI states
-- [Feature request](.github/ISSUE_TEMPLATE/feature_request.md) — for proposing new Stellar tools or improvements
-- [Documentation](.github/ISSUE_TEMPLATE/documentation.md) — for suggesting doc or guide updates
-- [Pull request](.github/PULL_REQUEST_TEMPLATE.md) — for submitting your changes
-
-## Pull Requests
-
-PRs should include:
-
-- What changed
-- Why it changed
-- How you tested it
-- Screenshots for UI changes
-- Any follow-up TODOs
-
-The pull request template also asks contributors to confirm lint, tests, the production build, documentation updates, and relevant loading or error states.
-
-Use the [bug report](.github/ISSUE_TEMPLATE/bug_report.md), [feature request](.github/ISSUE_TEMPLATE/feature_request.md), or [documentation](.github/ISSUE_TEMPLATE/documentation.md) template when opening issues, and the [pull request template](.github/PULL_REQUEST_TEMPLATE.md) when submitting changes.
-
-## Code Quality
-
-- Keep tools modular under `app/tools/*`
-- Put Stellar API logic under `lib/stellar/*`
-- Reuse components from `components/ui` and `components/stellar`
-- Do not ask users for secret keys, seed phrases, or private keys
-- Keep testnet-only behavior clearly labeled
-
-## Testing Expectations
-
-Run these before opening a PR:
+Almost every open issue asks for a new tool. Scaffold it:
 
 ```bash
-npm run lint
-npm run test
-npm run build
+npm run new:feature -- ledger-lookup "Ledger Lookup" transactions
 ```
 
-Unit tests are available for core Stellar utilities. E2E tests remain a roadmap item. If you add or change tests, keep the README and CI workflow aligned.
+That creates `features/ledger-lookup/` with all 23 required files, already
+compiling and passing its own placeholder tests. Your job is to replace the
+placeholders with the real tool.
 
-## Asking for Help
+Then:
 
-Open a GitHub issue with context, screenshots when relevant, and the exact command or workflow that failed.
+```bash
+npm run registry            # picks up the new slice
+npm run dev                 # it is already in the nav and at /tools/<slug>
+npm run verify:features -- ledger-lookup
+```
+
+**You should not need to edit any file outside `features/<slug>/.`** Routing,
+navigation, the dashboard and search all read a generated registry. If you find
+yourself editing a shared file, that is a signal something is off — say so on
+the issue instead of working around it.
+
+## Before opening a pull request
+
+```bash
+npm run check
+```
+
+This runs the registry generation, ESLint, the full test suite, the feature
+contract check and a production build. CI runs exactly the same thing.
+
+## What reviewers look for
+
+- Error codes specific enough to give the user real advice
+- All user-facing text in `copy.ts`
+- Amounts handled as strings and `BigInt`, never floats
+- All four UI states present: idle, loading, success, error
+- `a11y.test.tsx` clean in at least two states
+- Fixtures derived from fixed seeds, not hand-typed addresses
+- Requests mocked with MSW, not `vi.mock`
+- **No secret key ever accepted, displayed, stored or transmitted**
+
+## Commits and pull requests
+
+- One tool per pull request. Link the issue it closes.
+- Conventional commit prefixes: `feat:`, `fix:`, `test:`, `docs:`, `chore:`.
+- Describe the decisions you made, not just the files you touched. The
+  interesting part of a review is *why* an error code exists, not that it does.
+
+## Security
+
+RevyHubX is read-only by design. It never asks for a secret key and never signs
+or submits a transaction. If a change would break that, it does not belong
+here. See [SECURITY.md](./SECURITY.md).
