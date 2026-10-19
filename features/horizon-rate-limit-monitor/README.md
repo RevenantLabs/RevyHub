@@ -1,0 +1,7 @@
+# Horizon Rate Limit Monitor
+
+Checks Horizon `GET /`, `GET /ledgers`, and optionally `GET /accounts/{account_id}` on the selected testnet or mainnet. It reads only response headers; response bodies are never parsed or stored. The optional account ID must be a valid public G address. Secret seeds are rejected before a request and cleared from the form on submission.
+
+Each endpoint has its own limit, remaining count, and reset epoch with a readable countdown. A missing field reads **Not reported**; an endpoint with no quota headers is still a successful check. Missing data is never treated as zero. A header that is present but not a nonnegative decimal integer produces the `missing_headers` error because its value cannot be trusted. A `429` is reported separately. The threshold is an absolute remaining-request count from 0 to 999999; only a reported count strictly below it triggers a warning. Reset is interpreted as Unix seconds and updated once a second without another network request. In-flight requests are canceled when a new check starts or the selected network changes.
+
+The browser can read these headers only when the Horizon instance exposes them through CORS. If an instance omits or does not expose them, the tool reports **Not reported**. It does not throttle, retry, or keep quota history. MSW fixtures cover both networks, partial and missing headers, and failure outcomes.
