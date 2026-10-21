@@ -1,0 +1,11 @@
+import { xdr } from "@stellar/stellar-sdk";
+import { sourceAccount, successOperation } from "./operationResultXdrDecoder.fixture";
+const emptyExt = () => new (xdr.TransactionResultExt as unknown as new (v: 0) => xdr.TransactionResultExt)(0);
+export const partialHash = "b".repeat(64);
+export const preOperationHash = "3".repeat(64);
+export const failedPayment = xdr.OperationResult.opInner(xdr.OperationResultTr.payment(xdr.PaymentResult.paymentUnderfunded()));
+export const partialXdr = new xdr.TransactionResult({ feeCharged: xdr.Int64.fromString("200"), result: xdr.TransactionResultResult.txFailed([successOperation, failedPayment]), ext: emptyExt() }).toXDR("base64");
+export const preOperationXdr = new xdr.TransactionResult({ feeCharged: xdr.Int64.fromString("100"), result: xdr.TransactionResultResult.txBadSeq(), ext: emptyExt() }).toXDR("base64");
+export const partialRecord = { hash: partialHash, successful: false, result_xdr: partialXdr, operation_count: 2 };
+export const preOperationRecord = { hash: preOperationHash, successful: false, result_xdr: preOperationXdr, operation_count: 1 };
+export const partialOperations = { _embedded: { records: [{ id: "1", type: "bump_sequence", source_account: sourceAccount }, { id: "2", type: "payment", source_account: sourceAccount }] } };
