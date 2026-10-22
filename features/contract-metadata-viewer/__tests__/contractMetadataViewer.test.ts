@@ -1,0 +1,2 @@
+import { describe, expect, it } from "vitest"; import { customSections } from "@/features/contract-metadata-viewer/lib/wasm-sections"; import { fullMetadataWasm } from "@/features/contract-metadata-viewer/fixtures/full-metadata.fixture";
+describe("contract metadata orchestration inputs", () => { it("keeps environment and publisher sections separate", () => { const result = customSections(fullMetadataWasm); expect(result.ok && [...result.value.keys()]).toEqual(["contractenvmetav0", "contractmetav0"]); }); });

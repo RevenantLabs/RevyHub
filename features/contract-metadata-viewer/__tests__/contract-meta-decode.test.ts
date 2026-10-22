@@ -1,0 +1,5 @@
+import { describe, expect, it } from "vitest"; import { customSections } from "@/features/contract-metadata-viewer/lib/wasm-sections"; import { decodeContractMeta } from "@/features/contract-metadata-viewer/lib/contract-meta-decode"; import { fullMetadataWasm } from "@/features/contract-metadata-viewer/fixtures/full-metadata.fixture"; import { noContractMetaWasm } from "@/features/contract-metadata-viewer/fixtures/no-contract-meta.fixture";
+describe("decodeContractMeta", () => {
+  it("decodes every key-value entry", () => { const sections = customSections(fullMetadataWasm); expect(sections.ok && decodeContractMeta(sections.value.get("contractmetav0") ?? [])).toEqual({ ok: true, value: [{ key: "name", value: "Revy demo" }, { key: "version", value: "1.0.0" }] }); });
+  it("treats an absent section as none published", () => { const sections = customSections(noContractMetaWasm); expect(sections.ok && decodeContractMeta(sections.value.get("contractmetav0") ?? [])).toEqual({ ok: true, value: [] }); });
+});
