@@ -1,0 +1,2 @@
+import { metadataContractId } from "@/features/contract-metadata-viewer/fixtures/full-metadata.fixture"; import type { ContractMetadataViewerResult } from "@/features/contract-metadata-viewer/types";
+export const contractMetadataViewerFixture: ContractMetadataViewerResult = { contractId: metadataContractId, network: "testnet", wasmBytes: 128, environment: { protocol: 23, preRelease: 1 }, metadata: [{ key: "name", value: "Revy demo" }] };
