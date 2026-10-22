@@ -1,0 +1,2 @@
+import { copy } from "@/features/batch-operation-summary/copy";
+export function SourceAccountRows({ transactionSource, overrides }: { transactionSource: string; overrides: string[] }) { return <section><h3 className="font-bold">{copy.sourceTitle}</h3><dl><dt>{copy.transactionSource}</dt><dd className="break-all font-mono">{transactionSource}</dd>{overrides.map((source) => <div key={source}><dt>{copy.overrideSource}</dt><dd className="break-all font-mono">{source}</dd></div>)}</dl>{overrides.length === 0 ? <p>{copy.noOverrides}</p> : null}</section>; }
