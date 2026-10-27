@@ -1,0 +1,2 @@
+import { describe, expect, it } from "vitest"; import { MAX_WASM_BYTES } from "@/features/contract-metadata-viewer/lib/wasm-fetch"; import { customSections } from "@/features/contract-metadata-viewer/lib/wasm-sections"; import { fullMetadataWasm } from "@/features/contract-metadata-viewer/fixtures/full-metadata.fixture";
+describe("Wasm fetch boundary", () => { it("caps decoding at one MiB", () => expect(MAX_WASM_BYTES).toBe(1_048_576)); it("accepts a valid Wasm module", () => expect(customSections(fullMetadataWasm).ok).toBe(true)); });

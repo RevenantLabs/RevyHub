@@ -1,0 +1,2 @@
+import { FileCode2 } from "lucide-react"; import type { FeatureManifest } from "@/core/registry/types";
+export const manifest: FeatureManifest = { slug: "contract-metadata-viewer", title: "Soroban Contract Metadata Viewer", description: "Inspect a deployed contract's environment version and publisher metadata.", character: "Read the Wasm label before calling the code.", category: "soroban", status: "beta", icon: FileCode2, networks: ["testnet", "mainnet"], keywords: ["soroban", "wasm", "contract metadata", "environment"] };

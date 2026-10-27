@@ -1,0 +1,2 @@
+import { copy } from "@/features/contract-metadata-viewer/copy"; import type { MetadataEntry } from "@/features/contract-metadata-viewer/types";
+export function MetadataEntryRows({ entries }: { entries: MetadataEntry[] }) { return <section><h3 className="font-bold">{copy.metadataTitle}</h3><dl>{entries.map((entry) => <div key={entry.key} className="grid grid-cols-2 gap-3 border-b py-2"><dt className="font-mono">{entry.key}</dt><dd>{entry.value}</dd></div>)}</dl></section>; }

@@ -1,0 +1,2 @@
+import { Badge } from "@/core/ui/Badge"; import { copy } from "@/features/contract-metadata-viewer/copy"; import { formatEnvVersion } from "@/features/contract-metadata-viewer/lib/format"; import type { EnvVersion } from "@/features/contract-metadata-viewer/types";
+export function EnvVersionBadge({ version }: { version: EnvVersion }) { return <p><strong>{copy.envTitle}:</strong> <Badge tone="info">{formatEnvVersion(version)}</Badge></p>; }
