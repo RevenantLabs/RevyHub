@@ -7,11 +7,12 @@ export async function openBoundedSse(url: string, input: HorizonStreamSamplerInp
   const controller = new AbortController(); const abort = () => controller.abort();
   signal?.addEventListener("abort", abort, { once: true }); if (signal?.aborted) abort();
   const timeout = setTimeout(abort, input.durationMs); const events: SampledEvent[] = [];
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   try {
     const response = await fetch(url, { headers: { Accept: "text/event-stream" }, signal: controller.signal });
     if (response.status === 429) return err("rate_limited");
     if (!response.ok || !response.body) return err("stream_connection_failed");
-    const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
+    reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
     while (!controller.signal.aborted) {
       const chunk = await reader.read(); if (chunk.done) break; buffer += decoder.decode(chunk.value, { stream: true });
       const blocks = buffer.split(/\r?\n\r?\n/); buffer = blocks.pop() ?? "";
@@ -22,5 +23,11 @@ export async function openBoundedSse(url: string, input: HorizonStreamSamplerInp
   } catch (error) {
     if (controller.signal.aborted) { const reason = signal?.aborted ? "manual" : "duration"; return ok({ events, stopReason: completedReason(events, reason), network }); }
     return err("stream_connection_failed");
-  } finally { clearTimeout(timeout); signal?.removeEventListener("abort", abort); }
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener("abort", abort);
+    controller.abort();
+    await reader?.cancel().catch(() => undefined);
+    reader?.releaseLock();
+  }
 }

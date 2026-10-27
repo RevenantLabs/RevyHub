@@ -21,7 +21,9 @@ export function useHorizonStreamSampler() {
 
   const submit = useCallback(
     async (raw: string) => {
-      controller.current?.abort();
+      const previous = controller.current;
+      controller.current = null;
+      previous?.abort();
       const parsed = parseHorizonStreamSamplerInput(raw);
       if (isErr(parsed)) {
         setState({ status: "error", code: parsed.code });
@@ -37,15 +39,19 @@ export function useHorizonStreamSampler() {
           parsed.value,
           network,
           next.signal,
-          (event) => setState((current) => current.status === "loading" ? { status: "loading", events: [...current.events, event] } : current)
+          (event) => {
+            if (controller.current !== next) return;
+            setState((current) => current.status === "loading" ? { status: "loading", events: [...current.events, event] } : current);
+          }
         );
+        if (controller.current !== next) return;
         setState(
           result.ok
             ? { status: "success", result: result.value }
             : { status: "error", code: result.code }
         );
       } catch (error) {
-        if (next.signal.aborted) return;
+        if (controller.current !== next || next.signal.aborted) return;
         setState({ status: "error", code: toHorizonStreamSamplerErrorCode(error) });
       }
     },
@@ -53,12 +59,18 @@ export function useHorizonStreamSampler() {
   );
 
   const reset = useCallback(() => {
-    controller.current?.abort();
+    const active = controller.current;
+    controller.current = null;
+    active?.abort();
     setState({ status: "idle" });
   }, []);
 
   const stop = useCallback(() => controller.current?.abort(), []);
-  useEffect(() => () => controller.current?.abort(), []);
+  useEffect(() => () => {
+    const active = controller.current;
+    controller.current = null;
+    active?.abort();
+  }, [network]);
 
   return { state, submit, reset, stop };
 }
