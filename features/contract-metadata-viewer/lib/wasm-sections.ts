@@ -1,5 +1,5 @@
 import { err, ok, type Result } from "@/core/result/result"; import type { ContractMetadataViewerErrorCode } from "@/features/contract-metadata-viewer/types";
-function uleb(bytes: Uint8Array, start: number): { value: number; next: number } | null { let value = 0; let shift = 0; for (let offset = start; offset < bytes.length && shift < 35; offset++, shift += 7) { const byte = bytes[offset]!; value |= (byte & 0x7f) << shift; if (!(byte & 0x80)) return { value, next: offset + 1 }; } return null; }
+function uleb(bytes: Uint8Array, start: number): { value: number; next: number } | null { let value = 0; let shift = 0; for (let offset = start; offset < bytes.length && shift < 35; offset++, shift += 7) { const byte = bytes[offset]!; if (shift === 28 && (byte & 0xf0)) return null; value += (byte & 0x7f) * 2 ** shift; if (!(byte & 0x80)) return { value, next: offset + 1 }; } return null; }
 export function customSections(wasm: Uint8Array): Result<Map<string, Uint8Array[]>, ContractMetadataViewerErrorCode> {
   if (wasm.length < 8 || wasm[0] !== 0 || wasm[1] !== 97 || wasm[2] !== 115 || wasm[3] !== 109) return err("request_failed");
   const sections = new Map<string, Uint8Array[]>(); let offset = 8;

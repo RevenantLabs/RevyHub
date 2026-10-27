@@ -1,3 +1,4 @@
+import { Buffer } from "buffer";
 import { Address, xdr } from "@stellar/stellar-sdk"; import { err, ok, type Result } from "@/core/result/result"; import { isRpcFailure, sorobanRpc } from "@/core/rpc/client"; import type { StellarNetwork } from "@/core/network/types"; import type { ContractMetadataViewerErrorCode } from "@/features/contract-metadata-viewer/types";
 export const MAX_WASM_BYTES = 1_048_576;
 interface LedgerResult { entries?: Array<{ xdr?: string }> }
@@ -10,10 +11,10 @@ async function read(key: string, network: StellarNetwork, signal?: AbortSignal):
 export async function fetchContractWasm(contractId: string, network: StellarNetwork, signal?: AbortSignal): Promise<Result<Uint8Array, ContractMetadataViewerErrorCode>> {
   const instance = await read(instanceKey(contractId), network, signal); if (!instance.ok) return instance;
   try {
-    const executable = xdr.LedgerEntry.fromXDR(instance.value, "base64").data().contractData().val().instance().executable();
+    const executable = xdr.LedgerEntryData.fromXDR(instance.value, "base64").contractData().val().instance().executable();
     if (executable.switch().name !== "contractExecutableWasm") return err("contract_not_found");
     const code = await read(codeKey(Buffer.from(executable.wasmHash())), network, signal); if (!code.ok) return code;
-    const wasm = new Uint8Array(xdr.LedgerEntry.fromXDR(code.value, "base64").data().contractCode().code());
+    const wasm = new Uint8Array(xdr.LedgerEntryData.fromXDR(code.value, "base64").contractCode().code());
     if (wasm.length > MAX_WASM_BYTES) return err("too_large"); return ok(wasm);
   } catch { return err("request_failed"); }
 }
