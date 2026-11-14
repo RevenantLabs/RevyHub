@@ -6,6 +6,18 @@ import type {
   WalletSnapshot
 } from "@/features/freighter-connect/types";
 
+const CONNECTION_TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(promise: Promise<T>, ms = CONNECTION_TIMEOUT_MS): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("TIMEOUT")), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timer);
+  });
+}
+
 /**
  * Reads the wallet's current state.
  *
@@ -20,15 +32,15 @@ export async function readWallet(
   if (!api.ok) return api;
 
   try {
-    const allowed = (await api.value.isAllowed?.()) ?? false;
+    const allowed = (await withTimeout(api.value.isAllowed?.() ?? Promise.resolve(false))) ?? false;
 
     if (!allowed) {
       return ok({ installed: true, allowed: false, network: "unknown" });
     }
 
     const [publicKey, rawNetwork] = await Promise.all([
-      api.value.getPublicKey!(),
-      api.value.getNetwork!()
+      withTimeout(api.value.getPublicKey!()),
+      withTimeout(api.value.getNetwork!())
     ]);
 
     return ok({
@@ -51,7 +63,7 @@ export async function requestAccess(
   if (!api.ok) return api;
 
   try {
-    await api.value.setAllowed?.();
+    await withTimeout(api.value.setAllowed?.() ?? Promise.resolve(false));
   } catch {
     return err("not_allowed");
   }
