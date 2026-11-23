@@ -30,7 +30,7 @@ describe("readQuoteTerms", () => {
   })
 
   it("lists missing fee terms instead of inventing zeroes", () => {
-    const record = quoteRecord()
+    const record: Record<string, unknown> = { ...quoteRecord() }
     delete record.fee
     delete record.price
     const result = readQuoteTerms(record, ANCHOR_ID)

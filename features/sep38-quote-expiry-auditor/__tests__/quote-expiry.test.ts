@@ -28,7 +28,8 @@ describe("evaluateQuoteExpiry", () => {
   it("equates a timezone offset with the same UTC instant", () => {
     const offset = evaluateQuoteExpiry(OFFSET_SAME_AS_EVALUATION, EVALUATION_TIME)
     const utc = evaluateQuoteExpiry(EVALUATION_TIME, EVALUATION_TIME)
-    expect(offset.ok && utc.ok && offset.value.expiresAtEpochMs).toBe(utc.value.expiresAtEpochMs)
+    if (!offset.ok || !utc.ok) throw new Error("expected both timestamps to parse")
+    expect(offset.value.expiresAtEpochMs).toBe(utc.value.expiresAtEpochMs)
     expect(offset.ok && offset.value.status).toBe("expired")
   })
 
